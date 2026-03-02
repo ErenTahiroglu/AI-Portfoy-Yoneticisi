@@ -249,6 +249,13 @@ class HisseAnaliz:
             )
             r = req_lib.get(url, timeout=30, verify=False)
             data = r.json()
+            
+            # Rate limit check
+            if "Information" in data and "rate limit" in data["Information"].lower():
+                raise Exception("ALPHA_VANTAGE_RATE_LIMIT")
+            if "Note" in data and "API call frequency" in data["Note"]:
+                raise Exception("ALPHA_VANTAGE_RATE_LIMIT")
+                
             ts = data.get("Time Series (Daily)", {})
             if not ts:
                 return None
@@ -258,7 +265,9 @@ class HisseAnaliz:
             df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
             df = df[["Close"]].sort_index()
             return self._utc(df)
-        except Exception:
+        except Exception as e:
+            if str(e) == "ALPHA_VANTAGE_RATE_LIMIT":
+                raise e
             return None
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -296,6 +305,7 @@ class HisseAnaliz:
 
         # ── Fiyat: Alpha Vantage (üçüncül, opsiyonel) ─────────────────────────
         fiyatlar_av = None
+        av_rate_limited = False
         if self.av_key:
             try:
                 fiyatlar_av = self._alphavantage_cek(sembol)
@@ -304,10 +314,16 @@ class HisseAnaliz:
                 else:
                     print(f"     ⚠️  Alpha Vantage: veri yok")
             except Exception as e:
-                print(f"     ⚠️  Alpha Vantage hata: {e}")
+                if str(e) == "ALPHA_VANTAGE_RATE_LIMIT":
+                    av_rate_limited = True
+                    print(f"     ⚠️  Alpha Vantage: RATE LIMIT AŞILDI")
+                else:
+                    print(f"     ⚠️  Alpha Vantage hata: {e}")
 
         # ── En az bir kaynak lazım ────────────────────────────────────────────
         if fiyatlar_yf is None and fiyatlar_stooq is None and fiyatlar_av is None:
+            if av_rate_limited:
+                raise Exception("ALPHA_VANTAGE_RATE_LIMIT")
             print(f"  ❌ {sembol}: hiçbir kaynaktan veri alınamadı.")
             return None
 
@@ -444,7 +460,13 @@ class HisseAnaliz:
         print(f"🔍  {sembol}")
         print(f"{'─'*68}")
 
-        veri = self._veri_cek(sembol)
+        try:
+            veri = self._veri_cek(sembol)
+        except Exception as e:
+            if str(e) == "ALPHA_VANTAGE_RATE_LIMIT":
+                raise e
+            return None
+            
         if not veri:
             return None
 

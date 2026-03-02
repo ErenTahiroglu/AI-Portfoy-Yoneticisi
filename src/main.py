@@ -155,7 +155,10 @@ async def analyze_portfolio(request: AnalysisRequest):
                     else:
                         result_entry["fin_error"] = "Hisse için detaylı finansal veri kurulamadı."
                 except Exception as e:
-                    result_entry["fin_error"] = f"Finans modülü hatası: {str(e)}"
+                    if str(e) == "ALPHA_VANTAGE_RATE_LIMIT":
+                        result_entry["fin_error"] = "⚠️ **Alpha Vantage Kotası Doldu**<br>Ücretsiz API limitiniz (günlük) dolmuştur. Diğer kaynaklardan (Yahoo/Stooq) da veri çekilemedi. Analiz için yarına kadar bekleyin."
+                    else:
+                        result_entry["fin_error"] = f"Finans modülü hatası: {str(e)}"
                 
         # 3. AI Comment Generator
         if request.use_ai:
