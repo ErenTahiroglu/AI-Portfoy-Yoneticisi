@@ -1,0 +1,33 @@
+# Environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE and Editor files
+.vscode/
+.idea/
+
+# PyInstaller & Build artifacts
+build/
+dist/
+*.spec
+
+# User Output / Excel Exports
+*.xlsx
+*.csv
+
+# Other
+error.txt
+*.vbs
+*.log
+.DS_Store

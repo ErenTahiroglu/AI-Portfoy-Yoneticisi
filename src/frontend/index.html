@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI İslami Portföy Yöneticisi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Settings -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-mosque"></i>
+                <h2>Portföy Yöneticisi</h2>
+            </div>
+
+            <div class="settings-panel">
+                <h3><i class="fa-solid fa-gear"></i> Ayarlar</h3>
+
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-islamic-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                    <span style="font-weight: 500; color: #4ade80;">İslami Uygunluk Analizi</span>
+                </div>
+
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-financials-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                    <span style="font-weight: 500; color: #60a5fa;">Finansal (Getiri) Analiz</span>
+                </div>
+
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="use-ai-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                    <span>AI Yorumlarını Aç (Gemini)</span>
+                </div>
+
+                <div class="ai-settings" id="ai-settings-panel">
+                    <div class="input-group">
+                        <label for="api-key">Gemini API Anahtarınız</label>
+                        <input type="password" id="api-key" placeholder="API Key girin...">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="ai-model"
+                            title="Ücretsiz/Ücretli modellere göre hız limitleri (Rate Limit) uygulanır.">Gemini Model
+                            Sürümü <i class="fa-solid fa-circle-question"
+                                style="font-size: 0.8em; color: rgba(255,255,255,0.5);"></i></label>
+                        <select id="ai-model">
+                            <optgroup label="✅ Ücretsiz (Free Tier) Kullanılabilir">
+                                <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Önerilen)</option>
+                                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                                <option value="gemini-3-flash">Gemini 3 Flash</option>
+                            </optgroup>
+                            <optgroup label="💰 Ücretli (Gelişmiş API / Billing Gerekir)">
+                                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                                <option value="gemini-3-pro">Gemini 3 Pro</option>
+                                <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
+                            </optgroup>
+                        </select>
+                        <p style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 5px;">
+                            <i class="fa-solid fa-triangle-exclamation" style="color: #fbbf24;"></i> Pro serisi için
+                            <b>Faturalandırma</b> açık olmalıdır. Yoksa "429: Rate Limit" hatası alırsınız.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <i class="fa-solid fa-circle-info"></i>
+                <p>AAOIFI standartlarına göre <b>Faiz Geliri (<%5)< /b> ve <b>Borçluluk Oranı (<%30)< /b> analizleri
+                                    otonom olarak yapılır.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <h1>Otonom AI İslami Portföy Yöneticisi</h1>
+                <p class="subtitle">Hisselerinizi ve Fonlarınızı İslami Finans Kriterlerine Göre Saniyeler İçinde Analiz
+                    Edin</p>
+            </header>
+
+            <section class="input-section">
+                <div class="input-card text-input-card">
+                    <h3><i class="fa-solid fa-keyboard"></i> Hisse Sembolleri</h3>
+
+                    <textarea id="tickers-input" placeholder="Örnek: AAPL, MSFT, TSLA veya THYAO, AKB, KCHOL..."
+                        rows="4"></textarea>
+                    <p class="hint">Virgülle veya boşlukla ayırarak girebilirsiniz. <strong>ABD ve Türkiye (BIST/TEFAS)
+                            hisse/fonları aynı anda analiz edilebilir.</strong></p>
+                </div>
+
+                <div class="input-divider">
+                    <span>VEYA</span>
+                </div>
+
+                <div class="input-card file-upload-card">
+                    <h3><i class="fa-solid fa-file-arrow-up"></i> Dosya Yükle</h3>
+                    <p>Desteklenen formatlar: .txt, .csv, .xlsx, .docx</p>
+                    <div class="file-drop-area" id="file-drop-area">
+                        <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                        <span class="file-message">Sürükle bırak veya <b>göz at</b></span>
+                        <input class="file-input" type="file" id="portfolio-file" accept=".txt,.csv,.xlsx,.xls,.docx">
+                    </div>
+                    <div id="file-name-display" class="file-name-display"></div>
+                </div>
+            </section>
+
+            <div class="action-section">
+                <button id="analyze-btn" class="primary-btn">
+                    <i class="fa-solid fa-rocket"></i> Portföyü Analiz Et
+                </button>
+            </div>
+
+            <!-- Loader -->
+            <div id="loader-container" class="loader-container hidden">
+                <div class="spinner"></div>
+                <p id="loader-text">Analiz ediliyor, lütfen bekleyin...</p>
+            </div>
+
+            <!-- Results Section -->
+            <section id="results-section" class="results-section hidden">
+                <div class="results-header">
+                    <h2><i class="fa-solid fa-chart-pie"></i> Analiz Sonuçları</h2>
+                    <div class="export-actions">
+                        <button class="icon-btn" title="Excel Olarak İndir"><i
+                                class="fa-solid fa-file-excel"></i></button>
+                        <button class="icon-btn" title="PDF Olarak İndir"><i class="fa-solid fa-file-pdf"></i></button>
+                        <button class="icon-btn" title="Word Olarak İndir"><i
+                                class="fa-solid fa-file-word"></i></button>
+                    </div>
+                </div>
+
+                <div id="results-container" class="results-grid">
+                    <!-- Results will be injected here via JS -->
+                </div>
+
+                <div class="summary-table-container">
+                    <h3>Genel Portföy Özeti</h3>
+                    <table class="summary-table" id="summary-table">
+                        <thead>
+                            <tr>
+                                <th>Hisse/Fon</th>
+                                <th>Arındırma Oranı</th>
+                                <th>Borçluluk Oranı</th>
+                                <th>Hüküm</th>
+                                <th>5Y Getiri (Reel)</th>
+                                <th>Son Yıl Temettü</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-table-body">
+                            <!-- Table rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Template for a result card -->
+    <template id="result-card-template">
+        <div class="result-card">
+            <div class="card-header">
+                <h3 class="ticker-name">AAPL</h3>
+                <span class="status-badge status-approved">Uygun</span>
+            </div>
+
+            <div class="metrics-grid islamic-metrics-grid">
+                <div class="metric">
+                    <span class="metric-label">Arındırma Oranı</span>
+                    <span class="metric-value pur-ratio">%1.20</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Borçluluk Oranı</span>
+                    <span class="metric-value debt-ratio">%15.40</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Faiz Geliri</span>
+                    <span class="metric-value interest-val">$1,200,000</span>
+                </div>
+                <div class="metric type-badge">
+                    <span class="metric-label">Tip</span>
+                    <span class="metric-value is-etf">Hisse</span>
+                </div>
+            </div>
+
+            <div class="metrics-grid financial-metrics-grid"
+                style="display:none; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <div class="metric">
+                    <span class="metric-label" style="color:#60a5fa;">5Y Reel Getiri</span>
+                    <span class="metric-value fin-5y-real">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label" style="color:#60a5fa;">3Y Reel Getiri</span>
+                    <span class="metric-value fin-3y-real">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label" style="color:#60a5fa;">Son Yıl Temettü</span>
+                    <span class="metric-value fin-div">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label" style="color:#60a5fa;">Finansal Uyarı</span>
+                    <span class="metric-value fin-status" style="font-size: 0.8rem;">--</span>
+                </div>
+            </div>
+
+            <div class="ai-comment-section">
+                <h4><i class="fa-solid fa-robot"></i> AI Yorumu</h4>
+                <div class="ai-content markdown-body">
+                    <!-- AI text injected here -->
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Marked.js for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
