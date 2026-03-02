@@ -12,7 +12,7 @@
 
 ---
 
-## 🇹🇷 Türkçe (Turkish)
+## Türkçe (Turkish)
 
 **AI İslami Portföy Yöneticisi**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir masaüstü uygulamasıdır. 
 
@@ -38,7 +38,7 @@ Uygulamayı kullanmak için bilgisayarınızda sadece **Python** yüklü olması
 
 ---
 
-## 🇬🇧 English
+## English
 
 **AI Islamic Portfolio Manager** is a locally-hosted, AI-powered desktop application capable of simultaneously analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds. 
 
