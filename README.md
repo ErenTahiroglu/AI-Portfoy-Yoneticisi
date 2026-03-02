@@ -28,7 +28,7 @@ Finansal verileri (getiri, enflasyon, temettü) hesaplar, **AAOIFI İslami finan
 * 🚀 **PyInstaller Bağımsız (Çapraz Platform):** `.exe` hantallığından arındırılmış, hafifletilmiş başlatıcıları (Launcher) ile Windows, Mac veya Linux'ta tek tıklamayla anında çalışır.
 
 ### 🚀 Nasıl Çalıştırılır (Kurulum)
-Uygulamayı kullanmak için bilgisayarınızda sadece **Python** yüklü olması yeterlidir.
+Uygulamayı kullanmak için bilgisayarınızda **Python 3.10 veya üzeri** yüklü olmalıdır. *(Önemli: Python'u kurarken en alttaki **"Add Python to PATH"** kutucuğunu işaretlemeyi unutmayın! Aksi halde siyah ekran anında kapanır).*
 
 1. Projeyi bilgisayarınıza indirin (ZIP veya Git Clone).
 2. Proje klasörüne girin ve sisteminize uygun olan dosyaya çift tıklayın:
@@ -54,7 +54,7 @@ It calculates financial metrics (returns, inflation adjustments, dividends), aud
 * 🚀 **Cross-Platform Launchers:** Freed from clunky `.exe` standalone builds; uses lightweight launcher scripts to boot instantly on Windows, Mac, or Linux with a single click.
 
 ### 🚀 How to Run (Installation)
-The only requirement is having **Python** installed on your machine.
+The only requirement is having **Python 3.10 or higher** installed on your machine. *(Important: Make sure to check the **"Add Python to PATH"** box during installation! Otherwise, the launcher script will crash immediately).*
 
 1. Download the project (via ZIP or Git Clone).
 2. Open the project folder and double-click the launcher for your Operating System:

@@ -2,6 +2,11 @@ import threading
 import time
 import webbrowser
 import sys
+import os
+
+# Add the 'src' directory to Python's import path so main.py and other modules can be found
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import uvicorn
 from main import app as fastapi_app
 
