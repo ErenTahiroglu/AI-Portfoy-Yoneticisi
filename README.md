@@ -34,7 +34,7 @@ Uygulamayı kullanmak için bilgisayarınızda sadece **Python** yüklü olması
 2. Proje klasörüne girin ve sisteminize uygun olan dosyaya çift tıklayın:
    * **Windows kullanıcıları:** `baslat_windows.bat` dosyasına tıklayın.
    * **Mac / Linux kullanıcıları:** `baslat_mac_linux.command` (veya `.sh`) dosyasını çalıştırın.
-3. Kütüphaneler otomatik kurulacak, sunucu başlayacak ve tarayıcınızda muhteşem arayüz otomatik olarak açılacaktır. *(Gerekli Gemini API anahtarını arayüzden ekleyebilirsiniz.)*
+3. Kütüphaneler otomatik kurulacak, sunucu başlayacak ve tarayıcınızda muhteşem arayüz otomatik olarak açılacaktır. *(Gerekli Gemini ve Alpha Vantage API anahtarlarınızı doğrudan arayüzden ekleyebilirsiniz.)*
 
 ---
 
@@ -60,7 +60,7 @@ The only requirement is having **Python** installed on your machine.
 2. Open the project folder and double-click the launcher for your Operating System:
    * **Windows users:** Double-click on `baslat_windows.bat`.
    * **Mac / Linux users:** Run `baslat_mac_linux.command` (or manually run the bash script).
-3. Dependencies will auto-install, the local server will boot, and your browser will automatically open the beautiful UI. *(You can add your Gemini API key directly via the web interface.)*
+3. Dependencies will auto-install, the local server will boot, and your browser will automatically open the beautiful UI. *(You can add your Gemini and Alpha Vantage API keys directly via the web interface.)*
 
 ---
 *Disclaimer: This software is for informational and educational purposes only. It does not constitute financial or investment advice. Always verify AI-generated analyses with your own research.*

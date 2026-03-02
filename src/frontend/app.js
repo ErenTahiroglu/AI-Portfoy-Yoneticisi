@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkFinancialsToggle = document.getElementById('check-financials-toggle');
     const aiSettingsPanel = document.getElementById('ai-settings-panel');
     const apiKeyInput = document.getElementById('api-key');
+    const avApiKeyInput = document.getElementById('av-api-key');
     const aiModelSelect = document.getElementById('ai-model');
 
     // Inputs (File & Text)
@@ -112,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkIslamic = checkIslamicToggle.checked;
         const checkFinancials = checkFinancialsToggle.checked;
         const apiKey = apiKeyInput.value.trim();
+        const avApiKey = avApiKeyInput.value.trim();
         const model = aiModelSelect.value;
 
         // Validation Checks
@@ -145,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append("check_financials", checkFinancials);
                 formData.append("model", model);
                 if (useAI && apiKey) formData.append("api_key", apiKey);
+                if (avApiKey) formData.append("av_api_key", avApiKey);
 
                 response = await fetch(`${API_BASE_URL}/api/analyze/file`, {
                     method: 'POST',
@@ -157,7 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     check_islamic: checkIslamic,
                     check_financials: checkFinancials,
                     model: model,
-                    api_key: apiKey
+                    api_key: apiKey,
+                    av_api_key: avApiKey
                 };
 
                 response = await fetch(`${API_BASE_URL}/api/analyze/text`, {
