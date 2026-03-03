@@ -179,11 +179,18 @@ async def analyze_portfolio(request: AnalysisRequest):
                     data = None
                     
             if data is not None:
-                result_entry["purification_ratio"] = round(data.get('purification_ratio', 0), 2)
-                result_entry["debt_ratio"] = round(data.get('debt_ratio', 0), 2)
-                result_entry["interest"] = data.get('interest', 0)
-                result_entry["status"] = data.get('status', 'Bilinmiyor')
-                result_entry["is_etf"] = data.get("is_etf", False)
+                if is_tefas:
+                    # For TEFAS funds: only show status and fund_note, no ratios
+                    result_entry["status"] = data.get('status', 'Bilinmiyor')
+                    result_entry["is_etf"] = True
+                    result_entry["is_tefas"] = True
+                    result_entry["fund_note"] = data.get('fund_note', '')
+                else:
+                    result_entry["purification_ratio"] = round(data.get('purification_ratio', 0), 2)
+                    result_entry["debt_ratio"] = round(data.get('debt_ratio', 0), 2)
+                    result_entry["interest"] = data.get('interest', 0)
+                    result_entry["status"] = data.get('status', 'Bilinmiyor')
+                    result_entry["is_etf"] = data.get("is_etf", False)
             
         # 2. Financial Return & Historical Check (independent)
         fin_data = None

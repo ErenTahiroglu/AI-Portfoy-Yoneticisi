@@ -240,25 +240,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.status) {
                 statusBadge.textContent = res.status;
-                if (res.status !== 'Uygun') {
-                    statusBadge.classList.replace('status-approved', 'status-rejected');
-                } else {
+                if (res.status === 'Uygun' || res.status === 'Katılım Fonu (Uygun)') {
                     isHalal = true;
+                } else {
+                    statusBadge.classList.replace('status-approved', 'status-rejected');
                 }
 
-                // Debt Ratio
-                const debtRatioElem = cardClone.querySelector('.debt-ratio');
-                debtRatioElem.textContent = `%${res.debt_ratio.toFixed(2)}`;
-                if (res.debt_ratio > 30) debtRatioElem.classList.add('danger');
+                if (res.is_tefas) {
+                    // TEFAS Fund: hide ratios, show fund note
+                    if (islamicMetrics) islamicMetrics.style.display = 'none';
+                    // Add fund note after header
+                    const noteDiv = document.createElement('div');
+                    noteDiv.style.cssText = 'padding: 0.75rem 1rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);';
+                    noteDiv.innerHTML = res.fund_note || '';
+                    const cardHeader = cardClone.querySelector('.card-header');
+                    if (cardHeader) cardHeader.after(noteDiv);
+                } else {
+                    // Stock/ETF: show full metrics
+                    const debtRatioElem = cardClone.querySelector('.debt-ratio');
+                    debtRatioElem.textContent = `%${res.debt_ratio.toFixed(2)}`;
+                    if (res.debt_ratio > 30) debtRatioElem.classList.add('danger');
 
-                // Purification Ratio
-                const purRatioElem = cardClone.querySelector('.pur-ratio');
-                purRatioElem.textContent = `%${res.purification_ratio.toFixed(2)}`;
-                if (res.purification_ratio > 5) purRatioElem.classList.add('danger');
+                    const purRatioElem = cardClone.querySelector('.pur-ratio');
+                    purRatioElem.textContent = `%${res.purification_ratio.toFixed(2)}`;
+                    if (res.purification_ratio > 5) purRatioElem.classList.add('danger');
 
-                // Metadata
-                cardClone.querySelector('.interest-val').textContent = (res.interest !== null && res.interest !== undefined) ? `${currencySymbol}${res.interest.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'Veri Yok';
-                cardClone.querySelector('.is-etf').textContent = res.is_etf ? 'ETF/Fon' : 'Hisse';
+                    cardClone.querySelector('.interest-val').textContent = (res.interest !== null && res.interest !== undefined) ? `${currencySymbol}${res.interest.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'Veri Yok';
+                    cardClone.querySelector('.is-etf').textContent = res.is_etf ? 'ETF/Fon' : 'Hisse';
+                }
 
             } else {
                 if (islamicMetrics) islamicMetrics.style.display = 'none';
@@ -282,6 +291,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     cardClone.querySelector('.fin-div').textContent = div;
                     cardClone.querySelector('.fin-status').textContent = "Başarılı";
+
+                    // 6.2.1. Render Multi-Period Returns Table
+                    if (fin.ay && Object.keys(fin.ay).length > 0) {
+                        const periodSection = document.createElement('div');
+                        periodSection.style.cssText = 'padding: 0.75rem 1rem; border-top: 1px solid var(--glass-border); overflow-x: auto;';
+
+                        const periodLabels = {
+                            1: '1 Ay', 2: '2 Ay', 3: '3 Ay', 4: '4 Ay', 5: '5 Ay',
+                            6: '6 Ay', 9: '9 Ay', 12: '1 Yıl', 24: '2 Yıl',
+                            36: '3 Yıl', 60: '5 Yıl', 120: '10 Yıl'
+                        };
+
+                        let tableHTML = `<h4 style="margin:0 0 0.5rem 0;font-size:0.85rem;color:var(--text-secondary);">📊 Dönemsel Getiri Analizi</h4>`;
+                        tableHTML += `<table style="width:100%;border-collapse:collapse;font-size:0.75rem;">`;
+                        tableHTML += `<tr style="border-bottom:1px solid var(--glass-border);">
+                            <th style="text-align:left;padding:4px 6px;color:var(--text-secondary);">Dönem</th>
+                            <th style="text-align:right;padding:4px 6px;color:var(--text-secondary);">Nominal</th>
+                            <th style="text-align:right;padding:4px 6px;color:var(--text-secondary);">Reel</th>
+                            <th style="text-align:right;padding:4px 6px;color:var(--text-secondary);">Enflasyon</th>
+                        </tr>`;
+
+                        const periods = Object.keys(fin.ay).map(Number).sort((a, b) => a - b);
+                        for (const p of periods) {
+                            const d = fin.ay[p];
+                            const label = periodLabels[p] || `${p} Ay`;
+                            const nomColor = d.g >= 0 ? '#4ade80' : '#f87171';
+                            const realColor = d.r >= 0 ? '#4ade80' : '#f87171';
+                            tableHTML += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                <td style="padding:3px 6px;color:var(--text-primary);">${label}</td>
+                                <td style="padding:3px 6px;text-align:right;color:${nomColor};">${d.g >= 0 ? '+' : ''}${d.g.toFixed(2)}%</td>
+                                <td style="padding:3px 6px;text-align:right;color:${realColor};">${d.r >= 0 ? '+' : ''}${d.r.toFixed(2)}%</td>
+                                <td style="padding:3px 6px;text-align:right;color:var(--text-secondary);">${d.enf >= 0 ? '+' : ''}${d.enf.toFixed(2)}%</td>
+                            </tr>`;
+                        }
+                        tableHTML += `</table>`;
+                        periodSection.innerHTML = tableHTML;
+
+                        // Get the card element and append
+                        const cardEl = cardClone.querySelector('.result-card');
+                        if (cardEl) cardEl.appendChild(periodSection);
+                    }
 
                 } else if (res.fin_error) {
                     finMetrics.style.display = 'grid';
@@ -310,11 +360,19 @@ document.addEventListener('DOMContentLoaded', () => {
             let rowHtml = `<td><strong>${res.ticker}</strong> ${res.is_etf ? '<small class="text-muted">(Fon)</small>' : ''}</td>`;
 
             if (res.status) {
-                rowHtml += `
-                    <td class="${res.purification_ratio > 5 ? 'metric-value danger' : ''}">%${res.purification_ratio.toFixed(2)}</td>
-                    <td class="${res.debt_ratio > 30 ? 'metric-value danger' : ''}">%${res.debt_ratio.toFixed(2)}</td>
-                    <td><span class="status-badge ${isHalal ? 'status-approved' : 'status-rejected'}">${res.status}</span></td>
-                `;
+                if (res.is_tefas) {
+                    rowHtml += `
+                        <td>-</td>
+                        <td>-</td>
+                        <td><span class="status-badge ${isHalal ? 'status-approved' : 'status-rejected'}">${res.status}</span></td>
+                    `;
+                } else {
+                    rowHtml += `
+                        <td class="${res.purification_ratio > 5 ? 'metric-value danger' : ''}">%${res.purification_ratio.toFixed(2)}</td>
+                        <td class="${res.debt_ratio > 30 ? 'metric-value danger' : ''}">%${res.debt_ratio.toFixed(2)}</td>
+                        <td><span class="status-badge ${isHalal ? 'status-approved' : 'status-rejected'}">${res.status}</span></td>
+                    `;
+                }
             } else {
                 rowHtml += `<td>-</td><td>-</td><td>-</td>`;
             }

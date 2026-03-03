@@ -100,7 +100,7 @@ except Exception:
 # ── Sabitler ──────────────────────────────────────────────────────────────────
 VARSAYILAN_ENF   = 50.0          # Türkiye yüksek enflasyon ortamı
 ANALIZ_YIL_SAYI  = 5
-AYLIK_DONEMLER   = [1, 2, 3, 6, 9]
+AYLIK_DONEMLER   = [1, 2, 3, 4, 5, 6, 9, 12, 24, 36, 60, 120]
 HAFTALIK_DONEMLER = [1, 2, 4, 8, 13, 26]  # Hafta cinsinden dönemler
 RETRY_SAYISI     = 4
 RETRY_BEKLEME    = [5, 15, 30, 60]
