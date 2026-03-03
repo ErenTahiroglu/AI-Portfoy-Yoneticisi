@@ -6,7 +6,8 @@ import io
 from fpdf import FPDF
 
 def extract_tickers_from_text(text):
-    words = re.findall(r'\b[A-Za-z]+\b', text)
+    # Match alphanumeric tickers (e.g. AAPL, TP2, ZP8, THYAO.IS)
+    words = re.findall(r'\b[A-Za-z][A-Za-z0-9.]*\b', text)
     return list(set([word.upper() for word in words]))
 
 def process_uploaded_file(uploaded_file):

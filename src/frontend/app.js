@@ -78,6 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Main Analysis Trigger
     analyzeBtn.addEventListener('click', handleAnalysisRequest);
 
+    // Enter key triggers analysis from the tickers input
+    tickersInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleAnalysisRequest();
+        }
+    });
+
 
     // ==========================================
     // 4. UI HANDLERS & HELPERS
