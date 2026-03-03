@@ -171,7 +171,7 @@ async def analyze_portfolio(request: AnalysisRequest):
                     hist = yf.Ticker(fetcher_ticker + ".IS").history(period="max")
                     if hist is not None and not hist.empty:
                         first_date = hist.index[0]
-                        fund_start_date = str(first_date.date())
+                        fund_start_date = first_date.strftime("%d.%m.%Y")
                         days_active = (datetime.now() - first_date.to_pydatetime().replace(tzinfo=None)).days
                         years = days_active // 365
                         months = (days_active % 365) // 30
