@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inputs (File & Text)
     const fileDropArea = document.getElementById('file-drop-area');
-    const fileInput = document.getElementById('file-input');
+    const fileInput = document.getElementById('portfolio-file');
     const fileNameDisplay = document.getElementById('file-name-display');
     const tickersInput = document.getElementById('tickers-input');
     const analyzeBtn = document.getElementById('analyze-btn');
