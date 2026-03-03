@@ -10,3 +10,8 @@ openpyxl
 langchain-google-genai
 python-multipart
 yahooquery
+docx
+python-docx
+python-dotenv
+fpdf
+numpy
