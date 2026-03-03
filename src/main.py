@@ -144,7 +144,34 @@ async def analyze_portfolio(request: AnalysisRequest):
         data = None
         if request.check_islamic:
             if is_tefas:
-                data = {"status": "Bilgi Yok (TEFAS fon içeriği YF'de yok)", "is_etf": True, "holdings_str": "", "purification_ratio": 0, "debt_ratio": 0}
+                # Check if the TEFAS fund is a "Katılım" (Participation/Islamic) type fund
+                is_katilim = False
+                fund_note = ""
+                try:
+                    import yfinance as yf
+                    fund_info = yf.Ticker(fetcher_ticker + ".IS").info
+                    fund_name = fund_info.get('longName', '') or fund_info.get('shortName', '') or ''
+                except Exception:
+                    fund_name = ''
+                
+                katilim_keywords = ['katılım', 'katilim', 'participation', 'sukuk', 'islamic']
+                if any(kw in fund_name.lower() for kw in katilim_keywords):
+                    is_katilim = True
+                    fund_note = f"✅ Katılım Fonu ({fund_name})"
+                else:
+                    fund_note = f"⚠️ Bu fon resmi olarak 'Katılım' türünde değildir. Bazı fonlar katılım ilkelerini uygulasa da resmi sınıflandırması farklı olabilir."
+                    if fund_name:
+                        fund_note = f"Fon: {fund_name} — " + fund_note
+                
+                status = "Katılım Fonu (Uygun)" if is_katilim else "Katılım Fonu Değil"
+                data = {
+                    "status": status,
+                    "is_etf": True,
+                    "holdings_str": "",
+                    "purification_ratio": 0,
+                    "debt_ratio": 0,
+                    "fund_note": fund_note
+                }
             else:
                 data, error = get_financials(fetcher_ticker)
                 if error or data is None:

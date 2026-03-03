@@ -41,18 +41,34 @@ def _get_single_stock_data(ticker):
                     return float(series[k])
             return 0.0
 
+        interest_keys = [
+            'InterestIncome', 'InterestIncomeNonOperating', 'NetInterestIncome',
+            'InterestExpense', 'InterestExpenseNonOperating',
+            'NetNonOperatingInterestIncomeExpense'
+        ]
+
         revenue, interest_income, inc_date = 0.0, 0.0, "Bilinmiyor"
         for _, row in inc.iterrows():
             rev = get_val(row, ['TotalRevenue', 'OperatingRevenue'])
             if rev > 0:
                 revenue = rev
-                interest_income = get_val(row, [
-                    'InterestIncome', 'InterestIncomeNonOperating', 'NetInterestIncome',
-                    'InterestExpense', 'InterestExpenseNonOperating',
-                    'NetNonOperatingInterestIncomeExpense'
-                ])
+                interest_income = get_val(row, interest_keys)
                 inc_date = str(row.get('asOfDate', 'Bilinmiyor')).split(' ')[0]
                 break
+        
+        # Fallback: if quarterly interest is 0, try annual income statement
+        if interest_income == 0.0:
+            try:
+                inc_annual = stock.income_statement(frequency='a')
+                if isinstance(inc_annual, pd.DataFrame) and not inc_annual.empty:
+                    inc_annual = inc_annual.reset_index().sort_values('asOfDate', ascending=False)
+                    for _, row in inc_annual.iterrows():
+                        val = get_val(row, interest_keys)
+                        if val != 0.0:
+                            interest_income = val
+                            break
+            except Exception:
+                pass
                 
         # Use absolute value: some companies report interest as negative expense
         interest_income = abs(interest_income)
