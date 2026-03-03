@@ -187,9 +187,13 @@ class HisseAnaliz:
 
     @staticmethod
     def _fon_kodu_mu(sembol: str) -> bool:
-        """3 harfli büyük harf → TEFAS fon kodu (örn: AKB, GAR). BIST hisseler ≥4 karakter."""
+        """Kısa alfanümerik kodlar → TEFAS fon kodu (örn: AKB, TP2, ZP8). 
+        BIST hisseler genellikle ≥4 karakter ve sadece harften oluşur."""
         s = sembol.strip().upper().replace(".IS", "")
-        return len(s) == 3 and s.isalpha()
+        # 2-3 chars with digits -> likely TEFAS (TP2, ZP8)
+        if len(s) <= 3 and s[0].isalpha():
+            return True
+        return False
 
     # ─────────────────────────────────────────────────────────────────────────
     # ENFLASYON (FRED – Türkiye CPI)
@@ -391,9 +395,9 @@ class HisseAnaliz:
     # ÇOK KAYNAKLI VERİ ÇEKME + DOĞRULAMA
     # ─────────────────────────────────────────────────────────────────────────
 
-    def _veri_cek(self, sembol: str) -> Optional[Dict]:
+    def _veri_cek(self, sembol: str, is_tefas: bool = False) -> Optional[Dict]:
         temiz     = self._temiz_sembol(sembol)
-        fon_mu    = self._fon_kodu_mu(temiz)
+        fon_mu    = is_tefas or self._fon_kodu_mu(temiz)
         baslangic = datetime(self.yillar[0] - 1, 12, 1)
         bitis     = self.bugun.tz_convert(None).to_pydatetime()
 
@@ -649,13 +653,13 @@ class HisseAnaliz:
     # ANA ANALİZ
     # ─────────────────────────────────────────────────────────────────────────
 
-    def analiz_et(self, sembol: str) -> Optional[Dict]:
+    def analiz_et(self, sembol: str, is_tefas: bool = False) -> Optional[Dict]:
         temiz = self._temiz_sembol(sembol)
         print(f"\n{'─'*68}")
         print(f"🔍  {temiz}")
         print(f"{'─'*68}")
 
-        veri = self._veri_cek(sembol)
+        veri = self._veri_cek(sembol, is_tefas=is_tefas)
         if not veri:
             return None
 

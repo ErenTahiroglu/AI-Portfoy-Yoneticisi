@@ -221,7 +221,11 @@ async def analyze_portfolio(request: AnalysisRequest):
             analyzer = tr_analyzer if market == "TR" else us_analyzer
             if analyzer:
                 try:
-                    fin_data = analyzer.analiz_et(ticker)
+                    # Pass is_tefas hint to bist_analyzer so it uses TEFAS data path
+                    if is_tefas and hasattr(analyzer, 'analiz_et'):
+                        fin_data = analyzer.analiz_et(ticker, is_tefas=True)
+                    else:
+                        fin_data = analyzer.analiz_et(ticker)
                     if fin_data:
                         result_entry["financials"] = fin_data
                     else:
