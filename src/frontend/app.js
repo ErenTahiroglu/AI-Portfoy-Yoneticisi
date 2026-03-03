@@ -202,9 +202,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         results.forEach(res => {
-            // Ignore results that only have an unhandled error without financials or custom fin_error
+            // Show error results as a simple error card instead of silently skipping
             if (res.error && !res.financials && !res.fin_error) {
-                console.warn(`Hata ${res.ticker}: ${res.error}`);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'result-card';
+                errorDiv.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="ticker-name">${res.ticker}</h3>
+                        <span class="status-badge status-rejected">Hata</span>
+                    </div>
+                    <div class="ai-comment-section">
+                        <h4><i class="fa-solid fa-triangle-exclamation"></i> Analiz Hatası</h4>
+                        <div class="ai-content"><p style="color:#f87171;">${res.error}</p></div>
+                    </div>`;
+                resultsContainer.appendChild(errorDiv);
                 return;
             }
 

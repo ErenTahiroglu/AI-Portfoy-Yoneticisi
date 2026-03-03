@@ -103,17 +103,18 @@ async def analyze_portfolio(request: AnalysisRequest):
     # Initialize the financial analyzers selectively
     us_analyzer = None
     tr_analyzer = None
+    init_errors = []
     if request.check_financials:
         try:
             from portfolio_analyzer import HisseAnaliz
             us_analyzer = HisseAnaliz(av_key=request.av_api_key)
-        except Exception:
-            pass
+        except Exception as e:
+            init_errors.append(f"US Analyzer hatası: {str(e)}")
         try:
             from bist_analyzer import HisseAnaliz as BistHisseAnaliz
             tr_analyzer = BistHisseAnaliz()
-        except Exception:
-            pass
+        except Exception as e:
+            init_errors.append(f"TR Analyzer hatası: {str(e)}")
     
     for ticker in request.tickers:
         ticker = ticker.upper().strip()
@@ -134,6 +135,8 @@ async def analyze_portfolio(request: AnalysisRequest):
                 
             if error or data is None:
                 result_entry["error"] = error or "Unknown error processing ticker"
+                if init_errors:
+                    result_entry["error"] += " | " + " | ".join(init_errors)
                 results.append(result_entry)
                 continue
                 
