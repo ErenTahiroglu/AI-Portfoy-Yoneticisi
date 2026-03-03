@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.purification_ratio > 5) purRatioElem.classList.add('danger');
 
                 // Metadata
-                cardClone.querySelector('.interest-val').textContent = res.interest ? `${currencySymbol}${res.interest.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'Veri Yok';
+                cardClone.querySelector('.interest-val').textContent = (res.interest !== null && res.interest !== undefined) ? `${currencySymbol}${res.interest.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'Veri Yok';
                 cardClone.querySelector('.is-etf').textContent = res.is_etf ? 'ETF/Fon' : 'Hisse';
 
             } else {

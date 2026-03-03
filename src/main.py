@@ -96,7 +96,8 @@ def detect_market_and_ticker(ticker: str):
     except:
         pass
         
-    if len(ticker) == 3 and ticker.isalpha():
+    # TEFAS fallback: short codes (2-5 chars) that weren't found on Yahoo
+    if len(ticker) <= 5:
         return "TR", ticker, True
         
     return "US", ticker, False
