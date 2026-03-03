@@ -252,7 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Add fund note after header
                     const noteDiv = document.createElement('div');
                     noteDiv.style.cssText = 'padding: 0.75rem 1rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);';
-                    noteDiv.innerHTML = res.fund_note || '';
+                    let noteContent = res.fund_note || '';
+                    if (res.fund_start_date) {
+                        noteContent += `<br>📅 <strong>İlk İşlem Tarihi:</strong> ${res.fund_start_date}`;
+                        if (res.fund_age) noteContent += ` (${res.fund_age})`;
+                    }
+                    noteDiv.innerHTML = noteContent;
                     const cardHeader = cardClone.querySelector('.card-header');
                     if (cardHeader) cardHeader.after(noteDiv);
                 } else {

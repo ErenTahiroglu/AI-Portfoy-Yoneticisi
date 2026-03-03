@@ -162,6 +162,25 @@ async def analyze_portfolio(request: AnalysisRequest):
                     fund_note = f"⚠️ Bu fon resmi olarak 'Katılım' türünde değildir. Bazı fonlar katılım ilkelerini uygulasa da resmi sınıflandırması farklı olabilir."
                     if fund_name:
                         fund_note = f"Fon: {fund_name} — " + fund_note
+                # Get the fund's first trading date
+                fund_start_date = None
+                fund_age_text = ""
+                try:
+                    import yfinance as yf
+                    from datetime import datetime, timedelta
+                    hist = yf.Ticker(fetcher_ticker + ".IS").history(period="max")
+                    if hist is not None and not hist.empty:
+                        first_date = hist.index[0]
+                        fund_start_date = str(first_date.date())
+                        days_active = (datetime.now() - first_date.to_pydatetime().replace(tzinfo=None)).days
+                        years = days_active // 365
+                        months = (days_active % 365) // 30
+                        if years > 0:
+                            fund_age_text = f"{years} yıl {months} aydır aktif"
+                        else:
+                            fund_age_text = f"{months} aydır aktif"
+                except Exception:
+                    pass
                 
                 status = "Katılım Fonu (Uygun)" if is_katilim else "Katılım Fonu Değil"
                 data = {
@@ -170,7 +189,9 @@ async def analyze_portfolio(request: AnalysisRequest):
                     "holdings_str": "",
                     "purification_ratio": 0,
                     "debt_ratio": 0,
-                    "fund_note": fund_note
+                    "fund_note": fund_note,
+                    "fund_start_date": fund_start_date,
+                    "fund_age": fund_age_text
                 }
             else:
                 data, error = get_financials(fetcher_ticker)
@@ -185,6 +206,8 @@ async def analyze_portfolio(request: AnalysisRequest):
                     result_entry["is_etf"] = True
                     result_entry["is_tefas"] = True
                     result_entry["fund_note"] = data.get('fund_note', '')
+                    result_entry["fund_start_date"] = data.get('fund_start_date')
+                    result_entry["fund_age"] = data.get('fund_age', '')
                 else:
                     result_entry["purification_ratio"] = round(data.get('purification_ratio', 0), 2)
                     result_entry["debt_ratio"] = round(data.get('debt_ratio', 0), 2)
