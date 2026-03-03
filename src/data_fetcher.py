@@ -46,12 +46,16 @@ def _get_single_stock_data(ticker):
             rev = get_val(row, ['TotalRevenue', 'OperatingRevenue'])
             if rev > 0:
                 revenue = rev
-                interest_income = get_val(row, ['InterestIncome', 'InterestIncomeNonOperating', 'NetInterestIncome'])
+                interest_income = get_val(row, [
+                    'InterestIncome', 'InterestIncomeNonOperating', 'NetInterestIncome',
+                    'InterestExpense', 'InterestExpenseNonOperating',
+                    'NetNonOperatingInterestIncomeExpense'
+                ])
                 inc_date = str(row.get('asOfDate', 'Bilinmiyor')).split(' ')[0]
                 break
                 
-        if interest_income < 0: 
-            interest_income = 0.0
+        # Use absolute value: some companies report interest as negative expense
+        interest_income = abs(interest_income)
         
         total_assets, total_debt, bal_date = 0.0, 0.0, "Bilinmiyor"
         for _, row in bal.iterrows():
