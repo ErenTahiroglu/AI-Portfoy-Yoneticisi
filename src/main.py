@@ -124,29 +124,25 @@ async def analyze_portfolio(request: AnalysisRequest):
         market, fetcher_ticker, is_tefas = detect_market_and_ticker(ticker)
         result_entry = {"ticker": ticker, "market": market}
         
-        # 1. Islamic / Halal Compliance Check
+        # 1. Islamic / Halal Compliance Check (independent)
+        data = None
         if request.check_islamic:
             if is_tefas:
-                # TEFAS funds don't have direct yahoo statements, data_fetcher might fail or we skip
                 data = {"status": "Bilgi Yok (TEFAS fon içeriği YF'de yok)", "is_etf": True, "holdings_str": "", "purification_ratio": 0, "debt_ratio": 0}
-                error = None
             else:
                 data, error = get_financials(fetcher_ticker)
-                
-            if error or data is None:
-                result_entry["error"] = error or "Unknown error processing ticker"
-                if init_errors:
-                    result_entry["error"] += " | " + " | ".join(init_errors)
-                results.append(result_entry)
-                continue
-                
-            result_entry["purification_ratio"] = round(data.get('purification_ratio', 0), 2)
-            result_entry["debt_ratio"] = round(data.get('debt_ratio', 0), 2)
-            result_entry["interest"] = data.get('interest', 0)
-            result_entry["status"] = data.get('status', 'Bilinmiyor')
-            result_entry["is_etf"] = data.get("is_etf", False)
+                if error or data is None:
+                    result_entry["islamic_error"] = error or "İslami veri bulunamadı"
+                    data = None
+                    
+            if data is not None:
+                result_entry["purification_ratio"] = round(data.get('purification_ratio', 0), 2)
+                result_entry["debt_ratio"] = round(data.get('debt_ratio', 0), 2)
+                result_entry["interest"] = data.get('interest', 0)
+                result_entry["status"] = data.get('status', 'Bilinmiyor')
+                result_entry["is_etf"] = data.get("is_etf", False)
             
-        # 2. Financial Return & Historical Check
+        # 2. Financial Return & Historical Check (independent)
         fin_data = None
         if request.check_financials:
             analyzer = tr_analyzer if market == "TR" else us_analyzer
@@ -162,11 +158,13 @@ async def analyze_portfolio(request: AnalysisRequest):
                         result_entry["fin_error"] = "⚠️ **Alpha Vantage Kotası Doldu**<br>Ücretsiz API limitiniz (günlük) dolmuştur. Diğer kaynaklardan (Yahoo/Stooq) da veri çekilemedi. Analiz için yarına kadar bekleyin."
                     else:
                         result_entry["fin_error"] = f"Finans modülü hatası: {str(e)}"
+            elif init_errors:
+                result_entry["fin_error"] = " | ".join(init_errors)
                 
-        # 3. AI Comment Generator
+        # 3. AI Comment Generator (uses whatever data is available)
         if request.use_ai:
             try:
-                islamic_dict = data if (request.check_islamic and data is not None) else {}
+                islamic_dict = data if data is not None else {}
                 ai_comment = generate_report(
                     ticker=ticker,
                     data=islamic_dict,
