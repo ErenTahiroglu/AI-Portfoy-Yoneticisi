@@ -68,7 +68,6 @@ _ENF_CACHE_TTL = 3600  # 1 saat
 
 def get_cached_cpi(fred_seri: str, start: datetime, end: datetime) -> Optional[pd.DataFrame]:
     """FRED CPI verisini cache'den döndürür veya yeni çeker."""
-    from data_sources import req_lib
     from io import StringIO
     
     cache_key = fred_seri

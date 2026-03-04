@@ -20,7 +20,7 @@ from dataclasses import asdict
 
 import yfinance as yf
 import pandas as pd
-import pandas_datareader as pdr
+from io import StringIO
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -121,10 +121,20 @@ class HisseAnaliz(BaseAnalyzer):
 
     def _stooq_cek(self, sembol: str, baslangic: datetime, bitis: datetime
                    ) -> Optional[pd.DataFrame]:
+        """Stooq'tan doğrudan CSV API ile veri çeker (pandas_datareader kullanmaz)."""
         try:
             stooq_sembol = sembol if "." in sembol else f"{sembol}.US"
-            df = pdr.get_data_stooq(stooq_sembol, start=baslangic, end=bitis)
-            if df is None or df.empty:
+            s_start = pd.Timestamp(baslangic).strftime('%Y%m%d')
+            s_end   = pd.Timestamp(bitis).strftime('%Y%m%d')
+            url = (
+                f"https://stooq.pl/q/d/l/"
+                f"?s={stooq_sembol.lower()}&d1={s_start}&d2={s_end}&i=d"
+            )
+            r = req_lib.get(url, timeout=20, verify=False)
+            if r.status_code != 200 or len(r.text) < 50:
+                return None
+            df = pd.read_csv(StringIO(r.text), index_col=0, parse_dates=True)
+            if df.empty or 'Close' not in df.columns:
                 return None
             return self._utc(df.sort_index())
         except Exception:
@@ -221,6 +231,7 @@ class HisseAnaliz(BaseAnalyzer):
 
         # Temettü (Yahoo'dan)
         temettular = pd.Series(dtype=float)
+        ticker = None
         try:
             ticker_kwargs = {"session": CURL_SESSION} if HAS_CURL else {}
             ticker = yf.Ticker(sembol, **ticker_kwargs)
@@ -232,10 +243,11 @@ class HisseAnaliz(BaseAnalyzer):
 
         # Şirket adı
         ad = sembol
-        try:
-            ad = ticker.fast_info.company_name or sembol
-        except Exception:
-            pass
+        if ticker is not None:
+            try:
+                ad = ticker.fast_info.company_name or sembol
+            except Exception:
+                pass
 
         return {"fiyatlar": fiyatlar, "temettular": temettular, "ad": ad}
 

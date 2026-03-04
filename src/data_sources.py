@@ -2,7 +2,7 @@
 🧩 Puzzle Parça: Veri Kaynakları Altyapısı
 ============================================
 Tüm modüllerin paylaştığı SSL bypass, oturum yönetimi ve
-pandas-datareader uyumluluk yamaları bu tek dosyada toplanır.
+ortak sabitler bu tek dosyada toplanır.
 
 Diğer modüller buradan import eder:
     from data_sources import HAS_CURL, CURL_SESSION, AV_KEY, req_lib
@@ -54,41 +54,7 @@ except Exception:
     HAS_CURL = False
     CURL_SESSION = None
 
-# ── pandas_datareader uyumluluk yaması (pandas 2.x / 3.x) ────────────────
-# pandas.util._decorators.deprecate_kwarg imzası pandas'ın yeni sürümlerinde
-# değişti, pandas_datareader ile uyumsuz. Her zaman override ediyoruz.
-import sys as _sys, types as _types
-try:
-    import pandas.util._decorators as _pd_dec
-except ImportError:
-    if "pandas.util._decorators" not in _sys.modules:
-        _sys.modules["pandas.util._decorators"] = _types.ModuleType("pandas.util._decorators")
-    _pd_dec = _sys.modules["pandas.util._decorators"]
 
-from functools import wraps as _wraps
-
-def _deprecate_kwarg(*args, **kwargs):
-    def _dec(func):
-        @_wraps(func)
-        def _wrapper(*a, **kw):
-            return func(*a, **kw)
-        return _wrapper
-    return _dec
-
-setattr(_pd_dec, "deprecate_kwarg", _deprecate_kwarg)
-
-# ── pandas-datareader SSL bypass (FRED erişimi için) ──────────────────────
-try:
-    _pdr_session = req_lib.Session()
-    _pdr_session.verify = False
-    import pandas_datareader.base as _pdr_base
-    _orig_pdr_init = _pdr_base._BaseReader.__init__
-    def _patched_pdr_init(self, *args, **kwargs):
-        _orig_pdr_init(self, *args, **kwargs)
-        self.session = _pdr_session
-    _pdr_base._BaseReader.__init__ = _patched_pdr_init
-except Exception:
-    pass
 
 # ── .env dosyasını yükle ──────────────────────────────────────────────────
 try:

@@ -25,7 +25,7 @@ from dataclasses import asdict
 
 import yfinance as yf
 import pandas as pd
-import pandas_datareader as pdr
+from io import StringIO
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -188,11 +188,20 @@ class HisseAnaliz(BaseAnalyzer):
 
     def _stooq_cek(self, sembol: str, baslangic: datetime, bitis: datetime
                    ) -> Optional[pd.DataFrame]:
+        """Stooq'tan doğrudan CSV API ile veri çeker (pandas_datareader kullanmaz)."""
         try:
             temiz = self._temiz_sembol(sembol)
-            stooq_sembol = f"{temiz}.TR"
-            df = pdr.get_data_stooq(stooq_sembol, start=baslangic, end=bitis)
-            if df is None or df.empty:
+            s_start = pd.Timestamp(baslangic).strftime('%Y%m%d')
+            s_end   = pd.Timestamp(bitis).strftime('%Y%m%d')
+            url = (
+                f"https://stooq.pl/q/d/l/"
+                f"?s={temiz}.tr&d1={s_start}&d2={s_end}&i=d"
+            )
+            r = req_lib.get(url, timeout=20, verify=False)
+            if r.status_code != 200 or len(r.text) < 50:
+                return None
+            df = pd.read_csv(StringIO(r.text), index_col=0, parse_dates=True)
+            if df.empty or 'Close' not in df.columns:
                 return None
             return self._utc(df.sort_index())
         except Exception:

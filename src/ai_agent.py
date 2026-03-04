@@ -42,6 +42,11 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
         if yt:
             years = sorted(yt.keys(), reverse=True)
             if years: div = f"%{yt[years[0]]:.2f}"
+        
+        # Risk metrikleri
+        risk = fin_data.get('risk', {})
+        sharpe_str = f"{risk.get('sharpe_ratio', 'N/A')}" if risk else "Veri Yok"
+        mdd_str = f"%{risk.get('max_drawdown', 'N/A')} ({risk.get('max_drawdown_tarih', '')})" if risk else "Veri Yok"
             
         market_label = "Türkiye (TR) Reel Enflasyon Düzeltmeli Getirisi" if market == 'TR' else "ABD Reel Enflasyon Düzeltmeli Getiri"
             
@@ -49,8 +54,10 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
         Finansal ve Geçmiş Performans Verileri:
         - Son 5 Yıllık Reel (Enflasyondan Arındırılmış) Toplam Getiri: {s5_str}
         - Son Yılın Temettü Verimi: {div}
+        - Sharpe Ratio (Risk/Getiri Oranı): {sharpe_str}
+        - Maximum Drawdown (En Büyük Düşüş): {mdd_str}
         """
-        requirements.append(f"{len(requirements)+1}. **📈 Finansal Getiri Performansı:** (Şirketin 5 yıllık {market_label} oranını ve varsa son temettü oranını değerlendir.)")
+        requirements.append(f"{len(requirements)+1}. **📈 Finansal Getiri Performansı:** (Şirketin 5 yıllık {market_label} oranını, varsa son temettü oranını ve risk metriklerini (Sharpe Ratio, Max Drawdown) değerlendir.)")
     
     if len(requirements) == 0:
         return "Gerekli analiz verisi seçilmediği için yorum üretilemedi."
