@@ -3,8 +3,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US"):
     """Gemini API'sini kullanarak seçili oranlara göre finansal rapor üretir."""
-    os.environ["GOOGLE_API_KEY"] = api_key
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1)
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key)
 
     is_etf = data.get("is_etf", False) if data else False
     

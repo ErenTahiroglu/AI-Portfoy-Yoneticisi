@@ -1,3 +1,7 @@
+# ═══════════════════════════════════════════════════
+# AI İslami Portföy Yöneticisi — .gitignore
+# ═══════════════════════════════════════════════════
+
 # Environments
 .env
 .venv/
@@ -12,10 +16,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
 
 # IDE and Editor files
 .vscode/
 .idea/
+.pyre_configuration
 
 # PyInstaller & Build artifacts
 build/
@@ -26,8 +32,23 @@ dist/
 *.xlsx
 *.csv
 
-# Other
-error.txt
-*.vbs
+# Logs & Debug
 *.log
+error.txt
+traceback.txt
+test_out.txt
+
+# Test Scripts and Outputs (geliştirici dosyaları)
+test_*.py
+test_*.json
+
+# Platform
 .DS_Store
+Thumbs.db
+
+# Playwright browsers (büyük, her makinede yeniden indirilmeli)
+playwright-browsers/
+
+# Misc
+*.vbs
+isy_home.html

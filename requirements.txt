@@ -6,13 +6,12 @@ yfinance>=0.2.36
 pandas_datareader
 curl_cffi
 requests
-beautifulsoup4
 openpyxl
 langchain-google-genai
 python-multipart
-yahooquery
-docx
 python-docx
 python-dotenv
-fpdf
+fpdf2
 numpy
+playwright
+nest_asyncio

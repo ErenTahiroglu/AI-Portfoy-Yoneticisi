@@ -16,7 +16,8 @@ if %errorlevel% neq 0 (
 
 echo Gereksinimler kontrol ediliyor ve yukleniyor (bu islem biraz surebilir)...
 pip install -r requirements.txt
-
+echo Sanal tarayici (Playwright) bilesenleri yukleniyor...
+playwright install chromium
 echo.
 echo Sunucu baslatiliyor, lutfen bekleyin...
 python src\desktop_app.py

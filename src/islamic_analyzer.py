@@ -1,21 +1,15 @@
-import os
-import tempfile
-import certifi
-import shutil
+"""
+🧩 Puzzle Parça: İslami Uygunluk Analizi
+===========================================
+Hisselerin ve ETF'lerin Yahoo Finance gelir tablosu
+ve bilançolarını analiz ederek AAOIFI standartlarına
+göre uygunluk durumunu hesaplar.
+"""
+
 import pandas as pd
 import functools
 from yahooquery import Ticker
-
-# --- SSL/CURL SERTİFİKA HATASI KESİN ÇÖZÜMÜ ---
-temp_dir = tempfile.gettempdir()
-temp_cert_path = os.path.join(temp_dir, 'cacert.pem')
-
-if not os.path.exists(temp_cert_path):
-    shutil.copy2(certifi.where(), temp_cert_path)
-
-os.environ['CURL_CA_BUNDLE'] = temp_cert_path
-os.environ['REQUESTS_CA_BUNDLE'] = temp_cert_path
-os.environ['SSL_CERT_FILE'] = temp_cert_path
+import data_sources  # SSL Bypass ve diğer ayarlar buradan otomatik yüklenir
 
 def _get_single_stock_data(ticker):
     """Tekil bir hissenin verilerini bulur (Döngü için yardımcı fonksiyon)"""

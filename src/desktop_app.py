@@ -77,5 +77,11 @@ if __name__ == '__main__':
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
+        # Playwright tarayıcısını kapat (varsa)
+        try:
+            from tefas_scraper import TefasScraper
+            TefasScraper().close()
+        except Exception:
+            pass
         print("Shutting down...")
         sys.exit(0)

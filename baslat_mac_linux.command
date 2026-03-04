@@ -18,6 +18,9 @@ fi
 echo "Gereksinimler kontrol ediliyor ve yükleniyor (bu işlem biraz sürebilir)..."
 python3 -m pip install -r requirements.txt
 
+# Sanal tarayıcı (Playwright) bileşenlerini yükle
+echo "Sanal tarayıcı (Playwright) bileşenleri kontrol ediliyor..."
+python3 -m playwright install chromium
 # Masaüstü uygulamasını arka planda başlat
 echo ""
 echo "Sunucu başlatılıyor, lütfen bekleyin..."
