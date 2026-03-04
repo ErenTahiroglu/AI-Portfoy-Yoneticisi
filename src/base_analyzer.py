@@ -68,7 +68,8 @@ _ENF_CACHE_TTL = 3600  # 1 saat
 
 def get_cached_cpi(fred_seri: str, start: datetime, end: datetime) -> Optional[pd.DataFrame]:
     """FRED CPI verisini cache'den döndürür veya yeni çeker."""
-    import pandas_datareader as pdr
+    from data_sources import req_lib
+    from io import StringIO
     
     cache_key = fred_seri
     now = time.time()
@@ -80,8 +81,32 @@ def get_cached_cpi(fred_seri: str, start: datetime, end: datetime) -> Optional[p
             return cached["data"]
     
     try:
-        logger.info(f"📊 {fred_seri} FRED'den çekiliyor...")
-        cpi = pdr.get_data_fred(fred_seri, start=start, end=end)
+        logger.info(f"📊 {fred_seri} FRED'den çekiliyor (doğrudan CSV)...")
+        url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={fred_seri}"
+        
+        import urllib.request
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ctx, timeout=30) as response:
+            csv_text = response.read().decode('utf-8')
+            
+        csv_data = StringIO(csv_text)
+        cpi = pd.read_csv(csv_data, index_col=0, parse_dates=True, na_values='.')
+        
+        # Beklenmeyen na değerleri temizle ve datetime indeksle
+        cpi = cpi.dropna()
+        cpi.columns = [fred_seri]
+        
+        # Filtrele ve tz-naive datetime kullanışından koru
+        cpi.index = pd.to_datetime(cpi.index).tz_localize(None)
+        start_naive = pd.to_datetime(start).tz_localize(None)
+        end_naive = pd.to_datetime(end).tz_localize(None)
+        cpi = cpi.loc[start_naive:end_naive]
+        
         _ENF_CACHE[cache_key] = {"ts": now, "data": cpi}
         logger.info(f"✅ {fred_seri} alındı ve cache'lendi.")
         return cpi
