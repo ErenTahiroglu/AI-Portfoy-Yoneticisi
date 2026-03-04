@@ -55,7 +55,6 @@ except Exception:
     CURL_SESSION = None
 
 
-
 # ── .env dosyasını yükle ──────────────────────────────────────────────────
 try:
     from dotenv import load_dotenv

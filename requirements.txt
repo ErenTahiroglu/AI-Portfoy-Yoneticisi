@@ -3,6 +3,7 @@ fastapi>=0.100.0
 uvicorn>=0.20.0
 pandas>=2.0.0
 yfinance>=0.2.36
+yahooquery
 curl_cffi
 requests
 openpyxl

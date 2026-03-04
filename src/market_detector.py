@@ -59,7 +59,9 @@ def detect_market(ticker: str) -> tuple:
         pass
     
     # 5. Yukarıda bulunamadıysa ve kısa kodsa → TEFAS fonu
-    if len(ticker) <= 5:
+    #    TEFAS kodları genelde 2-3 karakter (TP2, ZP8, AKB)
+    #    BIST hisseleri minimum 4 karakter (AKSA, THYAO vb.)
+    if len(ticker) <= 3:
         return "TR", ticker, True
     
     # 6. Son çare: ABD olarak kabul et

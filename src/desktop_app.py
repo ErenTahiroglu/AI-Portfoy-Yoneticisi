@@ -73,15 +73,20 @@ if __name__ == '__main__':
 
     # Keep the console / process alive as long as necessary
     print("Press CTRL+C or close this window to stop the server.")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        # Playwright tarayıcısını kapat (varsa)
+    
+    # atexit ile Playwright temizliğini garanti altına al
+    import atexit
+    def _cleanup():
         try:
             from tefas_scraper import TefasScraper
             TefasScraper().close()
         except Exception:
             pass
+    atexit.register(_cleanup)
+    
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
         print("Shutting down...")
         sys.exit(0)
