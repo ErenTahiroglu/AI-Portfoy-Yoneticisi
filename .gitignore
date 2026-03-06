@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════
-# AI İslami Portföy Yöneticisi — .gitignore
+# Portföy Analiz Platformu — .gitignore
 # ═══════════════════════════════════════════════════
 
 # Environments
@@ -22,6 +22,7 @@ __pycache__/
 .vscode/
 .idea/
 .pyre_configuration
+*.code-workspace
 
 # PyInstaller & Build artifacts
 build/
@@ -36,7 +37,6 @@ dist/
 *.log
 error.txt
 traceback.txt
-test_out.txt
 
 # Test Scripts and Outputs (geliştirici dosyaları)
 test_*.py
@@ -45,10 +45,13 @@ test_*.json
 # Platform
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Playwright browsers (büyük, her makinede yeniden indirilmeli)
 playwright-browsers/
 
+# Gemini Agent artifacts
+.gemini/
+
 # Misc
 *.vbs
-isy_home.html

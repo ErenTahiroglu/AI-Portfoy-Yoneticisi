@@ -1,10 +1,10 @@
 <div align="center">
   
-# 🤖 AI İslami Portföy Yöneticisi & Analiz Aracı
-### (AI Islamic Portfolio Manager & Analyzer)
+# 📊 Portföy Analiz Platformu — AI Destekli
+### (AI-Powered Portfolio Analysis Platform)
 
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
 [![Gemini AI](https://img.shields.io/badge/Google_Gemini-AI-orange.svg)](https://ai.google.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -14,123 +14,176 @@
 
 ## Türkçe (Turkish)
 
-**AI İslami Portföy Yöneticisi**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir masaüstü uygulamasıdır. 
+**Portföy Analiz Platformu**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir web uygulamasıdır.
 
-Finansal verileri (getiri, enflasyon, temettü, risk metrikleri) hesaplar, **AAOIFI İslami finans (Katılım) standartlarını** denetler ve sonuçları Google Gemini AI modeli ile otonom olarak yorumlar. Tek bir arayüzden tüm portföyünüzün röntgenini çekmenizi sağlar.
+Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerleme oranları) hesaplar, opsiyonel olarak İslami uygunluk (AAOIFI) denetimi yapar ve sonuçları Google Gemini AI modeli ile yorumlar.
 
 ### ✨ Temel Özellikler
-* 🌍 **Çoklu Piyasa Desteği:** Aynı giriş kutucuğuna hem BIST (`THYAO`, `AKBNK`), hem ABD (`AAPL`, `TSLA`), hem de TEFAS fonlarınızı (`TP2`, `ZP8`) karışık yazabilirsiniz. Sistem piyasayı **otomatik tespit eder**.
-* ☪️ **İslami Uygunluk (AAOIFI) Analizi:** Şirket bilançosunu inceleyerek *Faiz Geliri (<\%5)* ve *Borçluluk Oranı (<\%30)* sınırlarını denetler (\"Katılım Endeksi\" standartları).
-* 📈 **Reel Getiri Hesaplama:** ABD hisseleri için ABD (\$), BIST/TEFAS için Türkiye (₺) enflasyon verilerini (FRED) çekerek, getirinizi enflasyondan arındırır.
-* 🎯 **Sharpe Ratio & Max Drawdown:** Her hisse/fon için risk-getiri oranı ve en büyük düşüş yüzdesi hesaplanır.
-* 🤖 **Otonom Yapay Zeka Yorumu:** Ham veriyi boğucu olmaktan çıkarır; Gemini 2.5 Flash modeli ile size profesyonel bir fon yöneticisi gibi finansal metin / uyarılar yazar.
-* 🛡️ **Güvenlik (Yerel Çalışma):** Kendi API anahtarınızı (Gemini & Alpha Vantage) kullanırsınız. Verileriniz hiçbir bulut sunucusuna gitmez, %100 kendi bilgisayarınızda (localhost) çalışır.
-* 📂 **Toplu Excel Girdisi:** Hisse sembollerinizi tek tek yazmak yerine doğrudan Excel portföyünüzü sürükle-bırak ile yükleyebilirsiniz.
-* ⚡ **Paralel Veri Çekme:** Yahoo Finance, Stooq ve Alpha Vantage kaynakları eşzamanlı olarak sorgulanır (3x hız artışı).
-* 🌐 **TEFAS WAF Bypass:** Playwright sanal tarayıcı ile TEFAS'ın F5 güvenlik duvarını aşarak fon verilerini çeker.
-* 🚀 **PyInstaller Bağımsız (Çapraz Platform):** `.exe` hantallığından arındırılmış, hafifletilmiş başlatıcıları (Launcher) ile Windows, Mac veya Linux'ta tek tıklamayla anında çalışır.
+
+| Özellik | Açıklama |
+|---------|----------|
+| 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
+| 📊 **Değerleme Metrikleri** | P/E, P/B, Beta, Piyasa Değeri, EPS, ROE, Temüttü, 52 hafta aralığı |
+| 📈 **Reel Getiri** | ABD ($) ve Türkiye (₺) enflasyon verilerinden arındırılmış gerçek getiri |
+| 🎯 **Risk Analizi** | Sharpe Ratio, Maximum Drawdown, yıllık/aylık getiri dağılımı |
+| 📉 **Teknik Göstergeler** | RSI 14, MACD 12/26/9, EMA 20/50/100/200, SMA 20/50/100/200 |
+| 🧩 **Sektör Dağılımı** | Portföy genelinde sektör pasta grafiği |
+| 🔗 **Korelasyon Matrisi** | Hisseler arası renk kodlu korelasyon ısı haritası |
+| 🎲 **Monte Carlo** | 200 simülasyon × 1 yıl — portföy risk/getiri fan grafiği |
+| 🤖 **AI Yorumları** | Gemini 2.5 Flash ile profesyonel finansal yorum |
+| 🌐 **Çoklu Dil** | Türkçe / İngilizce arayüz desteği (anlık geçiş) |
+| 🎨 **Tema Değiştirme** | Manuel açık/koyu tema + sistem teması otomatik algılama |
+| 📱 **PWA** | Mobilde veya masaüstünde uygulama olarak kur |
+| 📈 **İnteraktif Grafikler** | Chart.js ile yıllık getiri, sektör, Monte Carlo grafikleri |
+| 🔍 **Autocomplete** | 60+ popüler ABD & BIST hissesi için öneri |
+| 📋 **Watchlist** | Sık kullandığınız portföyleri kaydedin (localStorage) |
+| 📊 **Karşılaştırma** | Hisseleri yan yana tablo ile kıyaslayın |
+| 📥 **Dışa Aktarım** | Excel, PDF, Word formatlarında rapor indirin |
+| ☪️ **İslami Analiz** | Opsiyonel AAOIFI uygunluk taraması (varsayılan kapalı) |
+| ⚡ **Paralel Analiz** | Çoklu hisseler ThreadPoolExecutor ile 3-5x hızlı |
+| 💾 **Akıllı Cache** | Aynı hisse 5 dakika içinde tekrar sorgulanmaz |
+| 🔒 **API Şifreleme** | API anahtarları AES-GCM ile şifreli saklanır |
+| 🛡️ **Gizlilik** | %100 yerel — verileriniz hiçbir sunucuya gitmez |
+| 🐳 **Docker** | `docker compose up` ile tek komutla çalıştırma |
 
 ### 🧩 Modüler Mimari (Puzzle Modeli)
 
-Uygulamanın arka planı tamamen modüler bir "yap-boz" mimarisine sahiptir. Her dosya tek bir sorumluluğa odaklanır:
+Her dosya tek bir sorumluluğa sahiptir. Birbirinden bağımsız geliştirilebilir:
 
 ```
 src/
-├── main.py              → FastAPI HTTP katmanı (endpoint'ler)
-├── analysis_engine.py   → Orkestratör (tüm parçaları yönetir)
+├── main.py              → FastAPI API katmanı + export/autocomplete
+├── analysis_engine.py   → Orkestratör (paralel + cache + teknik göstergeler + sektör)
 ├── market_detector.py   → Pazar algılama (US / TR / TEFAS)
 ├── base_analyzer.py     → Ortak hesaplama mantığı (DRY)
-├── bist_analyzer.py     → BIST & TEFAS analizi (TR pazar)
-├── portfolio_analyzer.py→ ABD hisse analizi (US pazar)
-├── tefas_scraper.py     → Playwright TEFAS WAF bypass
-├── islamic_analyzer.py  → AAOIFI İslami uygunluk denetimi
+├── portfolio_analyzer.py→ ABD hisse analizi
+├── bist_analyzer.py     → BIST & TEFAS analizi
+├── tefas_scraper.py     → Chunked requests TEFAS WAF bypass
+├── islamic_analyzer.py  → AAOIFI uygunluk denetimi (opsiyonel)
 ├── ai_agent.py          → Gemini AI yorum üretimi
 ├── data_sources.py      → SSL bypass, logging, sabitler
 ├── file_processor.py    → Excel/DOCX/PDF okuma & yazma
 ├── desktop_app.py       → Masaüstü başlatıcı
-└── frontend/            → HTML/CSS/JS arayüz
+└── frontend/
+    ├── index.html       → Arayüz yapısı (PWA)
+    ├── styles.css       → Tema (manuel açık/koyu + sistem) + responsive
+    ├── app.js           → Tüm frontend mantığı
+    ├── i18n.js          → Çoklu dil (TR/EN)
+    ├── manifest.json    → PWA manifest
+    └── sw.js            → Service worker
 ```
 
-### 🚀 Nasıl Çalıştırılır (Kurulum)
-Uygulamayı kullanmak için bilgisayarınızda **Python 3.10 veya üzeri** yüklü olmalıdır. *(Önemli: Python'u kurarken en alttaki **"Add Python to PATH"** kutucuğunu işaretlemeyi unutmayın!)*
+### 🚀 Nasıl Çalıştırılır
 
-1. Projeyi bilgisayarınıza indirin (ZIP veya Git Clone).
-2. Proje klasörüne girin ve sisteminize uygun olan dosyaya çift tıklayın:
-   * **Windows kullanıcıları:** `baslat_windows.bat` dosyasına tıklayın.
-   * **Mac / Linux kullanıcıları:** `baslat_mac_linux.command` dosyasını çalıştırın.
-3. Kütüphaneler otomatik kurulacak, Playwright tarayıcısı indirilecek, sunucu başlayacak ve tarayıcınızda arayüz otomatik olarak açılacaktır.
+En kolay yol: projeyi indirin ve çift tıklayın!
+
+- **Windows:** `baslat_windows.bat`
+- **Mac/Linux:** `baslat_mac_linux.command`
+
+> **🤖 Python kurulu değil mi? Sorun değil!** Başlatıcı scriptleri Python bulamazsa otomatik olarak indirip kurar. Windows'ta `winget` veya Python.org'dan sessiz kurulum, Mac'te Homebrew, Linux'ta apt/dnf/pacman ile otomatik kurulum yapar.
+
+Manuel kurulum tercih ederseniz:
+```bash
+git clone https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi.git
+cd AI-Portfoy-Yoneticisi
+python -m venv .venv && .venv\Scripts\activate
+pip install -r requirements.txt
+playwright install chromium
+python src/desktop_app.py
+```
 
 ### 📦 Bağımlılıklar
+
 | Paket | Amaç |
 |-------|------|
 | `fastapi` + `uvicorn` | API sunucusu |
-| `yfinance` + `pandas_datareader` | Fiyat ve enflasyon verileri |
-| `playwright` + `nest_asyncio` | TEFAS WAF bypass (sanal tarayıcı) |
-| `langchain-google-genai` | Gemini AI entegrasyonu |
-| `curl_cffi` | SSL bypass & Chrome impersonate |
+| `yfinance` + `yahooquery` | Fiyat, bilanço ve değerleme verileri |
 | `pandas` + `numpy` | Veri analizi |
-| `python-docx` + `fpdf2` | Rapor dışa aktarımı |
+| `requests` + `rate_limiter` | TEFAS WAF bypass & Chunked Fetching |
+| `langchain-google-genai` | Gemini AI entegrasyonu |
+| `python-docx` + `fpdf2` + `openpyxl` | Rapor dışa aktarımı |
 
 ---
 
 ## English
 
-**AI Islamic Portfolio Manager** is a locally-hosted, AI-powered desktop application capable of simultaneously analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds. 
+**Portfolio Analysis Platform** is a locally-hosted, AI-powered web application for analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds simultaneously.
 
-It calculates financial metrics (returns, inflation adjustments, dividends, Sharpe Ratio, Max Drawdown), audits **AAOIFI Islamic finance compliance**, and autonomously interprets the results using the Google Gemini AI model. It allows you to X-ray your entire portfolio from a single, unified interface.
+It calculates financial metrics (returns, inflation adjustments, dividends, Sharpe Ratio, Max Drawdown, P/E, P/B, Beta), optionally audits AAOIFI Islamic compliance, and generates AI commentary via Google Gemini.
 
 ### ✨ Key Features
-* 🌍 **Multi-Market Support:** You can enter a mix of BIST (`THYAO`, `AKBNK`), US stocks (`AAPL`, `TSLA`), and TEFAS funds (`TP2`, `ZP8`) into the main input field. The system **auto-detects** the market.
-* ☪️ **Islamic Compliance (AAOIFI) Analysis:** Audits company balance sheets against *Interest Income (<5%)* and *Debt Ratio (<30%)* thresholds ("Participation Index" standards).
-* 📈 **Real Return Calculation:** Pulls US (\$) or Turkey (₺) inflation data (via FRED) based on the asset's market to strip inflation from your raw historical returns.
-* 🎯 **Sharpe Ratio & Max Drawdown:** Risk-adjusted return ratio and maximum drawdown percentage calculated for every asset.
-* 🤖 **Autonomous AI Commentary:** Turns raw data into actionable insights; the Gemini 2.5 Flash model writes professional fund-manager style financial text and warnings for you.
-* 🛡️ **Privacy First (Local Execution):** Bring your own API keys (Gemini & Alpha Vantage). Your portfolio data never goes to a third-party cloud server; it runs 100% locally on your machine (localhost).
-* 📂 **Batch Excel Upload:** Instead of typing ticker symbols manually, drag-and-drop your Excel portfolio file directly into the app.
-* ⚡ **Parallel Data Fetching:** Yahoo Finance, Stooq, and Alpha Vantage are queried concurrently (3x speed boost).
-* 🌐 **TEFAS WAF Bypass:** Uses Playwright headless browser to bypass the F5 web application firewall and scrape TEFAS fund data.
-* 🚀 **Cross-Platform Launchers:** Freed from clunky `.exe` standalone builds; uses lightweight launcher scripts to boot instantly on Windows, Mac, or Linux with a single click.
+
+| Feature | Description |
+|---------|-------------|
+| 🌍 **Multi-Market** | Mix US, BIST and TEFAS tickers — market is **auto-detected** |
+| 📊 **Valuation Metrics** | P/E, P/B, Beta, Market Cap, EPS, ROE, Dividend Yield, 52w range |
+| 📈 **Real Returns** | Inflation-adjusted returns using US/TR CPI data from FRED |
+| 🎯 **Risk Analysis** | Sharpe Ratio, Max Drawdown, yearly/monthly return breakdowns |
+| 🤖 **AI Commentary** | Professional fund-manager style analysis via Gemini 2.5 Flash |
+| 📈 **Interactive Charts** | Chart.js bar charts for yearly returns |
+| 🔍 **Autocomplete** | Suggestions for 60+ popular US & BIST tickers |
+| 📋 **Watchlist** | Save frequently-used portfolios (localStorage) |
+| 📊 **Comparison** | Side-by-side metric comparison table |
+| 📥 **Export** | Download reports as Excel, PDF, or Word |
+| ☪️ **Islamic Analysis** | Optional AAOIFI compliance scan (off by default) |
+| ⚡ **Parallel Analysis** | ThreadPoolExecutor for 3-5x speed boost |
+| 💾 **Smart Cache** | 5-minute TTL prevents redundant API calls |
+| 🛡️ **Privacy** | 100% local — your data never leaves your machine |
 
 ### 🧩 Modular Architecture (Puzzle Model)
 
-The backend features a fully modular "puzzle-piece" architecture where each file has a single responsibility:
+Each file has a single responsibility and can be developed independently:
 
 ```
 src/
-├── main.py              → FastAPI HTTP layer (endpoints)
-├── analysis_engine.py   → Orchestrator (manages all pieces)
+├── main.py              → FastAPI HTTP layer + export/autocomplete
+├── analysis_engine.py   → Orchestrator (parallel + cache + valuation)
 ├── market_detector.py   → Market detection (US / TR / TEFAS)
 ├── base_analyzer.py     → Shared calculation logic (DRY)
-├── bist_analyzer.py     → BIST & TEFAS analysis (TR market)
-├── portfolio_analyzer.py→ US stock analysis (US market)
-├── tefas_scraper.py     → Playwright TEFAS WAF bypass
-├── islamic_analyzer.py  → AAOIFI Islamic compliance audit
+├── portfolio_analyzer.py→ US stock analysis
+├── bist_analyzer.py     → BIST & TEFAS analysis
+├── tefas_scraper.py     → Chunked requests TEFAS WAF bypass
+├── islamic_analyzer.py  → AAOIFI compliance audit (optional)
 ├── ai_agent.py          → Gemini AI commentary generation
 ├── data_sources.py      → SSL bypass, logging, constants
 ├── file_processor.py    → Excel/DOCX/PDF read & write
 ├── desktop_app.py       → Desktop launcher
-└── frontend/            → HTML/CSS/JS interface
+└── frontend/
+    ├── index.html       → UI structure
+    ├── styles.css       → Theme (auto light/dark) + responsive
+    └── app.js           → All frontend logic
 ```
 
-### 🚀 How to Run (Installation)
-The only requirement is having **Python 3.10 or higher** installed on your machine. *(Important: Make sure to check the **"Add Python to PATH"** box during installation!)*
+### 🚀 How to Run
 
-1. Download the project (via ZIP or Git Clone).
-2. Open the project folder and double-click the launcher for your Operating System:
-   * **Windows users:** Double-click on `baslat_windows.bat`.
-   * **Mac / Linux users:** Run `baslat_mac_linux.command` (or manually run the bash script).
-3. Dependencies will auto-install, the Playwright browser will be downloaded, the local server will boot, and your browser will automatically open the UI.
+Easiest way: download the project and double-click!
+
+- **Windows:** `baslat_windows.bat`
+- **Mac/Linux:** `baslat_mac_linux.command`
+
+> **🤖 Python not installed?** No problem! The launcher scripts auto-detect and install Python if it's missing. On Windows via `winget` or Python.org silent installer, on Mac via Homebrew, on Linux via apt/dnf/pacman.
+
+For manual setup:
+```bash
+git clone https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi.git
+cd AI-Portfoy-Yoneticisi
+python -m venv .venv && .venv\Scripts\activate
+pip install -r requirements.txt
+playwright install chromium
+python src/desktop_app.py
+```
 
 ### 📦 Dependencies
+
 | Package | Purpose |
 |---------|---------|
 | `fastapi` + `uvicorn` | API server |
-| `yfinance` + `pandas_datareader` | Price and inflation data |
-| `playwright` + `nest_asyncio` | TEFAS WAF bypass (headless browser) |
-| `langchain-google-genai` | Gemini AI integration |
-| `curl_cffi` | SSL bypass & Chrome impersonate |
+| `yfinance` + `yahooquery` | Price, balance sheet & valuation data |
 | `pandas` + `numpy` | Data analysis |
-| `python-docx` + `fpdf2` | Report export |
+| `requests` + `rate_limiter` | TEFAS WAF bypass & Chunked Fetching |
+| `langchain-google-genai` | Gemini AI integration |
+| `python-docx` + `fpdf2` + `openpyxl` | Report export |
 
 ---
+
 *Disclaimer: This software is for informational and educational purposes only. It does not constitute financial or investment advice. Always verify AI-generated analyses with your own research.*
