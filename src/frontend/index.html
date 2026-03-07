@@ -20,6 +20,7 @@
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <body>
@@ -170,6 +171,29 @@
                     <button id="remove-file-btn"><i class="fas fa-times"></i></button>
                 </div>
             </div>
+
+            <div class="input-divider" data-i18n="input.or">VEYA</div>
+
+            <!-- AI Wizard -->
+            <div class="input-card" id="wizard-card"
+                style="position:relative; overflow:hidden; border: 1px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(2,132,199,0.05));">
+                <!-- background flare -->
+                <div
+                    style="position:absolute; top:-50px; right:-50px; width:150px; height:150px; background:radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%); filter:blur(20px); pointer-events:none;">
+                </div>
+
+                <h3><i class="fas fa-magic" style="color:#a78bfa"></i> AI Portföy Sihirbazı</h3>
+                <textarea id="wizard-input" rows="3" class="input"
+                    placeholder="Örnek: 'Temettü verimi yüksek 5 BIST hissesi' veya 'Teknoloji ağırlıklı agresif ABD portföyü'"
+                    style="background:rgba(0,0,0,0.2)"></textarea>
+
+                <button class="btn btn-primary" id="btn-run-wizard"
+                    style="width:100%; margin-top:1rem; background:linear-gradient(135deg, #7c3aed, #0284c7); border:none; box-shadow:0 0 15px rgba(124, 58, 237, 0.4);">
+                    <i class="fas fa-wand-magic-sparkles"></i> Sihirbazı Çalıştır
+                </button>
+                <p class="input-helper" style="margin-top:0.75rem;">Yapay zeka asistanı isteklerinize göre en uygun
+                    portföyü tasarlar.</p>
+            </div>
         </div>
 
         <!-- ANALYZE BUTTON -->
@@ -199,12 +223,102 @@
             <div class="results-toolbar">
                 <h2 data-i18n="results.title"><i class="fas fa-chart-pie"></i> Analiz Sonuçları</h2>
                 <div class="toolbar-actions">
+                    <button class="btn-icon" id="share-btn" title="Paylaş"><i class="fas fa-share-alt"></i> <span
+                            data-i18n="btn.share">Paylaş</span></button>
                     <button class="btn-icon" id="compare-btn" title="Karşılaştır"><i class="fas fa-columns"></i> <span
                             data-i18n="btn.compare">Karşılaştır</span></button>
                     <button class="btn-icon" id="export-excel-btn" title="Excel"><i
                             class="fas fa-file-excel"></i></button>
                     <button class="btn-icon" id="export-pdf-btn" title="PDF"><i class="fas fa-file-pdf"></i></button>
                     <button class="btn-icon" id="export-docx-btn" title="Word"><i class="fas fa-file-word"></i></button>
+                </div>
+            </div>
+
+            <!-- Hero Cards (Overall Summary) -->
+            <div class="hero-cards-grid hidden" id="hero-cards">
+                <div class="hero-card">
+                    <div class="hero-icon"><i class="fas fa-star"></i></div>
+                    <div class="hero-info">
+                        <span class="hero-label" data-i18n="hero.score">Portföy Skoru</span>
+                        <div class="hero-value" id="hero-score-val">-</div>
+                    </div>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-icon" style="color: var(--success)"><i class="fas fa-arrow-trend-up"></i></div>
+                    <div class="hero-info">
+                        <span class="hero-label" data-i18n="hero.best">En İyi Hisse</span>
+                        <div class="hero-value" id="hero-best-val">-</div>
+                    </div>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-icon" style="color: var(--danger)"><i class="fas fa-shield-virus"></i></div>
+                    <div class="hero-info">
+                        <span class="hero-label" data-i18n="hero.risk">Risk Seviyesi</span>
+                        <div class="hero-value" id="hero-risk-val">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap (Treemap) -->
+            <div id="portfolio-heatmap-wrap" class="hidden" style="margin-bottom:2rem;">
+                <h3 data-i18n="results.heatmap"><i class="fas fa-th-large"></i> Portföy Isı Haritası (Günlük Değişim)
+                </h3>
+                <div id="portfolio-heatmap" class="heatmap-container"></div>
+            </div>
+
+            <!-- Scenarios & Dividend FI/RE Calculator -->
+            <div id="scenarios-wrap" class="hidden" style="margin-bottom:2rem;">
+                <h3 data-i18n="results.scenarios"><i class="fas fa-flask"></i> Senaryo & Stres Testleri</h3>
+                <div class="scenarios-grid"
+                    style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+                    <!-- Stress Test Card -->
+                    <div class="scenario-card"
+                        style="padding:1.5rem; border-radius:var(--radius); background:var(--card-bg); border:1px solid var(--card-border);">
+                        <h4><i class="fas fa-bolt" style="color:var(--warning)"></i> Stres Testi</h4>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Portföyünüzün Beta
+                            sayısına dayalı tahmini şok tepkisi.</p>
+                        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                            <button class="btn btn-outline" id="btn-scenario-2008" style="flex:1; font-size:0.8rem">2008
+                                Krizi (-%50)</button>
+                            <button class="btn btn-outline" id="btn-scenario-covid"
+                                style="flex:1; font-size:0.8rem">Covid-19 (-%30)</button>
+                        </div>
+                        <div id="scenario-stress-result"
+                            style="font-size:1.1rem; font-weight:600; text-align:center; padding:1rem; background:rgba(255,255,255,0.05); border-radius:0.5rem;">
+                            -</div>
+                    </div>
+
+                    <!-- Dividend FI/RE Card -->
+                    <div class="scenario-card"
+                        style="padding:1.5rem; border-radius:var(--radius); background:var(--card-bg); border:1px solid var(--card-border);">
+                        <h4><i class="fas fa-piggy-bank" style="color:var(--primary)"></i> Temettü Emekliliği</h4>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Aylık eklemelerle
+                            portföy veriminden hedef gelire ulaşma süresi (Mevcut Sermaye Hariç).</p>
+                        <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
+                            <div style="flex:1">
+                                <label style="font-size:0.75rem; color:var(--text-muted)">Aylık Ekleme</label>
+                                <input type="number" id="div-monthly-add" class="input" value="5000"
+                                    style="padding:0.4rem; font-size:0.9rem;">
+                            </div>
+                            <div style="flex:1">
+                                <label style="font-size:0.75rem; color:var(--text-muted)">Aylık Hedef Gelir</label>
+                                <input type="number" id="div-target-income" class="input" value="17002"
+                                    style="padding:0.4rem; font-size:0.9rem;">
+                            </div>
+                        </div>
+                        <div id="scenario-div-result"
+                            style="font-size:1.1rem; font-weight:600; text-align:center; padding:1rem; background:rgba(255,255,255,0.05); border-radius:0.5rem; color:var(--success)">
+                            Hesaplanıyor...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization -->
+            <div id="optimization-wrap" class="hidden" style="margin-bottom:2rem;">
+                <h3 data-i18n="results.optimization"><i class="fas fa-balance-scale"></i> Markowitz Optimum Ağırlıklar
+                    (Maksimum Sharpe)</h3>
+                <div id="opt-bars"
+                    style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:var(--radius); padding:1.5rem;">
                 </div>
             </div>
 

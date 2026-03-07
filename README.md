@@ -26,10 +26,15 @@ Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerlem
 | 📊 **Değerleme Metrikleri** | P/E, P/B, Beta, Piyasa Değeri, EPS, ROE, Temüttü, 52 hafta aralığı |
 | 📈 **Reel Getiri** | ABD ($) ve Türkiye (₺) enflasyon verilerinden arındırılmış gerçek getiri |
 | 🎯 **Risk Analizi** | Sharpe Ratio, Maximum Drawdown, yıllık/aylık getiri dağılımı |
+| 🧪 **Stres Testleri** | 2008 Krizi, Covid-19 simülasyonları ile portföy şok analizi |
+| 🏦 **Temettü Emekliliği** | İstenilen pasif gelire aylık katkılarla ulaşma süresini hesaplayan finansal simülatör |
 | 📉 **Teknik Göstergeler** | RSI 14, MACD 12/26/9, EMA 20/50/100/200, SMA 20/50/100/200 |
-| 🧩 **Sektör Dağılımı** | Portföy genelinde sektör pasta grafiği |
+| 🧩 **Sektör Dağılımı** | Portföy genelinde sektör pasta grafiği ve interaktif ısı haritası (Treemap) |
 | 🔗 **Korelasyon Matrisi** | Hisseler arası renk kodlu korelasyon ısı haritası |
+| ⚖️ **Portföy Optimizasyonu** | Markowitz Modern Portföy Teorisi (MPT) ile maksimum Sharpe oranlı ideal ağırlık hesabı |
 | 🎲 **Monte Carlo** | 200 simülasyon × 1 yıl — portföy risk/getiri fan grafiği |
+| 🪄 **AI Portföy Sihirbazı** | Metin girişiyle (örn: "Temettü veren 5 şirket") yapay zekaya anında özel portföy kurdurma |
+| 📰 **Dinamik Haberler**| Şirketlere ait son dakika haberlerini AI duygu (sentiment) analiziyle (Bullish/Bearish) listeleme |
 | 🤖 **AI Yorumları** | Gemini 2.5 Flash ile profesyonel finansal yorum |
 | 🌐 **Çoklu Dil** | Türkçe / İngilizce arayüz desteği (anlık geçiş) |
 | 🎨 **Tema Değiştirme** | Manuel açık/koyu tema + sistem teması otomatik algılama |
@@ -128,8 +133,13 @@ It calculates financial metrics (returns, inflation adjustments, dividends, Shar
 | 📊 **Valuation Metrics** | P/E, P/B, Beta, Market Cap, EPS, ROE, Dividend Yield, 52w range |
 | 📈 **Real Returns** | Inflation-adjusted returns using US/TR CPI data from FRED |
 | 🎯 **Risk Analysis** | Sharpe Ratio, Max Drawdown, yearly/monthly return breakdowns |
+| 🧪 **Stress Tests** | Simulate 2008 Crash and Covid-19 drops based on Portfolio Beta |
+| 🏦 **Dividend FI/RE** | Calculate time to reach target passive income with monthly contributions |
+| ⚖️ **Optimization** | Markowitz Efficient Frontier optimization for Maximum Sharpe ratio weights |
+| 🪄 **AI Wizard** | Create tailored portfolios instantly from natural language prompts |
+| 📰 **Dynamic News** | AI-filtered impactful market news with Sentiment Analysis (Bullish/Bearish) |
 | 🤖 **AI Commentary** | Professional fund-manager style analysis via Gemini 2.5 Flash |
-| 📈 **Interactive Charts** | Chart.js bar charts for yearly returns |
+| 📈 **Interactive Charts** | Chart.js bar charts, Heatmaps (Treemaps), correlations and Monte Carlo graphs |
 | 🔍 **Autocomplete** | Suggestions for 60+ popular US & BIST tickers |
 | 📋 **Watchlist** | Save frequently-used portfolios (localStorage) |
 | 📊 **Comparison** | Side-by-side metric comparison table |

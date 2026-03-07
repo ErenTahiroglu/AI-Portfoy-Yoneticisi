@@ -131,6 +131,54 @@ function setupAutocomplete() {
 }
 
 // ═══════════════════════════════════════
+// AI WIZARD
+// ═══════════════════════════════════════
+async function runWizard() {
+    const promptText = document.getElementById("wizard-input").value.trim();
+    if (!promptText) { showToast(t("toast.enterTickers") || "Lütfen sihirbaza bir talimat yazın", "warning"); return; }
+
+    const apiKey = document.getElementById("api-key").value;
+    if (!apiKey) { showToast(t("toast.noApiKey") || "AI Sihirbazı için Gemini API Anahtarı gereklidir (Ayarlar)", "warning"); return; }
+
+    const currModel = document.getElementById("model-select").value || "gemini-2.5-flash";
+    const btn = document.getElementById("btn-run-wizard");
+    const origText = btn.innerHTML;
+
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sihirbaz Düşünüyor...`;
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/wizard`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: promptText, api_key: apiKey, model: currModel })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Makine öğrenimi servisi yanıt vermedi");
+
+        if (data.portfolio && Array.isArray(data.portfolio)) {
+            const tickerString = data.portfolio.map(p => `${p.ticker}:${p.weight}`).join(", ");
+            document.getElementById("ticker-input").value = tickerString;
+            showToast("Yapay Zeka portföyünüzü hazırladı! Analiz başlıyor...", "success");
+
+            document.getElementById("ticker-input").scrollIntoView({ behavior: "smooth", block: "center" });
+
+            setTimeout(() => {
+                document.getElementById("analyze-btn").click();
+            }, 800);
+        } else {
+            showToast("Geçerli bir portföy döndürülemedi.", "error");
+        }
+    } catch (err) {
+        showToast(`Sihirbaz Hatası: ${err.message}`, "error");
+    } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+    }
+}
+
+// ═══════════════════════════════════════
 // COLLAPSIBLE SECTIONS
 // ═══════════════════════════════════════
 function toggleCollapsible(header) {
@@ -302,6 +350,335 @@ function renderExtras(extras) {
 }
 
 // ═══════════════════════════════════════
+// HERO CARDS
+// ═══════════════════════════════════════
+function updateHeroCards(results, extras) {
+    const cardsContainer = document.getElementById("hero-cards");
+    const scoreVal = document.getElementById("hero-score-val");
+    const bestVal = document.getElementById("hero-best-val");
+    const riskVal = document.getElementById("hero-risk-val");
+
+    if (!results || results.length === 0) {
+        cardsContainer.classList.add("hidden");
+        return;
+    }
+
+    cardsContainer.classList.remove("hidden");
+
+    // Portföy Skoru (Ağırlıklı Getiri veya Ortalama)
+    if (extras && extras.weighted_return_5y !== undefined) {
+        scoreVal.textContent = `%${extras.weighted_return_5y}`;
+    } else {
+        scoreVal.textContent = "-";
+    }
+
+    // En İyi Hisse (5Y getiriye göre veya Son Değişim)
+    let bestStock = null;
+    let maxRet = -Infinity;
+    results.forEach(r => {
+        if (!r.error && r.financials && r.financials.s5 !== undefined && r.financials.s5 !== null) {
+            if (r.financials.s5 > maxRet) {
+                maxRet = r.financials.s5;
+                bestStock = r.ticker;
+            }
+        }
+    });
+    if (bestStock) {
+        bestVal.innerHTML = `${bestStock} <span style="font-size:0.8rem;color:var(--success)">(%${maxRet.toFixed(1)})</span>`;
+    } else {
+        bestVal.textContent = "-";
+    }
+
+    // Risk Seviyesi (Ortalama Max DD)
+    let totalRisk = 0;
+    let riskCount = 0;
+    results.forEach(r => {
+        if (!r.error && r.financials && r.financials.risk && r.financials.risk.max_drawdown !== null) {
+            totalRisk += Math.abs(r.financials.risk.max_drawdown);
+            riskCount++;
+        }
+    });
+
+    if (riskCount > 0) {
+        const avgRisk = totalRisk / riskCount;
+        let riskLabel = "Düşük";
+        let riskColor = "var(--success)";
+        if (avgRisk > 30) { riskLabel = "Yüksek"; riskColor = "var(--danger)"; }
+        else if (avgRisk > 15) { riskLabel = "Orta"; riskColor = "var(--warning)"; }
+        riskVal.innerHTML = `<span style="color:${riskColor}">${riskLabel}</span> <span style="font-size:0.8rem;color:var(--text-muted)">(MaxDD: %${avgRisk.toFixed(1)})</span>`;
+    } else {
+        riskVal.textContent = "-";
+    }
+}
+
+// ═══════════════════════════════════════
+// HEATMAP (TREEMAP)
+// ═══════════════════════════════════════
+function renderHeatmap(results) {
+    const wrap = document.getElementById("portfolio-heatmap-wrap");
+    const container = document.getElementById("portfolio-heatmap");
+    container.innerHTML = "";
+
+    const validResults = results.filter(r => !r.error && r.financials && r.financials.son_fiyat && r.financials.son_fiyat.degisim !== undefined);
+
+    if (validResults.length === 0) {
+        wrap.classList.add("hidden");
+        return;
+    }
+
+    wrap.classList.remove("hidden");
+
+    // Total weight sum for flex-basis calculations
+    const totalWeight = validResults.reduce((sum, r) => sum + (r.weight || 1), 0);
+
+    // Calculate colors properly like S&P 500 heatmaps
+    function getHeatmapColor(val) {
+        if (val === null || val === undefined) return "#334155"; // bg-slate-700
+        if (val > 3) return "#166534"; // Strong green
+        if (val > 1) return "#22c55e"; // Mid green
+        if (val > 0) return "#86efac"; // Light green (black text usually)
+        if (val > -1) return "#fca5a5"; // Light red
+        if (val > -3) return "#ef4444"; // Mid red
+        return "#991b1b"; // Strong red
+    }
+
+    // Determine text color based on background luminance
+    function getTextColor(val) {
+        if (val > 0 && val <= 1) return "#064e3b"; // Dark green text on light green bg
+        if (val < 0 && val >= -1) return "#7f1d1d"; // Dark red text on light red bg
+        return "white";
+    }
+
+    validResults.forEach(r => {
+        const change = r.financials.son_fiyat.degisim;
+        const weight = r.weight || 1;
+        const percentArea = (weight / totalWeight) * 100;
+
+        const cell = document.createElement("div");
+        cell.className = "heatmap-cell";
+
+        // Use flex-basis to size proportionally. For a true 2D treemap, CSS Grid would be highly complex, 
+        // flex-wrap provides a decent approximation for small portfolios.
+        cell.style.flex = `1 1 calc(${percentArea}% - 0.5rem)`;
+        cell.style.backgroundColor = getHeatmapColor(change);
+        cell.style.color = getTextColor(change);
+
+        // Hide text if the cell is too small
+        if (percentArea < 3 && validResults.length > 10) {
+            cell.title = `${r.ticker}: %${change.toFixed(2)}`;
+        } else {
+            cell.innerHTML = `
+                <span class="hm-ticker">${r.ticker}</span>
+                <span class="hm-val">%${change.toFixed(2)}</span>
+            `;
+            cell.title = `${r.ticker} (Ağırlık: ${weight})`;
+        }
+
+        container.appendChild(cell);
+    });
+}
+
+// ═══════════════════════════════════════
+// SCENARIOS & DIVIDEND CALCULATOR
+// ═══════════════════════════════════════
+function renderScenarios(results) {
+    const wrap = document.getElementById("scenarios-wrap");
+    if (!results || results.length === 0) {
+        wrap.classList.add("hidden");
+        return;
+    }
+    wrap.classList.remove("hidden");
+
+    let totalWeight = 0;
+    let weightedBeta = 0;
+    let weightedDiv = 0;
+
+    results.forEach(r => {
+        if (!r.error && r.financials && r.valuation) {
+            const w = r.weight || 1;
+            totalWeight += w;
+            const beta = r.valuation.beta || 1;
+            const div = r.valuation.div_yield || 0;
+            weightedBeta += beta * w;
+            weightedDiv += div * w;
+        }
+    });
+
+    const avgBeta = totalWeight > 0 ? weightedBeta / totalWeight : 1;
+    const avgDivYield = totalWeight > 0 ? weightedDiv / totalWeight : 0; // percentage, e.g. 5 means 5%
+
+    // Stress Tests
+    const resStress = document.getElementById("scenario-stress-result");
+    const btn2008 = document.getElementById("btn-scenario-2008");
+    const btnCovid = document.getElementById("btn-scenario-covid");
+
+    function calcStress(dropPct, name) {
+        const expectedDrop = dropPct * avgBeta;
+        resStress.innerHTML = `${name} Senaryosunda: <br><span style="color:var(--danger)"> Tahmini Düşüş: -%${expectedDrop.toFixed(1)}</span> <br><span style="font-size:0.8rem;color:var(--text-muted)">(Portföy Beta: ${avgBeta.toFixed(2)})</span>`;
+    }
+
+    btn2008.onclick = () => calcStress(50, "2008 Krizi");
+    btnCovid.onclick = () => calcStress(33, "Covid-19");
+
+    // Set default view
+    calcStress(50, "2008 Krizi");
+
+    // Dividend FI/RE Calculator
+    const resDiv = document.getElementById("scenario-div-result");
+    const inMonthlyAdd = document.getElementById("div-monthly-add");
+    const inTargetIncome = document.getElementById("div-target-income");
+
+    function calcDivFIRE() {
+        if (avgDivYield <= 0.1) {
+            resDiv.innerHTML = `<span style="color:var(--warning)">Portföy temettü verimi çok düşük (%${avgDivYield.toFixed(2)}). Hedefe ulaşmak mümkün görünmüyor.</span>`;
+            return;
+        }
+
+        const P = parseFloat(inMonthlyAdd.value);
+        const targetMonthly = parseFloat(inTargetIncome.value);
+        if (!P || !targetMonthly || P <= 0 || targetMonthly <= 0) {
+            resDiv.textContent = "Lütfen geçerli değerler girin."; return;
+        }
+
+        const r = avgDivYield / 100; // e.g. 0.05
+        const targetCapital = (targetMonthly * 12) / r;
+
+        // n (months) = Math.log((Capital * r/12 + P) / P) / Math.log(1 + r/12)
+        const rateMonthly = r / 12;
+        const months = Math.log((targetCapital * rateMonthly + P) / P) / Math.log(1 + rateMonthly);
+        const years = months / 12;
+
+        resDiv.innerHTML = `Ortalama Verim: <strong>%${avgDivYield.toFixed(2)}</strong><br>Hedef Sermaye: <strong>${targetCapital.toLocaleString("tr-TR", { maximumFractionDigits: 0 })}</strong><br> Süre: <strong>${years.toFixed(1)} Yıl</strong>`;
+    }
+
+    inMonthlyAdd.addEventListener("input", calcDivFIRE);
+    inTargetIncome.addEventListener("input", calcDivFIRE);
+    calcDivFIRE();
+}
+
+// ═══════════════════════════════════════
+// OPTIMIZATION
+// ═══════════════════════════════════════
+function renderOptimization(optWeights, results) {
+    const wrap = document.getElementById("optimization-wrap");
+    const container = document.getElementById("opt-bars");
+
+    if (!optWeights || Object.keys(optWeights).length === 0) {
+        wrap.classList.add("hidden");
+        return;
+    }
+
+    wrap.classList.remove("hidden");
+    container.innerHTML = "";
+
+    let totalCurWeight = results.reduce((sum, r) => sum + ((!r.error && r.weight) ? r.weight : 1), 0);
+
+    let html = `<div style="display:grid; grid-template-columns: 80px 1fr 1fr; gap:1rem; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; border-bottom:1px solid var(--card-border); padding-bottom:0.5rem;"><div>Hisse</div><div>Mevcut Ağırlık</div><div>İdeal (Optimize) Ağırlık</div></div>`;
+
+    for (const [ticker, idealPct] of Object.entries(optWeights)) {
+        const r = results.find(x => x.ticker === ticker);
+        let curPct = 0;
+        if (r && !r.error) {
+            curPct = ((r.weight || 1) / totalCurWeight) * 100;
+        }
+
+        html += `
+        <div style="display:grid; grid-template-columns: 80px 1fr 1fr; gap:1rem; align-items:center; margin-bottom:0.75rem;">
+            <div style="font-weight:700;">${ticker}</div>
+            
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <div style="flex:1; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
+                    <div style="height:100%; width:${curPct}%; background:var(--text-muted); border-radius:4px;"></div>
+                </div>
+                <span style="width:50px; text-align:right">%${curPct.toFixed(1)}</span>
+            </div>
+            
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <div style="flex:1; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
+                    <div style="height:100%; width:${idealPct}%; background:var(--primary); box-shadow:0 0 8px rgba(14, 165, 233, 0.4); border-radius:4px;"></div>
+                </div>
+                <span style="width:50px; text-align:right; color:var(--primary); font-weight:700;">%${idealPct.toFixed(1)}</span>
+            </div>
+        </div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// DYNAMIC NEWS
+// ═══════════════════════════════════════
+async function loadNews(results) {
+    const wrap = document.getElementById("news-wrap");
+    const container = document.getElementById("news-container");
+
+    // Sadece geçerli ticker listesi
+    const tickers = results.filter(r => !r.error && r.ticker).map(r => r.ticker);
+    if (tickers.length === 0) {
+        wrap.classList.add("hidden");
+        return;
+    }
+
+    wrap.classList.remove("hidden");
+    container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:1rem"></i><br>Yapay zeka haberleri tarayıp portföyünüz için en önemlilerini seçiyor...</div>`;
+
+    let aKey = "";
+    if (localStorage.getItem("settingsParams")) {
+        try {
+            const sp = JSON.parse(await decryptData(localStorage.getItem("settingsParams")));
+            aKey = sp.geminiApiKey || "";
+        } catch { }
+    }
+    const currModel = localStorage.getItem("ai_model") || "gemini-2.5-flash";
+
+    try {
+        const res = await fetch(`${API_BASE}/api/news`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tickers: tickers.slice(0, 5), api_key: aKey, model: currModel })
+        });
+
+        const data = await res.json();
+
+        if (!data.news || data.news.length === 0) {
+            container.innerHTML = `<div class="card" style="padding:1rem; text-align:center; color:var(--text-muted)">Portföydeki şirketler için kayda değer önemli bir haber bulunamadı.</div>`;
+            return;
+        }
+
+        let html = "";
+        data.news.forEach(item => {
+            const title = item.title || "İsimsiz Haber";
+            const link = item.link || "#";
+            const sentiment = item.sentiment || "Neutral";
+            const reason = item.reason || "";
+
+            let color = "var(--text-muted)";
+            let icon = "minus";
+            if (sentiment.toLowerCase().includes("bull")) { color = "var(--success)"; icon = "arrow-trend-up"; }
+            else if (sentiment.toLowerCase().includes("bear")) { color = "var(--danger)"; icon = "arrow-trend-down"; }
+
+            html += `
+            <a href="${link}" target="_blank" style="text-decoration:none; color:inherit; outline:none;">
+                <div class="card" style="padding:1.2rem; background:var(--card-bg); border:1px solid var(--card-border); border-radius:var(--radius); transition:transform 0.2s, box-shadow 0.2s; cursor:pointer;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)'; this.style.borderColor='rgba(255,255,255,0.1)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'; this.style.borderColor='var(--card-border)'">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                        <h4 style="margin:0; font-size:1.05rem; line-height:1.4; color:var(--text-main); flex:1;">${title}</h4>
+                        <span style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.3rem 0.6rem; border-radius:1rem; font-size:0.75rem; font-weight:700; background:rgba(255,255,255,0.05); color:${color}">
+                            <i class="fas fa-${icon}"></i> ${sentiment}
+                        </span>
+                    </div>
+                    ${reason ? `<p style="margin:0.75rem 0 0 0; font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${reason}</p>` : ""}
+                </div>
+            </a>`;
+        });
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        container.innerHTML = `<div class="card" style="padding:1rem; color:var(--danger)">Haberler yüklenirken hata oluştu: ${err.message}</div>`;
+    }
+}
+
+// ═══════════════════════════════════════
 // RENDER RESULTS
 // ═══════════════════════════════════════
 function renderResults(data) {
@@ -426,6 +803,18 @@ function renderResults(data) {
     }
 
     renderExtras(lastExtras);
+    updateHeroCards(results, lastExtras);
+    renderHeatmap(results);
+    renderScenarios(results);
+    if (lastExtras && lastExtras.optimized_weights) {
+        renderOptimization(lastExtras.optimized_weights, results);
+    } else {
+        document.getElementById("optimization-wrap").classList.add("hidden");
+    }
+
+    // Load News async so it doesn't block rendering
+    loadNews(results);
+
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -485,6 +874,32 @@ async function exportResults(format) {
         URL.revokeObjectURL(url);
         showToast(t("toast.exported"), "success");
     } catch (err) { showToast(`Export hatası: ${err.message}`, "error"); }
+}
+
+async function exportPortfolioImage() {
+    const resultsElem = document.getElementById("results");
+    if (!lastResults || lastResults.length === 0) { showToast(t("toast.noTickers"), "warning"); return; }
+
+    showToast("Görsel hazırlanıyor...", "info");
+    try {
+        const canvas = await html2canvas(resultsElem, {
+            scale: 2,
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-body') || '#0f172a',
+            ignoreElements: (el) => el.classList.contains('toolbar-actions') // Hide buttons in screenshot
+        });
+
+        const url = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `portfoy_analizi.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast("Görsel indirildi!", "success");
+    } catch (err) {
+        console.error(err);
+        showToast(`Görsel oluşturma hatası: ${err.message}`, "error");
+    }
 }
 
 // ═══════════════════════════════════════
@@ -620,7 +1035,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     function showFile(file) { selectedFileName.textContent = file.name; fileNameDisplay.classList.remove("hidden"); dropArea.classList.add("hidden"); }
     removeFileBtn.addEventListener("click", () => { fileInput.value = ""; fileNameDisplay.classList.add("hidden"); dropArea.classList.remove("hidden"); });
 
-    // Analyze button
+    // Analyze & Wizard buttons
+    document.getElementById("btn-run-wizard").addEventListener("click", runWizard);
     document.getElementById("analyze-btn").addEventListener("click", () => {
         const checkIslamic = document.getElementById("check-islamic-toggle").checked;
         const checkFinancials = document.getElementById("check-financials-toggle").checked;
@@ -638,6 +1054,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Export & Compare
+    document.getElementById("share-btn").addEventListener("click", exportPortfolioImage);
     document.getElementById("export-excel-btn").addEventListener("click", () => exportResults("excel"));
     document.getElementById("export-pdf-btn").addEventListener("click", () => exportResults("pdf"));
     document.getElementById("export-docx-btn").addEventListener("click", () => exportResults("docx"));

@@ -273,6 +273,43 @@ async def suggest_tickers(q: str = ""):
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# AI WIZARD & NEWS ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════
+
+class WizardRequest(BaseModel):
+    prompt: str
+    api_key: str
+    model: str = "gemini-2.5-flash"
+
+class NewsRequest(BaseModel):
+    tickers: List[str]
+    api_key: Optional[str] = None
+    model: str = "gemini-2.5-flash"
+
+@app.post("/api/wizard")
+async def wizard_api(request: WizardRequest):
+    """Metinsel komuttan portföy üretir."""
+    if not request.api_key:
+        raise HTTPException(status_code=400, detail="API key is required for AI Wizard")
+    try:
+        from ai_agent import generate_wizard_portfolio
+        portfolio = generate_wizard_portfolio(request.prompt, request.api_key, request.model)
+        return {"portfolio": portfolio}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/news")
+async def news_api(request: NewsRequest):
+    """Ticker listesi için önemli haberleri çeker ve AI ile filtreler."""
+    if not request.tickers: return {"news": []}
+    try:
+        from news_fetcher import fetch_and_filter_news
+        data = fetch_and_filter_news(request.tickers, request.api_key, request.model)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ══════════════════════════════════════════════════════════════════════════
 # EXPORT ENDPOINTS
 # ══════════════════════════════════════════════════════════════════════════
 

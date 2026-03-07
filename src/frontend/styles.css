@@ -797,6 +797,104 @@ body {
     background: rgba(14, 165, 233, 0.05);
 }
 
+/* ── Hero Cards ─────────────────────── */
+.hero-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.hero-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background-image: var(--gradient-card);
+    transition: all 0.3s;
+}
+
+.hero-card:hover {
+    border-color: rgba(14, 165, 233, 0.2);
+    box-shadow: 0 4px 24px rgba(14, 165, 233, 0.08);
+    transform: translateY(-2px);
+}
+
+.hero-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(14, 165, 233, 0.08);
+    color: var(--primary);
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+}
+
+.hero-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.hero-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.hero-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+/* ── Heatmap ────────────────────────── */
+.heatmap-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+    height: 200px;
+}
+
+.heatmap-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: 600;
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    overflow: hidden;
+    transition: transform 0.2s, filter 0.2s;
+    cursor: default;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.heatmap-cell:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+    z-index: 10;
+}
+
+.hm-ticker {
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+.hm-val {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
 /* ── Summary Table ──────────────────── */
 .summary-table-wrap {
     margin-bottom: 1.5rem;

@@ -87,3 +87,39 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
         if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
             return "⚠️ **Kota Sınırı Aşıldı (Kullanım Limiti)**<br>Seçtiğiniz Gemini modelinin ücretsiz sürüm kotası dolmuştur. Lütfen 1-2 dakika bekleyip tekrar deneyin veya ayarlar menüsünden `gemini-2.5-flash` modeline geçiş yapın."
         return f"Gemini Yanıt Hatası: {error_msg}"
+
+
+import json
+
+def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = "gemini-2.5-flash") -> list:
+    """Kullanıcının metin girişini analiz edip ticker ve ağırlık öneren JSON döndürür."""
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key)
+    
+    sys_prompt = f"""
+    Sen US ve TR piyasalarına hakim profesyonel bir nicel yatırım yöneticisisin. 
+    Kullanıcının aşağıda belirttiği profile, risk algısına veya temaya uygun olarak, BIST (TR) veya ABD (US) borsalarından en mantıklı 3 ile 8 arası hisse veya fon (ETF/TEFAS) barındıran bir portföy öner.
+    
+    Kullanıcı talebi: "{prompt_text}"
+    
+    DİKKAT: YALNIZCA geçerli bir JSON array döndür. Yorum, giriş veya markdown backtick (```json) KULLANMA.
+    Format Örneği:
+    [
+        {{"ticker": "AAPL", "weight": 40.0, "reason": "Güçlü bilanço ve nakit akışı"}},
+        {{"ticker": "THYAO", "weight": 30.0, "reason": "Sektör lideri ve istikrarlı büyüme"}}
+    ]
+    Ağırlıklar (weight) toplamda her zaman tam 100 olmalıdır.
+    """
+    
+    try:
+        response = llm.invoke(sys_prompt)
+        content = str(response.content).strip()
+        
+        # Temizle (markdown backticks bazen sızabiliyor)
+        if content.startswith("```json"): content = content[7:]
+        elif content.startswith("```"): content = content[3:]
+        if content.endswith("```"): content = content[:-3]
+        
+        data = json.loads(content.strip())
+        return data
+    except Exception as e:
+        raise ValueError(f"AI yanıtı çözümlenemedi veya kota aşıldı: {str(e)}")

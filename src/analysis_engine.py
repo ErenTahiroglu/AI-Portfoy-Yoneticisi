@@ -479,6 +479,14 @@ def compute_portfolio_extras(results: List[dict]) -> dict:
                         "tickers": list(corr.columns),
                         "matrix": [[round(v, 3) for v in row] for row in corr.values.tolist()]
                     }
+                    
+                    # ── Portföy Optimizasyonu (Markowitz) ──
+                    try:
+                        from optimization_engine import optimize_portfolio
+                        opt_weights = optimize_portfolio(df)
+                        extras["optimized_weights"] = opt_weights
+                    except Exception as opt_err:
+                        logger.debug(f"Optimization failed: {opt_err}")
     except Exception as e:
         logger.debug(f"Correlation computation failed: {e}")
     
