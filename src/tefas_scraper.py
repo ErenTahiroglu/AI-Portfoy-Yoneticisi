@@ -62,7 +62,7 @@ class TefasScraper:
             logger.info("🌐 Playwright Chromium başlatılıyor (tek seferlik)...")
             self._playwright = await async_playwright().start()
             self._browser = await self._playwright.chromium.launch(
-                headless=True,
+                headless=False,
                 args=["--disable-blink-features=AutomationControlled"]
             )
             self._context = await self._browser.new_context(
@@ -98,6 +98,8 @@ class TefasScraper:
         
         page = await self._context.new_page()
         try:
+            # Navigate to TEFAS to get correct origin/cookies
+            await page.goto('https://www.tefas.gov.tr/', wait_until='commit')
             # Tarayıcı içinden fetch ile API'yi çağır (WAF cookie'leri otomatik gider)
             script = f"""
             async () => {{
@@ -127,6 +129,7 @@ class TefasScraper:
             }}
             """
             json_response = await page.evaluate(script)
+            logger.debug(f"JSON RESP for {fonkod}: {json_response}")
             
             if not json_response or "data" not in json_response:
                 return pd.DataFrame()

@@ -391,6 +391,16 @@ class AnalysisEngine:
             from yahooquery import Ticker
             stock = Ticker(fetcher_ticker)
             profile = stock.asset_profile
+            prices = stock.price
+            
+            # Add Full Name using price dictionary
+            if isinstance(prices, dict) and fetcher_ticker in prices:
+                p_price = prices[fetcher_ticker]
+                if isinstance(p_price, dict):
+                    full_name = p_price.get("longName") or p_price.get("shortName")
+                    if full_name:
+                        result_entry["full_name"] = full_name
+
             if isinstance(profile, dict) and fetcher_ticker in profile:
                 p = profile[fetcher_ticker]
                 if isinstance(p, dict):

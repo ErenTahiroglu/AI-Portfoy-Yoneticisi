@@ -60,8 +60,11 @@ function renderResults(data) {
         const statusText = res.status || "-";
 
         // Summary row
+        const summaryFullName = res.full_name || fin.ad || "";
+        const tickerDisplay = summaryFullName ? `<div style="font-weight:700">${res.ticker}</div><div style="font-size:0.7rem; color:var(--text-muted)">${summaryFullName}</div>` : `<span style="font-weight:700">${res.ticker}</span>`;
+
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td style="font-weight:700">${res.ticker}</td><td><span class="market-badge">${res.market || "?"}</span></td><td>${res.weight || 1}</td><td>${sonFiyat}</td><td>${purRatio}</td><td>${statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "-"}</td><td>${fmtNum(val.pe)}</td><td>${fmtNum(val.pb)}</td><td>${fmtNum(val.beta)}</td>`;
+        tr.innerHTML = `<td>${tickerDisplay}</td><td><span class="market-badge">${res.market || "?"}</span></td><td>${res.weight || 1}</td><td>${sonFiyat}</td><td>${purRatio}</td><td>${statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "-"}</td><td>${fmtNum(val.pe)}</td><td>${fmtNum(val.pb)}</td><td>${fmtNum(val.beta)}</td>`;
         summaryBody.appendChild(tr);
 
         // Card
@@ -134,9 +137,12 @@ function renderResults(data) {
 
         let statusBadge = res.status ? `<span class="${res.status === "Uygun" ? "status-approved" : (res.status === "Uygun Değil" || res.status === "Katılım Fonu Değil" ? "status-rejected" : "")}">${res.status}</span>` : "";
 
+        const fullName = res.full_name || fin.ad || "";
+        const nameBadge = (fullName && fullName !== res.ticker) ? `<span style="font-size:0.85rem; color:var(--text-muted); margin-left:0.5rem; font-weight:normal">${fullName}</span>` : "";
+
         card.innerHTML = `
             <div class="card-header">
-                <div><span class="ticker-name">${res.ticker}</span>${fin.ad && fin.ad !== res.ticker ? `<span style="font-size:0.75rem; color:var(--text-muted); margin-left:0.5rem">${fin.ad}</span>` : ""}</div>
+                <div><span class="ticker-name">${res.ticker}</span>${nameBadge}</div>
                 <div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${res.market || "?"}</span>${sectorBadge}${statusBadge}</div>
             </div>
             ${fundHTML}${errHTML}
