@@ -35,7 +35,7 @@ def run_server(port):
 
 
 if __name__ == '__main__':
-    print("Starting AI Islamic Portfolio Manager API Background Daemon...")
+    print("Starting Portfolio Analysis Platform API...")
 
     # Find a free port (try 8000-8019)
     port = find_free_port()

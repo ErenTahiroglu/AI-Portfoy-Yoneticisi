@@ -167,7 +167,7 @@ def create_pdf(report_text):
 def create_docx(report_text):
     """Word formatı — emojiler ve Türkçe harfler tam korunur."""
     doc = docx.Document()
-    doc.add_heading('AI İslami Portföy Yöneticisi Raporu', 0)
+    doc.add_heading('Portföy Analiz Raporu', 0)
     for line in report_text.split('\n'):
         if line.startswith('## '):
             doc.add_heading(line.replace('##', '').strip(), level=2)

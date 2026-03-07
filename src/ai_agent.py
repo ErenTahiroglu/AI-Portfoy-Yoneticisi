@@ -1,4 +1,3 @@
-import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US"):

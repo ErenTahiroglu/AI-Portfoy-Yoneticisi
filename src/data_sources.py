@@ -26,15 +26,17 @@ except ImportError:
 # SSL BYPASS — tüm proje için tek noktadan yönetim
 # ══════════════════════════════════════════════════════════════════════════════
 import os, ssl, warnings, urllib3
+from config import settings
 
-os.environ["CURL_CA_BUNDLE"]     = ""
-os.environ["REQUESTS_CA_BUNDLE"] = ""
-os.environ["SSL_CERT_FILE"]      = ""
-os.environ["PYTHONHTTPSVERIFY"]  = "0"
-
-warnings.filterwarnings("ignore")
-urllib3.disable_warnings()
-ssl._create_default_https_context = ssl._create_unverified_context
+if not settings.SSL_VERIFY:
+    os.environ["CURL_CA_BUNDLE"]     = ""
+    os.environ["REQUESTS_CA_BUNDLE"] = ""
+    os.environ["SSL_CERT_FILE"]      = ""
+    os.environ["PYTHONHTTPSVERIFY"]  = "0"
+    
+    warnings.filterwarnings("ignore")
+    urllib3.disable_warnings()
+    ssl._create_default_https_context = ssl._create_unverified_context
 
 try:
     import certifi
@@ -63,7 +65,8 @@ except ImportError:
     pass
 
 # ── API Anahtarları ───────────────────────────────────────────────────────
-AV_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
+from config import settings
+AV_KEY = settings.ALPHA_VANTAGE_KEY or os.environ.get("ALPHA_VANTAGE_KEY", "")
 
 # ── Sabitler (paylaşılan) ─────────────────────────────────────────────────
 ANALIZ_YIL_SAYI     = 5

@@ -53,5 +53,8 @@ playwright-browsers/
 # Gemini Agent artifacts
 .gemini/
 
+# Deployment
+.vercel/
+
 # Misc
 *.vbs

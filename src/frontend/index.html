@@ -4,237 +4,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI İslami Portföy Yöneticisi</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Portföy Analiz Platformu — AI Destekli</title>
+    <meta name="description"
+        content="Hisselerinizi ve fonlarınızı yapay zeka ile saniyeler içinde derinlemesine analiz edin.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="styles.css?v=4.1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
-    <div class="app-container">
-        <!-- Sidebar / Settings -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="fa-solid fa-mosque"></i>
-                <h2>Portföy Yöneticisi</h2>
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- MOBILE MENU BUTTON -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+            <span class="logo-text">Portföy <span class="logo-accent">Analiz</span></span>
+        </div>
+
+        <div class="sidebar-section">
+            <h3 class="section-title"><i class="fas fa-sliders-h"></i> <span data-i18n="sidebar.settings">ANALİZ
+                    AYARLARI</span></h3>
+
+            <label class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-label" data-i18n="sidebar.compliance">Uygunluk Taraması</span>
+                    <span class="toggle-desc" data-i18n="sidebar.compliance.desc">İslami uygunluk analizi</span>
+                </div>
+                <input type="checkbox" id="check-islamic-toggle" class="toggle-input">
+                <span class="toggle-slider"></span>
+            </label>
+
+            <label class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-label" data-i18n="sidebar.financial">Finansal Analiz</span>
+                    <span class="toggle-desc" data-i18n="sidebar.financial.desc">Getiri & performans</span>
+                </div>
+                <input type="checkbox" id="check-financials-toggle" class="toggle-input" checked>
+                <span class="toggle-slider"></span>
+            </label>
+
+            <label class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-label" data-i18n="sidebar.ai">AI Yorumları</span>
+                    <span class="toggle-desc" data-i18n="sidebar.ai.desc">Gemini ile akıllı analiz</span>
+                </div>
+                <input type="checkbox" id="use-ai-toggle" class="toggle-input" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <!-- AI Settings (conditional) -->
+        <div class="sidebar-section" id="ai-settings">
+            <div class="input-group">
+                <label><i class="fas fa-key"></i> <span data-i18n="sidebar.apiKey">Gemini API Anahtarı</span></label>
+                <input type="password" id="api-key" placeholder="API Key girin...">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-satellite-dish"></i> <span data-i18n="sidebar.avKey">Alpha Vantage API</span>
+                    <span class="badge-optional">●</span></label>
+                <input type="password" id="av-api-key" placeholder="Opsiyonel...">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-globe"></i> <span data-i18n="sidebar.model">Model Seçimi</span></label>
+                <select id="model-select">
+                    <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Önerilen)</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+                </select>
+            </div>
+            <p class="ai-note" data-i18n="sidebar.aiNote">⚠ Pro modeller için faturalandırma açık olmalıdır.</p>
+        </div>
+
+        <!-- Watchlist -->
+        <div class="sidebar-section">
+            <h3 class="section-title"><i class="fas fa-bookmark"></i> <span data-i18n="sidebar.watchlist">KAYITLI
+                    PORTFÖYLER</span></h3>
+            <div id="watchlist-container"></div>
+            <button class="btn-secondary" id="save-portfolio-btn">
+                <i class="fas fa-plus-circle"></i> <span data-i18n="sidebar.savePortfolio">Portföy Kaydet</span>
+            </button>
+        </div>
+
+        <!-- Quick Start -->
+        <div class="sidebar-section info-card">
+            <h4 data-i18n="sidebar.quickStart">⚡ Hızlı Başlangıç</h4>
+            <p data-i18n="sidebar.quickStartDesc">ABD (NYSE/NASDAQ) ve Türkiye (BIST/TEFAS) hisselerini & fonlarını aynı
+                anda analiz edebilirsiniz.</p>
+            <div class="market-badges">
+                <span class="market-badge">🇺🇸 ABD</span>
+                <span class="market-badge">🇹🇷 BIST</span>
+                <span class="market-badge">📊 TEFAS</span>
+                <span class="market-badge">🤖 AI</span>
+            </div>
+        </div>
+
+        <!-- Theme & Language toggles at bottom -->
+        <div class="sidebar-footer">
+            <button class="footer-btn" id="theme-toggle-btn" title="Tema Değiştir">
+                <i class="fas fa-moon" id="theme-icon"></i> <span data-i18n="theme.toggle">Tema</span>
+            </button>
+            <button class="footer-btn" id="lang-toggle-btn" onclick="toggleLanguage()">
+                <i class="fas fa-language"></i> <span>EN</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="top-bar">
+            <span class="top-badge" data-i18n="header.badge">AI Destekli Analiz</span>
+        </div>
+
+        <h1 class="main-title" data-i18n="header.title">Portföy Analiz Platformu</h1>
+        <p class="main-subtitle" data-i18n="header.subtitle">Hisselerinizi ve fonlarınızı yapay zeka ile saniyeler
+            içinde derinlemesine analiz edin.</p>
+
+        <!-- INPUT AREA -->
+        <div class="input-area">
+            <!-- Ticker Input -->
+            <div class="input-card" id="ticker-card">
+                <h3><i class="fas fa-globe-americas"></i> <span data-i18n="input.tickers">Hisse Sembolleri</span></h3>
+                <div style="position:relative">
+                    <textarea id="ticker-input" rows="4" data-i18n="input.tickerPlaceholder"
+                        placeholder="Örnek: AAPL, MSFT, TSLA veya THYAO, AKB, KCHOL..."></textarea>
+                    <div class="autocomplete-dropdown hidden" id="autocomplete-dropdown"></div>
+                </div>
+                <p class="input-helper"><span data-i18n="input.tickerHelper">Virgülle veya boşlukla ayırarak
+                        girebilirsiniz.</span> <strong data-i18n="input.tickerHelperBold">ABD ve Türkiye (BIST/TEFAS)
+                        hisse/fonları aynı anda analiz edilebilir.</strong></p>
             </div>
 
-            <div class="settings-panel">
-                <h3><i class="fa-solid fa-gear"></i> Ayarlar</h3>
+            <div class="input-divider" data-i18n="input.or">VEYA</div>
 
-                <div class="setting-item">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="check-islamic-toggle" checked>
-                        <span class="slider round"></span>
-                    </label>
-                    <span style="font-weight: 500; color: #4ade80;">İslami Uygunluk Analizi</span>
+            <!-- File Upload -->
+            <div class="input-card" id="file-card">
+                <h3><i class="fas fa-file-alt"></i> <span data-i18n="input.file">Dosya Yükle</span></h3>
+                <p class="file-formats" data-i18n="input.fileFormats">Desteklenen formatlar: .txt, .csv, .xlsx, .docx
+                </p>
+                <div class="file-drop-area" id="file-drop-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p><span data-i18n="input.fileDrop">Sürükle bırak veya</span> <strong
+                            data-i18n="input.fileBrowse">göz at</strong></p>
                 </div>
-
-                <div class="setting-item">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="check-financials-toggle" checked>
-                        <span class="slider round"></span>
-                    </label>
-                    <span style="font-weight: 500; color: #60a5fa;">Finansal (Getiri) Analiz</span>
-                </div>
-
-                <div class="setting-item">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="use-ai-toggle" checked>
-                        <span class="slider round"></span>
-                    </label>
-                    <span>AI Yorumlarını Aç (Gemini)</span>
-                </div>
-
-                <div class="ai-settings" id="ai-settings-panel">
-                    <div class="input-group">
-                        <label for="api-key">Gemini API Anahtarınız</label>
-                        <input type="password" id="api-key" placeholder="API Key girin...">
-                    </div>
-
-                    <div class="input-group">
-                        <label for="av-api-key">Alpha Vantage API Anahtarınız <i class="fa-solid fa-circle-question"
-                                title="ABD hisseleri analizi için opsiyonel (ikincil kaynak). FRED/Yahoo'dan veri çekilemezse kullanılır."
-                                style="font-size: 0.8em; color: rgba(255,255,255,0.5);"></i></label>
-                        <input type="password" id="av-api-key" placeholder="Opsiyonel AV API Key...">
-                    </div>
-
-                    <div class="input-group">
-                        <label for="ai-model"
-                            title="Ücretsiz/Ücretli modellere göre hız limitleri (Rate Limit) uygulanır.">Gemini Model
-                            Sürümü <i class="fa-solid fa-circle-question"
-                                style="font-size: 0.8em; color: rgba(255,255,255,0.5);"></i></label>
-                        <select id="ai-model">
-                            <optgroup label="✅ Ücretsiz (Free Tier) Kullanılabilir">
-                                <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Önerilen)</option>
-                                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
-                                <option value="gemini-3-flash">Gemini 3 Flash</option>
-                            </optgroup>
-                            <optgroup label="💰 Ücretli (Gelişmiş API / Billing Gerekir)">
-                                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                                <option value="gemini-3-pro">Gemini 3 Pro</option>
-                                <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
-                            </optgroup>
-                        </select>
-                        <p style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 5px;">
-                            <i class="fa-solid fa-triangle-exclamation" style="color: #fbbf24;"></i> Pro serisi için
-                            <b>Faturalandırma</b> açık olmalıdır. Yoksa "429: Rate Limit" hatası alırsınız.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="info-card">
-                <i class="fa-solid fa-circle-info"></i>
-                <p>AAOIFI standartlarına göre <b>Faiz Geliri (&lt;%5)</b> ve <b>Borçluluk Oranı (&lt;%30)</b> analizleri
-                    otonom olarak yapılır.</p>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header>
-                <h1>Otonom AI İslami Portföy Yöneticisi</h1>
-                <p class="subtitle">Hisselerinizi ve Fonlarınızı İslami Finans Kriterlerine Göre Saniyeler İçinde Analiz
-                    Edin</p>
-            </header>
-
-            <section class="input-section">
-                <div class="input-card text-input-card">
-                    <h3><i class="fa-solid fa-keyboard"></i> Hisse Sembolleri</h3>
-
-                    <textarea id="tickers-input" placeholder="Örnek: AAPL, MSFT, TSLA veya THYAO, AKB, KCHOL..."
-                        rows="4"></textarea>
-                    <p class="hint">Virgülle veya boşlukla ayırarak girebilirsiniz. <strong>ABD ve Türkiye (BIST/TEFAS)
-                            hisse/fonları aynı anda analiz edilebilir.</strong></p>
-                </div>
-
-                <div class="input-divider">
-                    <span>VEYA</span>
-                </div>
-
-                <div class="input-card file-upload-card">
-                    <h3><i class="fa-solid fa-file-arrow-up"></i> Dosya Yükle</h3>
-                    <p>Desteklenen formatlar: .txt, .csv, .xlsx, .docx</p>
-                    <div class="file-drop-area" id="file-drop-area">
-                        <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
-                        <span class="file-message">Sürükle bırak veya <b>göz at</b></span>
-                        <input class="file-input" type="file" id="portfolio-file" accept=".txt,.csv,.xlsx,.xls,.docx">
-                    </div>
-                    <div id="file-name-display" class="file-name-display"></div>
-                </div>
-            </section>
-
-            <div class="action-section">
-                <button id="analyze-btn" class="primary-btn">
-                    <i class="fa-solid fa-rocket"></i> Portföyü Analiz Et
-                </button>
-            </div>
-
-            <!-- Loader -->
-            <div id="loader-container" class="loader-container hidden">
-                <div class="spinner"></div>
-                <p id="loader-text">Analiz ediliyor, lütfen bekleyin...</p>
-            </div>
-
-            <!-- Results Section -->
-            <section id="results-section" class="results-section hidden">
-                <div class="results-header">
-                    <h2><i class="fa-solid fa-chart-pie"></i> Analiz Sonuçları</h2>
-                    <div class="export-actions">
-                        <button class="icon-btn" title="Excel Olarak İndir"><i
-                                class="fa-solid fa-file-excel"></i></button>
-                        <button class="icon-btn" title="PDF Olarak İndir"><i class="fa-solid fa-file-pdf"></i></button>
-                        <button class="icon-btn" title="Word Olarak İndir"><i
-                                class="fa-solid fa-file-word"></i></button>
-                    </div>
-                </div>
-
-                <div id="results-container" class="results-grid">
-                    <!-- Results will be injected here via JS -->
-                </div>
-
-                <div class="summary-table-container">
-                    <h3>Genel Portföy Özeti</h3>
-                    <table class="summary-table" id="summary-table">
-                        <thead>
-                            <tr>
-                                <th>Hisse/Fon</th>
-                                <th>Arındırma Oranı</th>
-                                <th>Borçluluk Oranı</th>
-                                <th>Hüküm</th>
-                                <th>5Y Getiri (Reel)</th>
-                                <th>Son Yıl Temettü</th>
-                            </tr>
-                        </thead>
-                        <tbody id="summary-table-body">
-                            <!-- Table rows injected via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Template for a result card -->
-    <template id="result-card-template">
-        <div class="result-card">
-            <div class="card-header">
-                <h3 class="ticker-name">AAPL</h3>
-                <span class="status-badge status-approved">Uygun</span>
-            </div>
-
-            <div class="metrics-grid islamic-metrics-grid">
-                <div class="metric">
-                    <span class="metric-label">Arındırma Oranı</span>
-                    <span class="metric-value pur-ratio">%1.20</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Borçluluk Oranı</span>
-                    <span class="metric-value debt-ratio">%15.40</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Faiz Geliri</span>
-                    <span class="metric-value interest-val">$1,200,000</span>
-                </div>
-                <div class="metric type-badge">
-                    <span class="metric-label">Tip</span>
-                    <span class="metric-value is-etf">Hisse</span>
-                </div>
-            </div>
-
-            <div class="metrics-grid financial-metrics-grid"
-                style="display:none; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                <div class="metric">
-                    <span class="metric-label" style="color:#60a5fa;">5Y Reel Getiri</span>
-                    <span class="metric-value fin-5y-real">--</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label" style="color:#60a5fa;">3Y Reel Getiri</span>
-                    <span class="metric-value fin-3y-real">--</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label" style="color:#60a5fa;">Son Yıl Temettü</span>
-                    <span class="metric-value fin-div">--</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label" style="color:#60a5fa;">Finansal Uyarı</span>
-                    <span class="metric-value fin-status" style="font-size: 0.8rem;">--</span>
-                </div>
-            </div>
-
-            <div class="ai-comment-section">
-                <h4><i class="fa-solid fa-robot"></i> AI Yorumu</h4>
-                <div class="ai-content markdown-body">
-                    <!-- AI text injected here -->
+                <input type="file" id="file-input" accept=".txt,.csv,.xlsx,.xls,.docx" hidden>
+                <div class="file-name-display hidden" id="file-name-display">
+                    <span id="selected-file-name"></span>
+                    <button id="remove-file-btn"><i class="fas fa-times"></i></button>
                 </div>
             </div>
         </div>
-    </template>
 
-    <!-- Marked.js for markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <!-- ANALYZE BUTTON -->
+        <div style="width: 100%; margin-top: 1rem;">
+            <button class="btn-primary" id="analyze-btn">
+                <i class="fas fa-rocket"></i> <span data-i18n="btn.analyze">Portföyü Analiz Et</span>
+            </button>
+        </div>
+
+        <!-- LOADER -->
+        <div class="loader hidden" id="loader">
+            <div class="spinner"></div>
+            <p data-i18n="loader.text">Analiz ediliyor...</p>
+        </div>
+
+        <!-- PROGRESS BAR -->
+        <div class="progress-container hidden" id="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p class="progress-text" id="progress-text" data-i18n="progress.preparing">Hazırlanıyor...</p>
+        </div>
+
+        <!-- RESULTS SECTION -->
+        <section id="results" class="hidden">
+            <!-- Results toolbar -->
+            <div class="results-toolbar">
+                <h2 data-i18n="results.title"><i class="fas fa-chart-pie"></i> Analiz Sonuçları</h2>
+                <div class="toolbar-actions">
+                    <button class="btn-icon" id="compare-btn" title="Karşılaştır"><i class="fas fa-columns"></i> <span
+                            data-i18n="btn.compare">Karşılaştır</span></button>
+                    <button class="btn-icon" id="export-excel-btn" title="Excel"><i
+                            class="fas fa-file-excel"></i></button>
+                    <button class="btn-icon" id="export-pdf-btn" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                    <button class="btn-icon" id="export-docx-btn" title="Word"><i class="fas fa-file-word"></i></button>
+                </div>
+            </div>
+
+            <!-- Summary Table -->
+            <div class="summary-table-wrap">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h3 data-i18n="results.summary" style="margin-bottom:0;"><i class="fas fa-table"></i> Portföy Özeti
+                    </h3>
+                    <div id="portfolio-score-badge" class="score-badge hidden"
+                        style="background:var(--success); color:white; padding:0.4rem 0.8rem; border-radius:0.5rem; font-weight:600; font-size:0.9rem;">
+                        <span data-i18n="results.weightedReturn">Ağırlıklı Getiri (5Y)</span>: %<span
+                            id="weighted-return-val">0</span>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="th.ticker">Hisse / Fon</th>
+                                <th data-i18n="th.market">Pazar</th>
+                                <th data-i18n="th.weight">Ağırlık</th>
+                                <th data-i18n="th.price">Son Fiyat</th>
+                                <th data-i18n="th.compliance">Uyg. Tarama Oranı</th>
+                                <th data-i18n="th.status">Durum</th>
+                                <th>P/E</th>
+                                <th>P/B</th>
+                                <th>Beta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Portfolio Extras: Sector + Correlation + Monte Carlo -->
+            <div class="extras-grid" id="extras-grid">
+                <!-- Sector Distribution -->
+                <div class="extra-card hidden" id="sector-card">
+                    <h3><i class="fas fa-chart-pie"></i> <span data-i18n="results.sectors">Sektör Dağılımı</span></h3>
+                    <div class="chart-container"><canvas id="sector-chart"></canvas></div>
+                </div>
+                <!-- Correlation Matrix -->
+                <div class="extra-card hidden" id="correlation-card">
+                    <h3><i class="fas fa-th"></i> <span data-i18n="results.correlation">Korelasyon Matrisi</span></h3>
+                    <div id="correlation-content"></div>
+                </div>
+                <!-- Monte Carlo -->
+                <div class="extra-card hidden" id="monte-carlo-card">
+                    <h3><i class="fas fa-random"></i> <span data-i18n="monte.title">Monte Carlo Simülasyonu (1
+                            Yıl)</span></h3>
+                    <div class="chart-container"><canvas id="monte-carlo-chart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Comparison View -->
+            <div class="comparison-view hidden" id="comparison-view">
+                <h3 data-i18n="results.comparison"><i class="fas fa-columns"></i> Karşılaştırma</h3>
+                <div id="comparison-content"></div>
+            </div>
+
+            <!-- Individual Result Cards -->
+            <div class="results-grid" id="results-grid"></div>
+        </section>
+    </main>
+
+    <!-- SCRIPTS -->
+    <script src="i18n.js"></script>
     <script src="app.js"></script>
+    <script>
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => { });
+        }
+    </script>
 </body>
 
 </html>

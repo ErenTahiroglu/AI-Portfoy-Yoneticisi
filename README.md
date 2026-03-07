@@ -92,6 +92,15 @@ playwright install chromium
 python src/desktop_app.py
 ```
 
+### ☁️ İnternette Yayınlama (Vercel)
+Uygulamanın ön yüzünü (frontend) ücretsiz olarak tüm dünyaya açmak için Vercel'i kullanabilirsiniz.
+Aşağıdaki komutları çalıştırarak PWA destekli önyüzünüzü anında yayına alabilirsiniz (FastAPI arkayüzü yerelinizde veya başka bir sunucuda çalışmalıdır):
+```bash
+npm install -g vercel
+cd src/frontend
+vercel
+```
+
 ### 📦 Bağımlılıklar
 
 | Paket | Amaç |
