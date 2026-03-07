@@ -23,6 +23,7 @@ Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerlem
 | Özellik | Açıklama |
 |---------|----------|
 | 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
+| 🛡️ **TEFAS WAF Bypass** | Playwright sanal tarayıcısıyla çalışan kesintisiz ve hatasız yatırım fonu (TP2, ZP8 vb.) veri çekimi |
 | 📊 **Değerleme Metrikleri** | P/E, P/B, Beta, Piyasa Değeri, EPS, ROE, Temüttü, 52 hafta aralığı |
 | 📈 **Reel Getiri** | ABD ($) ve Türkiye (₺) enflasyon verilerinden arındırılmış gerçek getiri |
 | 🎯 **Risk Analizi** | Sharpe Ratio, Maximum Drawdown, yıllık/aylık getiri dağılımı |
@@ -136,6 +137,7 @@ It calculates financial metrics (returns, inflation adjustments, dividends, Shar
 | 🎯 **Risk Analysis** | Sharpe Ratio, Max Drawdown, yearly/monthly return breakdowns |
 | 🧪 **Stress Tests** | Simulate 2008 Crash and Covid-19 drops based on Portfolio Beta |
 | 🏦 **Dividend FI/RE** | Calculate time to reach target passive income with monthly contributions |
+| 🛡️ **TEFAS WAF Bypass** | Playwright headless browser implementation for flawless mutual fund data retrieval |
 | ⚖️ **Optimization** | Markowitz Efficient Frontier optimization for Maximum Sharpe ratio weights |
 | 🪄 **AI Wizard** | Create tailored portfolios instantly from natural language prompts |
 | 📰 **Dynamic News** | AI-filtered impactful market news with Sentiment Analysis (Bullish/Bearish) |

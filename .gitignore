@@ -37,6 +37,7 @@ dist/
 *.log
 error.txt
 traceback.txt
+tefas_log.txt
 
 # Test Scripts and Outputs (geliştirici dosyaları)
 test_*.py
