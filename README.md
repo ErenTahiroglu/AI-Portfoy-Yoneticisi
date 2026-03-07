@@ -41,6 +41,7 @@ Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerlem
 | 📱 **PWA** | Mobilde veya masaüstünde uygulama olarak kur |
 | 📈 **İnteraktif Grafikler** | Chart.js ile yıllık getiri, sektör, Monte Carlo grafikleri |
 | 🔍 **Autocomplete** | 60+ popüler ABD & BIST hissesi için öneri |
+| 🧠 **Modüler Mimari** | Frontend kodları `utils.js`, `api.js`, `charts.js` olarak ayrılmış "puzzle" prensibiyle çalışır |
 | 📋 **Watchlist** | Sık kullandığınız portföyleri kaydedin (localStorage) |
 | 📊 **Karşılaştırma** | Hisseleri yan yana tablo ile kıyaslayın |
 | 📥 **Dışa Aktarım** | Excel, PDF, Word formatlarında rapor indirin |
@@ -141,6 +142,7 @@ It calculates financial metrics (returns, inflation adjustments, dividends, Shar
 | 🤖 **AI Commentary** | Professional fund-manager style analysis via Gemini 2.5 Flash |
 | 📈 **Interactive Charts** | Chart.js bar charts, Heatmaps (Treemaps), correlations and Monte Carlo graphs |
 | 🔍 **Autocomplete** | Suggestions for 60+ popular US & BIST tickers |
+| 🧠 **Modular Architecture** | Frontend decoupled into `utils.js`, `api.js`, `charts.js` for "puzzle-like" clean extensibility |
 | 📋 **Watchlist** | Save frequently-used portfolios (localStorage) |
 | 📊 **Comparison** | Side-by-side metric comparison table |
 | 📥 **Export** | Download reports as Excel, PDF, or Word |
