@@ -583,6 +583,51 @@ body {
     padding-top: 3rem;
 }
 
+/* ── Autocomplete ────────────────────── */
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.autocomplete-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover {
+    background: var(--primary-glow);
+}
+
+.autocomplete-item .ticker-symbol {
+    font-weight: bold;
+    color: var(--primary);
+    min-width: 60px;
+}
+
+.autocomplete-item .ticker-name {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
 /* ── File Upload ─────────────────────── */
 .file-formats {
     font-size: 0.7rem;
