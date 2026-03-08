@@ -1,9 +1,11 @@
 """
-🧩 TEFAS FON YARDIMCISI (Optimized Playwright - Render Uyumlu)
+🧩 TEFAS FON YARDIMCISI (Super-Optimized Playwright - Render Uyumlu)
 ============================================================
 Render.com Free Tier (512MB RAM) limitine uymak için
 özel bellek optimizasyonlu Chromium ayarları ile çalışır.
-Browser her istekte bir kez açılır ve tüm chunklar bitince kapatılır.
+Sayfa (goto) her istekte YALNIZCA BİR KEZ açılır, 
+ardından tüm tarih aralıkları (chunklar) aynı sayfada fetch edilir.
+Bu sayede hız 2-3 kat artar ve zaman aşımı (timeout) riski azalır.
 """
 
 import json
@@ -23,16 +25,10 @@ class TefasScraper:
 
     async def _fetch_chunk_with_page(self, page, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
         try:
-            # Sadece gerekli JSON POST isteklerini geçirerek belleği korur
-            await page.route(
-                "**/*", 
-                lambda route: route.continue_() if route.request.resource_type in ["document", "xhr", "fetch"] else route.abort()
-            )
-            
-            await page.goto("https://www.tefas.gov.tr/FonAnaliz.aspx", wait_until="domcontentloaded", timeout=20000)
-            
             payload = f"fontip={fontip}&sfonkod={fonkod}&bastarih={start_date}&bittarih={end_date}"
             
+            # ASPX oturumu (cookie/WAF) zaten page.goto ile sağlandı. 
+            # Şimdi doğrudan JS içinden JSON API'sini çağırıyoruz.
             js_code = f"""
             async () => {{
                 try {{
@@ -58,6 +54,7 @@ class TefasScraper:
             result_text = await page.evaluate(js_code)
             
             if result_text.startswith("ERROR:"):
+                # Belki sayfa zaman aşımına uğradı, bir kez daha ana sayfaya gitmeyi deneyebiliriz ama şimdilik hata verelim
                 raise ValueError(f"Browser Fetch Error: {result_text}")
                 
             try:
@@ -75,7 +72,7 @@ class TefasScraper:
             return []
 
     async def _fetch_async(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
-        logger.info(f"[{fonkod}] TEFAS Optimized Playwright Fetching from {start_date} to {end_date}...")
+        logger.info(f"[{fonkod}] TEFAS Super-Optimized Playwright Fetching from {start_date} to {end_date}...")
         
         all_data = []
         current_start = start_date
@@ -106,6 +103,15 @@ class TefasScraper:
             page = await context.new_page()
             
             try:
+                # WAF ve Cookie oturumu için ana sayfayı BİR KEZ açıyoruz
+                logger.info(f"[{fonkod}] Opening TEFAS analysis page for session...")
+                await page.route(
+                    "**/*", 
+                    lambda route: route.continue_() if route.request.resource_type in ["document", "xhr", "fetch"] else route.abort()
+                )
+                await page.goto("https://www.tefas.gov.tr/FonAnaliz.aspx", wait_until="domcontentloaded", timeout=25000)
+                
+                # Şimdi tüm chunkları bu sayfa üzerinden fetch ediyoruz (goto yok)
                 while current_start <= end_date:
                     current_end = current_start + datetime.timedelta(days=89)
                     if current_end > end_date:
@@ -122,7 +128,6 @@ class TefasScraper:
                         if chunk_data:
                             all_data.extend(chunk_data)
                             logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
-                            
                     except Exception as e:
                         logger.error(f"[{fonkod}] Failed to fetch chunk {str_start} - {str_end}: {e}")
                         

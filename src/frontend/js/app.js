@@ -158,28 +158,33 @@ function renderResults(data) {
         if (fin.yg && Object.keys(fin.yg).length > 0) setTimeout(() => createReturnChart(chartId, fin), 50);
     });
 
-    // Render portfolio-level extras
-    const scoreBadge = document.getElementById("portfolio-score-badge");
-    const scoreVal = document.getElementById("weighted-return-val");
-    if (lastExtras && lastExtras.weighted_return_5y !== undefined) {
-        scoreVal.textContent = lastExtras.weighted_return_5y;
-        scoreBadge.classList.remove("hidden");
-    } else {
-        scoreBadge.classList.add("hidden");
-    }
+    // Render portfolio-level extras with error guards
+    try {
+        const scoreBadge = document.getElementById("portfolio-score-badge");
+        const scoreVal = document.getElementById("weighted-return-val");
+        if (lastExtras && lastExtras.weighted_return_5y !== undefined) {
+            scoreVal.textContent = lastExtras.weighted_return_5y;
+            scoreBadge.classList.remove("hidden");
+        } else {
+            scoreBadge.classList.add("hidden");
+        }
+    } catch (e) { console.error("Score badge error:", e); }
 
-    renderExtras(lastExtras);
-    updateHeroCards(results, lastExtras);
-    renderHeatmap(results);
-    renderScenarios(results);
-    if (lastExtras && lastExtras.optimized_weights) {
-        renderOptimization(lastExtras.optimized_weights, results);
-    } else {
-        document.getElementById("optimization-wrap").classList.add("hidden");
-    }
+    try { renderExtras(lastExtras); } catch (e) { console.error("Extras error:", e); }
+    try { updateHeroCards(results, lastExtras); } catch (e) { console.error("Hero cards error:", e); }
+    try { renderHeatmap(results); } catch (e) { console.error("Heatmap error:", e); }
+    try { renderScenarios(results); } catch (e) { console.error("Scenarios error:", e); }
+
+    try {
+        if (lastExtras && lastExtras.optimized_weights) {
+            renderOptimization(lastExtras.optimized_weights, results);
+        } else {
+            document.getElementById("optimization-wrap").classList.add("hidden");
+        }
+    } catch (e) { console.error("Optimization error:", e); }
 
     // Load News async so it doesn't block rendering
-    loadNews(results);
+    try { loadNews(results); } catch (e) { console.error("News load error:", e); }
 
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
