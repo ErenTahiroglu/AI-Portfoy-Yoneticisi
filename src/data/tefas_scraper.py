@@ -17,32 +17,44 @@ from playwright.async_api import async_playwright
 nest_asyncio.apply()
 logger = logging.getLogger(__name__)
 
-class TefasScraper:
-    def __init__(self):
-        self.url = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo"
-        self._browser = None
-        self._context = None
-        self._playwright = None
+# Global state to prevent OOM on Render
+_global_playwright = None
+_global_browser = None
+_global_browser_lock = asyncio.Lock()
 
-    async def _init_browser(self):
-        try:
-            self._playwright = await async_playwright().start()
-            self._browser = await self._playwright.chromium.launch(
+async def get_global_browser():
+    global _global_playwright, _global_browser
+    async with _global_browser_lock:
+        if not _global_browser:
+            if not _global_playwright:
+                _global_playwright = await async_playwright().start()
+            _global_browser = await _global_playwright.chromium.launch(
                 headless=True,
                 args=[
                     '--disable-gpu',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled'
+                    '--disable-blink-features=AutomationControlled',
+                    '--single-process'
                 ]
             )
-            self._context = await self._browser.new_context(
+    return _global_browser
+
+class TefasScraper:
+    def __init__(self):
+        self.url = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo"
+        self._context = None
+
+    async def _init_browser(self):
+        try:
+            browser = await get_global_browser()
+            self._context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={'width': 1280, 'height': 720}
             )
         except Exception as e:
-            logger.error(f"Browser başlatılamadı: {e}")
+            logger.error(f"Context başlatılamadı: {e}")
             raise
 
     async def _fetch_chunk_with_browser(self, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
@@ -155,18 +167,13 @@ class TefasScraper:
         return df[["Close"]]
 
     async def close_async(self):
-        if self._browser:
+        # Yalnızca context'i kapatıyoruz, global browser açık kalıyor.
+        if self._context:
             try:
-                await self._browser.close()
+                await self._context.close()
             except:
                 pass
-            self._browser = None
-        if self._playwright:
-            try:
-                await self._playwright.stop()
-            except:
-                pass
-            self._playwright = None
+            self._context = None
 
     def fetch_sync(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
         try:
