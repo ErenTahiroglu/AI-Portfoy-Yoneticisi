@@ -43,6 +43,13 @@ tefas_log.txt
 test_*.py
 test_*.json
 find_api.py
+fintables.html
+Full_File_List.txt
+tefas_log.txt
+*.xlsx
+*.csv
+*.docx
+*.pdf
 
 # Platform
 .DS_Store

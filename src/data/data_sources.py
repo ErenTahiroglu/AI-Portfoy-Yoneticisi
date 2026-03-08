@@ -5,7 +5,7 @@ Tüm modüllerin paylaştığı SSL bypass, oturum yönetimi ve
 ortak sabitler bu tek dosyada toplanır.
 
 Diğer modüller buradan import eder:
-    from data_sources import HAS_CURL, CURL_SESSION, AV_KEY, req_lib
+    from src.data.data_sources import HAS_CURL, CURL_SESSION, AV_KEY, req_lib
 """
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -26,7 +26,7 @@ except ImportError:
 # SSL BYPASS — tüm proje için tek noktadan yönetim
 # ══════════════════════════════════════════════════════════════════════════════
 import os, ssl, warnings, urllib3
-from config import settings
+from src.api.config import settings
 
 if not settings.SSL_VERIFY:
     os.environ["CURL_CA_BUNDLE"]     = ""
@@ -65,7 +65,7 @@ except ImportError:
     pass
 
 # ── API Anahtarları ───────────────────────────────────────────────────────
-from config import settings
+from src.api.config import settings
 AV_KEY = settings.ALPHA_VANTAGE_KEY or os.environ.get("ALPHA_VANTAGE_KEY", "")
 
 # ── Sabitler (paylaşılan) ─────────────────────────────────────────────────

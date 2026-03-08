@@ -3,7 +3,7 @@ import asyncio
 import random
 from functools import wraps
 import logging
-from config import settings
+from .config import settings
 
 logger = logging.getLogger(__name__)
 

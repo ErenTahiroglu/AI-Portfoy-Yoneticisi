@@ -24,12 +24,12 @@ from io import StringIO
 from datetime import datetime
 from typing import Dict, Optional
 
-from data_sources import (
+from src.data.data_sources import (
     HAS_CURL, CURL_SESSION, AV_KEY, req_lib,
     US_VARSAYILAN_ENF as VARSAYILAN_ENF,
     ANALIZ_YIL_SAYI, AYLIK_DONEMLER, RETRY_SAYISI, RETRY_BEKLEME, FIYAT_TOLERANS
 )
-from base_analyzer import BaseAnalyzer, get_cached_cpi
+from src.analyzers.base_analyzer import BaseAnalyzer, get_cached_cpi
 
 logger = logging.getLogger(__name__)
 

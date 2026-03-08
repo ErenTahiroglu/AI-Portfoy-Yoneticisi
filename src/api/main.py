@@ -22,8 +22,9 @@ from io import BytesIO
 import os
 
 # ── Modül importları ──────────────────────────────────────────────────────
-from file_processor import extract_tickers_from_text, process_uploaded_file
-from analysis_engine import AnalysisEngine, compute_portfolio_extras
+# ── Modül importları ──────────────────────────────────────────────────────
+from src.utils.file_processor import extract_tickers_from_text, process_uploaded_file
+from src.core.analysis_engine import AnalysisEngine, compute_portfolio_extras
 
 # ── FastAPI uygulaması ────────────────────────────────────────────────────
 app = FastAPI(title="Portföy Analiz Platformu", version="3.0")
@@ -292,7 +293,7 @@ async def wizard_api(request: WizardRequest):
     if not request.api_key:
         raise HTTPException(status_code=400, detail="API key is required for AI Wizard")
     try:
-        from ai_agent import generate_wizard_portfolio
+        from src.core.ai_agent import generate_wizard_portfolio
         portfolio = generate_wizard_portfolio(request.prompt, request.api_key, request.model)
         return {"portfolio": portfolio}
     except Exception as e:
@@ -303,7 +304,7 @@ async def news_api(request: NewsRequest):
     """Ticker listesi için önemli haberleri çeker ve AI ile filtreler."""
     if not request.tickers: return {"news": []}
     try:
-        from news_fetcher import fetch_and_filter_news
+        from src.data.news_fetcher import fetch_and_filter_news
         data = fetch_and_filter_news(request.tickers, request.api_key, request.model)
         return data
     except Exception as e:
@@ -317,7 +318,7 @@ async def news_api(request: NewsRequest):
 async def export_excel(request: ExportRequest):
     """Analiz sonuçlarını Excel dosyası olarak döndürür."""
     import pandas as pd
-    from file_processor import to_excel
+    from src.utils.file_processor import to_excel
     
     rows = _results_to_rows(request.results)
     df = pd.DataFrame(rows)
@@ -332,7 +333,7 @@ async def export_excel(request: ExportRequest):
 @app.post("/api/export/pdf")
 async def export_pdf(request: ExportRequest):
     """Analiz sonuçlarını PDF dosyası olarak döndürür."""
-    from file_processor import create_pdf
+    from src.utils.file_processor import create_pdf
     
     report_text = _results_to_report_text(request.results)
     pdf_bytes = create_pdf(report_text)
@@ -346,7 +347,7 @@ async def export_pdf(request: ExportRequest):
 @app.post("/api/export/docx")
 async def export_docx(request: ExportRequest):
     """Analiz sonuçlarını DOCX dosyası olarak döndürür."""
-    from file_processor import create_docx
+    from src.utils.file_processor import create_docx
     
     report_text = _results_to_report_text(request.results)
     docx_bytes = create_docx(report_text)

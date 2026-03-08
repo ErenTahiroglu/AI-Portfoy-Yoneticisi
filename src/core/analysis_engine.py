@@ -81,14 +81,14 @@ class AnalysisEngine:
         self._init_errors = []
         self._last_av_key = av_api_key
         try:
-            from portfolio_analyzer import HisseAnaliz
+            from .portfolio_analyzer import HisseAnaliz
             self._us_analyzer = HisseAnaliz(av_key=av_api_key)
         except Exception as e:
             import traceback
             logger.error(f"US Analyzer hatası:\n{traceback.format_exc()}")
             self._init_errors.append(f"US Analyzer hatası: {str(e)}")
         try:
-            from bist_analyzer import HisseAnaliz as BistHisseAnaliz
+            from src.analyzers.bist_analyzer import HisseAnaliz as BistHisseAnaliz
             self._tr_analyzer = BistHisseAnaliz()
         except Exception as e:
             import traceback
@@ -106,7 +106,7 @@ class AnalysisEngine:
         Ticker listesi için tam portföy analizi çalıştırır.
         Paralel analiz ile 3-4x hız artışı sağlar.
         """
-        from market_detector import detect_market
+        from src.data.market_detector import detect_market
         
         if check_financials:
             self._init_financial_analyzers(av_api_key)
@@ -167,7 +167,7 @@ class AnalysisEngine:
                         api_key: str,
                         model: str) -> dict:
         """Tek bir ticker için tüm analiz adımlarını çalıştırır."""
-        from market_detector import detect_market
+        from src.data.market_detector import detect_market
         
         # Cache kontrolü (AI hariç)
         ckey = _cache_key(ticker, check_islamic, check_financials)
@@ -219,11 +219,11 @@ class AnalysisEngine:
         data = None
         
         if is_tefas:
-            from market_detector import classify_fund
+            from src.data.market_detector import classify_fund
             data = classify_fund(fetcher_ticker)
         else:
             try:
-                from islamic_analyzer import get_financials
+                from src.analyzers.islamic_analyzer import get_financials
                 data, error = get_financials(fetcher_ticker)
                 if error or data is None:
                     result_entry["islamic_error"] = error or "Uygunluk verisi bulunamadı"
@@ -417,7 +417,7 @@ class AnalysisEngine:
                         api_key, model, check_islamic, check_financials, result_entry):
         """AI yorum üretimi."""
         try:
-            from ai_agent import generate_report
+            from .ai_agent import generate_report
             islamic_dict = data if data is not None else {}
             ai_comment = generate_report(
                 ticker=ticker,
@@ -459,7 +459,7 @@ def compute_portfolio_extras(results: List[dict]) -> dict:
     # ── Korelasyon Matrisi ────────────────────────────────────────────
     try:
         import yfinance as yf
-        from market_detector import detect_market
+        from src.data.market_detector import detect_market
         
         fetcher_tickers = []
         display_tickers = []
@@ -492,7 +492,7 @@ def compute_portfolio_extras(results: List[dict]) -> dict:
                     
                     # ── Portföy Optimizasyonu (Markowitz) ──
                     try:
-                        from optimization_engine import optimize_portfolio
+                        from .optimization_engine import optimize_portfolio
                         opt_weights = optimize_portfolio(df)
                         extras["optimized_weights"] = opt_weights
                     except Exception as opt_err:

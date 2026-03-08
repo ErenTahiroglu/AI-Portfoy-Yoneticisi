@@ -6,11 +6,11 @@ import os
 import socket
 import traceback
 
-# Add the 'src' directory to Python's import path so main.py and other modules can be found
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the project directory to Python's import path so src.* modules can be found
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import uvicorn
-from main import app as fastapi_app
+from src.api.main import app as fastapi_app
 
 
 def find_free_port(start=8000, end=8020):
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     import atexit
     def _cleanup():
         try:
-            from tefas_scraper import TefasScraper
+            from src.data.tefas_scraper import TefasScraper
             TefasScraper().close()
         except Exception:
             pass

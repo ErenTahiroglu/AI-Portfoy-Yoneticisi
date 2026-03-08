@@ -29,14 +29,14 @@ from io import StringIO
 from datetime import datetime
 from typing import Dict, Optional
 
-from data_sources import (
+from src.data.data_sources import (
     HAS_CURL, CURL_SESSION, AV_KEY, req_lib,
     TR_VARSAYILAN_ENF as VARSAYILAN_ENF,
     ANALIZ_YIL_SAYI, AYLIK_DONEMLER, HAFTALIK_DONEMLER,
     RETRY_SAYISI, RETRY_BEKLEME, FIYAT_TOLERANS
 )
-from base_analyzer import BaseAnalyzer, get_cached_cpi, RiskMetrikleri
-from tefas_scraper import get_tefas_data_sync
+from .base_analyzer import BaseAnalyzer, get_cached_cpi, RiskMetrikleri
+from src.data.tefas_scraper import get_tefas_data_sync
 
 logger = logging.getLogger(__name__)
 

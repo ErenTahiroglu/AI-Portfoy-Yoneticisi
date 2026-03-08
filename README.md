@@ -59,25 +59,29 @@ Her dosya tek bir sorumluluğa sahiptir. Birbirinden bağımsız geliştirilebil
 
 ```
 src/
-├── main.py              → FastAPI API katmanı + export/autocomplete
-├── analysis_engine.py   → Orkestratör (paralel + cache + teknik göstergeler + sektör)
-├── market_detector.py   → Pazar algılama (US / TR / TEFAS)
-├── base_analyzer.py     → Ortak hesaplama mantığı (DRY)
-├── portfolio_analyzer.py→ ABD hisse analizi
-├── bist_analyzer.py     → BIST & TEFAS analizi
-├── tefas_scraper.py     → Chunked requests TEFAS WAF bypass
-├── islamic_analyzer.py  → AAOIFI uygunluk denetimi (opsiyonel)
-├── ai_agent.py          → Gemini AI yorum üretimi
-├── data_sources.py      → SSL bypass, logging, sabitler
-├── file_processor.py    → Excel/DOCX/PDF okuma & yazma
-├── desktop_app.py       → Masaüstü başlatıcı
-└── frontend/
-    ├── index.html       → Arayüz yapısı (PWA)
-    ├── styles.css       → Tema (manuel açık/koyu + sistem) + responsive
-    ├── app.js           → Tüm frontend mantığı
-    ├── i18n.js          → Çoklu dil (TR/EN)
-    ├── manifest.json    → PWA manifest
-    └── sw.js            → Service worker
+├── api/
+│   ├── main.py              → FastAPI API katmanı + export/autocomplete
+│   ├── config.py            → Uygulama ayarları & API anahtarları
+│   └── rate_limiter.py      → Retry & limit yönetimi
+├── core/
+│   ├── analysis_engine.py   → Orkestratör (paralel + cache + teknik göstergeler + sektör)
+│   ├── optimization_engine.py → Portföy optimizasyonu (MPT)
+│   ├── ai_agent.py          → Gemini AI yorum üretimi
+│   └── portfolio_analyzer.py → ABD hisse analizi
+├── analyzers/
+│   ├── base_analyzer.py     → Ortak hesaplama mantığı (DRY)
+│   ├── bist_analyzer.py     → BIST hisse analizi
+│   └── islamic_analyzer.py  → AAOIFI uygunluk denetimi (opsiyonel)
+├── data/
+│   ├── data_sources.py      → SSL bypass, logging, sabitler
+│   ├── tefas_scraper.py     → Playwright TEFAS WAF bypass
+│   ├── market_detector.py   → Pazar algılama (US / TR / TEFAS)
+│   └── news_fetcher.py      → AI destekli haber akışı
+├── utils/
+│   ├── file_processor.py    → Excel/DOCX/PDF okuma & yazma
+│   └── report_generator.py  → Rapor şablon yönetimi
+├── desktop_app.py           → Masaüstü başlatıcı (Giriş noktası)
+└── frontend/                → Web arayüzü (HTML/CSS/JS)
 ```
 
 ### 🚀 Nasıl Çalıştırılır
