@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
-def filter_impactful_news(news_list: list, api_key: str, model_name: str = "gemini-2.5-flash") -> list:
+def filter_impactful_news(news_list: list, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> list:
     """Gemini kullanarak haberleri filtreler ve sadece fiyata etki edebilecek en önemli 5 haberi döner."""
     if not api_key:
         return sorted(news_list, key=lambda x: x.get('providerPublishTime', 0), reverse=True)[:5]
@@ -42,6 +42,8 @@ def filter_impactful_news(news_list: list, api_key: str, model_name: str = "gemi
                "reason": "Bu haberin neden önemli olduğunun 1 cümlelik Türkçe özeti"
            }}
         ]
+        
+        Dil talimatı: { "Analyze the news and provide the 'reason' in English. Output JSON only." if lang == "en" else "Sonuçları Türkçe ver." }
         """
         
         response = llm.invoke(prompt)
@@ -65,7 +67,7 @@ def filter_impactful_news(news_list: list, api_key: str, model_name: str = "gemi
             })
         return formatted
 
-def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini-2.5-flash") -> dict:
+def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> dict:
     """Verilen ticker listesi için haberleri çeker ve AI ile filtreler."""
     
     # 1. Haberi çek
@@ -100,5 +102,5 @@ def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini
     all_news.sort(key=lambda x: x.get('providerPublishTime', 0), reverse=True)
     
     # 2. AI ile filtrele (önemlileri seç)
-    filtered = filter_impactful_news(all_news, api_key, model_name)
+    filtered = filter_impactful_news(all_news, api_key, model_name, lang)
     return {"news": filtered}

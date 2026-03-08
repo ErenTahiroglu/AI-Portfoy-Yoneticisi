@@ -73,7 +73,9 @@ function renderResults(data) {
         const chartId = `chart-${idx}`;
 
         if (res.error) {
-            card.innerHTML = `<div class="card-header"><span class="ticker-name">${res.ticker}</span><span class="market-badge">${res.market || "?"}</span></div><p style="color:var(--danger);font-size:0.85rem">${res.error}</p>`;
+            card.innerHTML = `<div class="card-header"><span class="ticker-name">${res.ticker}</span><span class="market-badge">${res.market || "?"}</span></div>
+            <p style="color:var(--danger);font-size:0.85rem;margin-bottom:0.75rem;">${res.error}</p>
+            <button class="btn btn-outline" style="font-size:0.75rem; padding:0.3rem 0.6rem;" onclick="retryAnalysis('${res.ticker}')"><i class="fas fa-redo"></i> Yeniden Dene</button>`;
             grid.appendChild(card);
             return;
         }
@@ -183,6 +185,49 @@ function renderResults(data) {
 }
 
 // ═══════════════════════════════════════
+// RETRY ANALYSIS
+// ═══════════════════════════════════════
+window.retryAnalysis = async function (ticker) {
+    const checkIslamic = document.getElementById("check-islamic-toggle").checked;
+    const checkFinancials = document.getElementById("check-financials-toggle").checked;
+    const useAI = document.getElementById("use-ai-toggle").checked;
+    const apiKey = document.getElementById("api-key").value;
+    const avKey = document.getElementById("av-api-key").value;
+    const model = document.getElementById("model-select").value;
+
+    const payload = {
+        tickers: [ticker],
+        use_ai: useAI,
+        api_key: apiKey,
+        av_api_key: avKey,
+        model: model,
+        check_islamic: checkIslamic,
+        check_financials: checkFinancials,
+        lang: getLang()
+    };
+
+    showToast(`${ticker} analiz ediliyor...`, "info");
+    try {
+        const res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error("Sunucu hatası");
+        const data = await res.json();
+        const newResult = data.results[0];
+
+        const idx = lastResults.findIndex(r => r.ticker === ticker);
+        if (idx !== -1) {
+            lastResults[idx] = newResult;
+        } else {
+            lastResults.push(newResult);
+        }
+
+        renderResults({ results: lastResults, extras: lastExtras });
+        showToast(`${ticker} analizi yenilendi!`, "success");
+    } catch (err) {
+        showToast(`${ticker} hatası: ${err.message}`, "error");
+    }
+}
+
+// ═══════════════════════════════════════
 // DOM READY
 // ═══════════════════════════════════════
 document.addEventListener("DOMContentLoaded", async () => {
@@ -199,6 +244,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const toggleAIVisibility = () => aiSettings.classList.toggle("hidden", !aiToggle.checked);
     aiToggle.addEventListener("change", toggleAIVisibility);
     toggleAIVisibility();
+
+    // Auto-save API keys
+    document.getElementById("api-key").addEventListener("blur", saveApiKeys);
+    document.getElementById("av-api-key").addEventListener("blur", saveApiKeys);
 
     // Mobile menu
     const menuBtn = document.getElementById("mobile-menu-btn");
@@ -235,7 +284,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const text = document.getElementById("ticker-input").value.trim();
         if (!text) { showToast(t("toast.noTickers"), "warning"); return; }
         const tickers = text.split(/[\s,;]+/).filter(t => t.length > 0).map(t => t.toUpperCase());
-        runAnalysis({ tickers, use_ai: useAI, api_key: apiKey, av_api_key: avKey, model, check_islamic: checkIslamic, check_financials: checkFinancials }, "/api/analyze");
+        runAnalysis({ tickers, use_ai: useAI, api_key: apiKey, av_api_key: avKey, model, check_islamic: checkIslamic, check_financials: checkFinancials, lang: getLang() }, "/api/analyze");
     });
 
     // Export & Compare
@@ -251,4 +300,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Autocomplete
     setupAutocomplete();
+
+    // Tabs Navigation
+    const tabBtns = document.querySelectorAll(".tabs-nav .tab-btn");
+    const tabContents = document.querySelectorAll(".input-tabs-container .tab-content");
+    tabBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            tabBtns.forEach(b => {
+                b.classList.remove("active");
+                b.style.borderColor = "var(--glass-border)";
+                b.style.background = "var(--card-bg)";
+                b.style.color = "var(--text-muted)";
+            });
+            tabContents.forEach(c => c.classList.add("hidden"));
+
+            btn.classList.add("active");
+            btn.style.borderColor = "var(--primary)";
+            btn.style.background = "var(--primary-glow)";
+            btn.style.color = "var(--text-main)";
+
+            const targetId = btn.getAttribute("data-target");
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) targetContent.classList.remove("hidden");
+        });
+    });
 });

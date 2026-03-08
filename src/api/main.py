@@ -75,6 +75,7 @@ class AnalysisRequest(BaseModel):
     model: str = "gemini-2.5-flash"
     check_islamic: bool = False
     check_financials: bool = True
+    lang: str = "tr"
 
 class TextAnalysisRequest(BaseModel):
     text: str
@@ -84,6 +85,7 @@ class TextAnalysisRequest(BaseModel):
     model: str = "gemini-2.5-flash"
     check_islamic: bool = False
     check_financials: bool = True
+    lang: str = "tr"
 
 class ExportRequest(BaseModel):
     results: list
@@ -209,7 +211,8 @@ async def analyze_from_file(
     av_api_key: Optional[str] = Form(None),
     model: str = Form("gemini-2.5-flash"),
     check_islamic: bool = Form(False),
-    check_financials: bool = Form(True)
+    check_financials: bool = Form(True),
+    lang: str = Form("tr")
 ):
     """Dosyadan ticker çıkarıp analiz eder."""
     try:
@@ -243,6 +246,7 @@ async def analyze_from_file(
             model=model,
             check_islamic=check_islamic,
             check_financials=check_financials,
+            lang=lang,
         )
         return attach_weights_and_compute_extras(result, weights_map)
     except HTTPException:
@@ -281,11 +285,13 @@ class WizardRequest(BaseModel):
     prompt: str
     api_key: str
     model: str = "gemini-2.5-flash"
+    lang: str = "tr"
 
 class NewsRequest(BaseModel):
     tickers: List[str]
     api_key: Optional[str] = None
     model: str = "gemini-2.5-flash"
+    lang: str = "tr"
 
 @app.post("/api/wizard")
 async def wizard_api(request: WizardRequest):
@@ -294,7 +300,7 @@ async def wizard_api(request: WizardRequest):
         raise HTTPException(status_code=400, detail="API key is required for AI Wizard")
     try:
         from src.core.ai_agent import generate_wizard_portfolio
-        portfolio = generate_wizard_portfolio(request.prompt, request.api_key, request.model)
+        portfolio = generate_wizard_portfolio(request.prompt, request.api_key, request.model, request.lang)
         return {"portfolio": portfolio}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -305,7 +311,7 @@ async def news_api(request: NewsRequest):
     if not request.tickers: return {"news": []}
     try:
         from src.data.news_fetcher import fetch_and_filter_news
-        data = fetch_and_filter_news(request.tickers, request.api_key, request.model)
+        data = fetch_and_filter_news(request.tickers, request.api_key, request.model, request.lang)
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

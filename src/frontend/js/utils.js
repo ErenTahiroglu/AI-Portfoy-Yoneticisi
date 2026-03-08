@@ -185,13 +185,29 @@ async function decryptApiKey(b64) {
 async function saveApiKeys() {
     const gemini = document.getElementById("api-key").value;
     const av = document.getElementById("av-api-key").value;
-    if (gemini) localStorage.setItem("_gk", await encryptApiKey(gemini));
-    if (av) localStorage.setItem("_ak", await encryptApiKey(av));
+    if (gemini) {
+        localStorage.setItem("_gk", await encryptApiKey(gemini));
+        const icon = document.getElementById("api-key-saved-icon");
+        if (icon) { icon.classList.remove("hidden"); setTimeout(() => icon.classList.add("hidden"), 3000); }
+    }
+    if (av) {
+        localStorage.setItem("_ak", await encryptApiKey(av));
+        const icon = document.getElementById("av-key-saved-icon");
+        if (icon) { icon.classList.remove("hidden"); setTimeout(() => icon.classList.add("hidden"), 3000); }
+    }
 }
 
 async function loadApiKeys() {
     const gk = await decryptApiKey(localStorage.getItem("_gk") || "");
     const ak = await decryptApiKey(localStorage.getItem("_ak") || "");
-    if (gk) document.getElementById("api-key").value = gk;
-    if (ak) document.getElementById("av-api-key").value = ak;
+    if (gk) {
+        document.getElementById("api-key").value = gk;
+        const icon = document.getElementById("api-key-saved-icon");
+        if (icon) icon.classList.remove("hidden");
+    }
+    if (ak) {
+        document.getElementById("av-api-key").value = ak;
+        const icon = document.getElementById("av-key-saved-icon");
+        if (icon) icon.classList.remove("hidden");
+    }
 }

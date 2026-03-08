@@ -75,12 +75,22 @@
         <div class="sidebar-section" id="ai-settings">
             <div class="input-group">
                 <label><i class="fas fa-key"></i> <span data-i18n="sidebar.apiKey">Gemini API Anahtarı</span></label>
-                <input type="password" id="api-key" placeholder="API Key girin...">
+                <div style="position:relative; display:flex; align-items:center;">
+                    <input type="password" id="api-key" placeholder="API Key girin..."
+                        style="flex:1; padding-right:30px;">
+                    <i class="fas fa-check-circle hidden" id="api-key-saved-icon"
+                        style="color:var(--success); position:absolute; right:10px; font-size:1.1rem; transition:opacity 0.3s;"></i>
+                </div>
             </div>
             <div class="input-group">
                 <label><i class="fas fa-satellite-dish"></i> <span data-i18n="sidebar.avKey">Alpha Vantage API</span>
                     <span class="badge-optional">●</span></label>
-                <input type="password" id="av-api-key" placeholder="Opsiyonel...">
+                <div style="position:relative; display:flex; align-items:center;">
+                    <input type="password" id="av-api-key" placeholder="Opsiyonel..."
+                        style="flex:1; padding-right:30px;">
+                    <i class="fas fa-check-circle hidden" id="av-key-saved-icon"
+                        style="color:var(--success); position:absolute; right:10px; font-size:1.1rem; transition:opacity 0.3s;"></i>
+                </div>
             </div>
             <div class="input-group">
                 <label><i class="fas fa-globe"></i> <span data-i18n="sidebar.model">Model Seçimi</span></label>
@@ -138,14 +148,32 @@
         <p class="main-subtitle" data-i18n="header.subtitle">Hisselerinizi ve fonlarınızı yapay zeka ile saniyeler
             içinde derinlemesine analiz edin.</p>
 
+        <!-- INPUT TABS NAV -->
+        <div class="tabs-nav" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+            <button class="tab-btn active" data-target="ticker-card"
+                style="padding:0.6rem 1rem; border-radius:8px; border:1px solid var(--primary); background:var(--primary-glow); color:var(--text-main); font-weight:600; cursor:pointer;"><i
+                    class="fas fa-keyboard"></i> <span data-i18n="tab.manual">Manuel Giriş</span></button>
+            <button class="tab-btn" data-target="file-card"
+                style="padding:0.6rem 1rem; border-radius:8px; border:1px solid var(--glass-border); background:var(--card-bg); color:var(--text-muted); font-weight:600; cursor:pointer;"><i
+                    class="fas fa-file-upload"></i> <span data-i18n="tab.file">Dosya Yükle</span></button>
+            <button class="tab-btn" data-target="wizard-card"
+                style="padding:0.6rem 1rem; border-radius:8px; border:1px solid var(--glass-border); background:var(--card-bg); color:var(--text-muted); font-weight:600; cursor:pointer;"><i
+                    class="fas fa-magic"></i> <span data-i18n="tab.wizard">AI Sihirbazı</span></button>
+        </div>
+
         <!-- INPUT AREA -->
-        <div class="input-area">
+        <div class="input-tabs-container"
+            style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:var(--radius); padding:1.5rem;">
+
             <!-- Ticker Input -->
-            <div class="input-card" id="ticker-card">
-                <h3><i class="fas fa-globe-americas"></i> <span data-i18n="input.tickers">Hisse Sembolleri</span></h3>
+            <div class="tab-content active" id="ticker-card">
+                <h3 style="margin-bottom:0.75rem; font-size:0.85rem; font-weight:700;"><i class="fas fa-globe-americas"
+                        style="color:var(--primary)"></i> <span data-i18n="input.tickers">Hisse/ETF Sembolleri</span>
+                </h3>
                 <div style="position:relative">
                     <textarea id="ticker-input" rows="4" data-i18n="input.tickerPlaceholder"
-                        placeholder="Örnek: AAPL, MSFT, TSLA veya THYAO, AKB, KCHOL..."></textarea>
+                        placeholder="Örnek: AAPL, MSFT, TSLA veya THYAO, AKB, KCHOL..."
+                        style="width:100%; padding:0.75rem; background:rgba(14,165,233,0.03); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-family:monospace; resize:vertical;"></textarea>
                     <div class="autocomplete-dropdown hidden" id="autocomplete-dropdown"></div>
                 </div>
                 <p class="input-helper"><span data-i18n="input.tickerHelper">Virgülle veya boşlukla ayırarak
@@ -153,13 +181,13 @@
                         hisse/fonları aynı anda analiz edilebilir.</strong></p>
             </div>
 
-            <div class="input-divider" data-i18n="input.or">VEYA</div>
-
             <!-- File Upload -->
-            <div class="input-card" id="file-card">
-                <h3><i class="fas fa-file-alt"></i> <span data-i18n="input.file">Dosya Yükle</span></h3>
-                <p class="file-formats" data-i18n="input.fileFormats">Desteklenen formatlar: .txt, .csv, .xlsx, .docx
-                </p>
+            <div class="tab-content hidden" id="file-card">
+                <h3 style="margin-bottom:0.75rem; font-size:0.85rem; font-weight:700;"><i class="fas fa-file-alt"
+                        style="color:var(--primary)"></i> <span data-i18n="input.file">Dosya Yükle</span></h3>
+                <p class="file-formats" data-i18n="input.fileFormats"
+                    style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.75rem;">Desteklenen formatlar:
+                    .txt, .csv, .xlsx, .docx</p>
                 <div class="file-drop-area" id="file-drop-area">
                     <i class="fas fa-cloud-upload-alt"></i>
                     <p><span data-i18n="input.fileDrop">Sürükle bırak veya</span> <strong
@@ -168,31 +196,43 @@
                 <input type="file" id="file-input" accept=".txt,.csv,.xlsx,.xls,.docx" hidden>
                 <div class="file-name-display hidden" id="file-name-display">
                     <span id="selected-file-name"></span>
-                    <button id="remove-file-btn"><i class="fas fa-times"></i></button>
+                    <button id="remove-file-btn"
+                        style="background:none;border:none;color:var(--text-muted);cursor:pointer;"><i
+                            class="fas fa-times"></i></button>
                 </div>
             </div>
 
-            <div class="input-divider" data-i18n="input.or" style="grid-column: 1 / -1; padding-top: 0;">VEYA</div>
-
             <!-- AI Wizard -->
-            <div class="input-card" id="wizard-card"
-                style="grid-column: 1 / -1; position:relative; overflow:hidden; border: 1px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(2,132,199,0.05));">
-                <!-- background flare -->
+            <div class="tab-content hidden" id="wizard-card"
+                style="position:relative; overflow:hidden; border-radius:8px; border: 1px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(2,132,199,0.05)); padding:1rem;">
                 <div
                     style="position:absolute; top:-50px; right:-50px; width:150px; height:150px; background:radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%); filter:blur(20px); pointer-events:none;">
                 </div>
 
-                <h3><i class="fas fa-magic" style="color:#a78bfa"></i> AI Portföy Sihirbazı</h3>
+                <h3 style="margin-bottom:0.75rem; font-size:0.85rem; font-weight:700;"><i class="fas fa-magic"
+                        style="color:#a78bfa"></i> AI Portföy Sihirbazı</h3>
                 <textarea id="wizard-input" rows="3" class="input"
                     placeholder="Örnek: 'Temettü verimi yüksek 5 BIST hissesi' veya 'Teknoloji ağırlıklı agresif ABD portföyü'"
-                    style="background:rgba(0,0,0,0.2)"></textarea>
+                    style="width:100%; padding:0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
+
+                <div class="wizard-chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem;">
+                    <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText"
+                        style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Temettü
+                        verimi yüksek 5 BIST hissesi</button>
+                    <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText"
+                        style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Teknoloji
+                        ağırlıklı agresif ABD portföyü</button>
+                    <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText"
+                        style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Enflasyona
+                        karşı koruyan defansif fonlar</button>
+                </div>
 
                 <button class="btn btn-primary" id="btn-run-wizard"
-                    style="width:100%; margin-top:1rem; background:linear-gradient(135deg, #7c3aed, #0284c7); border:none; box-shadow:0 0 15px rgba(124, 58, 237, 0.4);">
+                    style="width:100%; margin-top:1rem; padding:0.85rem; background:linear-gradient(135deg, #7c3aed, #0284c7); border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer; box-shadow:0 0 15px rgba(124, 58, 237, 0.4);">
                     <i class="fas fa-wand-magic-sparkles"></i> Sihirbazı Çalıştır
                 </button>
-                <p class="input-helper" style="margin-top:0.75rem;">Yapay zeka asistanı isteklerinize göre en uygun
-                    portföyü tasarlar.</p>
+                <p class="input-helper" style="margin-top:0.75rem; font-size:0.72rem; color:var(--text-muted);">Yapay
+                    zeka asistanı isteklerinize göre en uygun portföyü tasarlar.</p>
             </div>
         </div>
 

@@ -101,7 +101,8 @@ class AnalysisEngine:
                 av_api_key: str = None,
                 model: str = "gemini-2.5-flash",
                 check_islamic: bool = False,
-                check_financials: bool = True) -> dict:
+                check_financials: bool = True,
+                lang: str = "tr") -> dict:
         """
         Ticker listesi için tam portföy analizi çalıştırır.
         Paralel analiz ile 3-4x hız artışı sağlar.
@@ -126,6 +127,7 @@ class AnalysisEngine:
                     use_ai=use_ai,
                     api_key=api_key,
                     model=model,
+                    lang=lang,
                 )
                 results.append(result)
         else:
@@ -141,6 +143,7 @@ class AnalysisEngine:
                         use_ai=use_ai,
                         api_key=api_key,
                         model=model,
+                        lang=lang,
                     )
                     future_map[future] = ticker
                 
@@ -165,7 +168,8 @@ class AnalysisEngine:
                         check_financials: bool,
                         use_ai: bool,
                         api_key: str,
-                        model: str) -> dict:
+                        model: str,
+                        lang: str) -> dict:
         """Tek bir ticker için tüm analiz adımlarını çalıştırır."""
         from src.data.market_detector import detect_market
         
@@ -206,7 +210,7 @@ class AnalysisEngine:
                 ticker, data, fin_data, market,
                 api_key, model,
                 check_islamic, check_financials,
-                result_entry
+                result_entry, lang
             )
         
         # Cache'e kaydet
@@ -414,7 +418,7 @@ class AnalysisEngine:
             logger.debug(f"Sector check failed for {fetcher_ticker}: {e}")
     
     def _run_ai_comment(self, ticker, data, fin_data, market, 
-                        api_key, model, check_islamic, check_financials, result_entry):
+                        api_key, model, check_islamic, check_financials, result_entry, lang):
         """AI yorum üretimi."""
         try:
             from .ai_agent import generate_report
@@ -427,7 +431,8 @@ class AnalysisEngine:
                 check_islamic=check_islamic,
                 check_financials=check_financials,
                 fin_data=fin_data,
-                market=market
+                market=market,
+                lang=lang
             )
             result_entry["ai_comment"] = ai_comment
         except Exception as e:

@@ -24,8 +24,11 @@ const TRANSLATIONS = {
         "sidebar.noWatchlist": "Henüz kayıtlı portföy yok",
         "sidebar.quickStart": "Hızlı Başlangıç",
         "sidebar.quickStartDesc": "ABD (NYSE/NASDAQ) ve Türkiye (BIST/TEFAS) hisselerini & fonlarını aynı anda analiz edebilirsiniz.",
-        // Input
-        "input.tickers": "Hisse Sembolleri",
+        // Input & Tabs
+        "tab.manual": "Manuel Giriş",
+        "tab.file": "Dosya Yükle",
+        "tab.wizard": "AI Sihirbazı",
+        "input.tickers": "Hisse/ETF Sembolleri",
         "input.tickerPlaceholder": "Örnek: AAPL, MSFT, TSLA veya THYAO, AKB, KCHOL...",
         "input.tickerHelper": "Virgülle veya boşlukla ayırarak girebilirsiniz.",
         "input.tickerHelperBold": "ABD ve Türkiye (BIST/TEFAS) hisse/fonları aynı anda analiz edilebilir.",
@@ -99,7 +102,10 @@ const TRANSLATIONS = {
         "sidebar.noWatchlist": "No saved portfolios",
         "sidebar.quickStart": "Quick Start",
         "sidebar.quickStartDesc": "You can analyze US (NYSE/NASDAQ) and Turkey (BIST/TEFAS) stocks & funds simultaneously.",
-        "input.tickers": "Ticker Symbols",
+        "tab.manual": "Manual Entry",
+        "tab.file": "Upload File",
+        "tab.wizard": "AI Wizard",
+        "input.tickers": "Stock/ETF Symbols",
         "input.tickerPlaceholder": "Example: AAPL, MSFT, TSLA or THYAO, AKB, KCHOL...",
         "input.tickerHelper": "Separate with commas or spaces.",
         "input.tickerHelperBold": "US and Turkey (BIST/TEFAS) tickers can be analyzed together.",
@@ -170,4 +176,9 @@ function setLanguage(lang) {
 
 function toggleLanguage() {
     setLanguage(currentLang === "tr" ? "en" : "tr");
+}
+
+// Get current language helper
+function getLang() {
+    return currentLang;
 }

@@ -19,7 +19,7 @@ async function runWizard() {
         const res = await fetch(`${API_BASE}/api/wizard`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: promptText, api_key: apiKey, model: currModel })
+            body: JSON.stringify({ prompt: promptText, api_key: apiKey, model: currModel, lang: getLang() })
         });
 
         const data = await res.json();
@@ -76,7 +76,7 @@ async function loadNews(results) {
         const res = await fetch(`${API_BASE}/api/news`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tickers: tickers.slice(0, 5), api_key: aKey, model: currModel })
+            body: JSON.stringify({ tickers: tickers.slice(0, 5), api_key: aKey, model: currModel, lang: getLang() })
         });
 
         const data = await res.json();
@@ -170,44 +170,90 @@ async function exportPortfolioImage() {
 // ═══════════════════════════════════════
 async function runAnalysis(payload, endpoint) {
     const btn = document.getElementById("analyze-btn");
-    const loader = document.getElementById("loader");
+    const progressContainer = document.getElementById("progress-container");
+    const progressFill = document.getElementById("progress-fill");
+    const progressText = document.getElementById("progress-text");
     const results = document.getElementById("results");
-    btn.disabled = true; results.classList.add("hidden"); loader.classList.remove("hidden");
+
+    btn.disabled = true; results.classList.add("hidden");
+    document.getElementById("loader").classList.add("hidden");
+    progressContainer.classList.remove("hidden");
+
+    let progress = 0;
+    const pInt = setInterval(() => {
+        progress += Math.random() * 5;
+        if (progress > 95) progress = 95;
+        progressFill.style.width = `${progress}%`;
+        if (progress < 30) progressText.textContent = getLang() === "en" ? "Scanning markets..." : "Piyasalar taranıyor...";
+        else if (progress < 60) progressText.textContent = getLang() === "en" ? "Analyzing financials..." : "Finansal veriler analiz ediliyor...";
+        else if (progress < 90) progressText.textContent = payload.use_ai ? (getLang() === "en" ? "AI is generating report..." : "Yapay Zeka rapor hazırlıyor...") : (getLang() === "en" ? "Processing data..." : "Veriler işleniyor...");
+        else progressText.textContent = getLang() === "en" ? "Finalizing results..." : "Sonuçlar derleniyor...";
+    }, 400);
+
     await saveApiKeys();
     try {
         const res = await fetch(`${API_BASE}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        clearInterval(pInt); progressFill.style.width = "100%"; progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
+        setTimeout(() => progressContainer.classList.add("hidden"), 500);
+
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Sunucu hatası (${res.status})`); }
         const data = await res.json();
-        loader.classList.add("hidden");
         renderResults(data);
         showToast(`${(data.results || []).length} ${t("toast.analysisComplete")}`, "success");
-    } catch (err) { loader.classList.add("hidden"); showToast(err.message, "error"); }
+    } catch (err) {
+        clearInterval(pInt); progressContainer.classList.add("hidden");
+        showToast(err.message, "error");
+    }
     finally { btn.disabled = false; }
 }
 
 async function runFileAnalysis(file) {
     const btn = document.getElementById("analyze-btn");
-    const loader = document.getElementById("loader");
+    const progressContainer = document.getElementById("progress-container");
+    const progressFill = document.getElementById("progress-fill");
+    const progressText = document.getElementById("progress-text");
     const results = document.getElementById("results");
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("use_ai", document.getElementById("use-ai-toggle").checked);
     formData.append("check_islamic", document.getElementById("check-islamic-toggle").checked);
     formData.append("check_financials", document.getElementById("check-financials-toggle").checked);
     formData.append("model", document.getElementById("model-select").value);
+    formData.append("lang", getLang());
     const apiKey = document.getElementById("api-key").value;
     if (apiKey) formData.append("api_key", apiKey);
     const avKey = document.getElementById("av-api-key").value;
     if (avKey) formData.append("av_api_key", avKey);
-    btn.disabled = true; results.classList.add("hidden"); loader.classList.remove("hidden");
+
+    btn.disabled = true; results.classList.add("hidden");
+    document.getElementById("loader").classList.add("hidden");
+    progressContainer.classList.remove("hidden");
+
+    let progress = 0;
+    const pInt = setInterval(() => {
+        progress += Math.random() * 5;
+        if (progress > 95) progress = 95;
+        progressFill.style.width = `${progress}%`;
+        if (progress < 30) progressText.textContent = getLang() === "en" ? "Scanning file..." : "Dosya taranıyor...";
+        else if (progress < 60) progressText.textContent = getLang() === "en" ? "Analyzing financials..." : "Finansal veriler analiz ediliyor...";
+        else if (progress < 90) progressText.textContent = formData.get("use_ai") === "true" ? (getLang() === "en" ? "AI is generating report..." : "Yapay Zeka rapor hazırlıyor...") : (getLang() === "en" ? "Processing data..." : "Veriler işleniyor...");
+        else progressText.textContent = getLang() === "en" ? "Finalizing results..." : "Sonuçlar derleniyor...";
+    }, 400);
+
     await saveApiKeys();
     try {
         const res = await fetch(`${API_BASE}/api/analyze/file`, { method: "POST", body: formData });
+        clearInterval(pInt); progressFill.style.width = "100%"; progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
+        setTimeout(() => progressContainer.classList.add("hidden"), 500);
+
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Sunucu hatası (${res.status})`); }
         const data = await res.json();
-        loader.classList.add("hidden");
         renderResults(data);
         showToast(`${(data.results || []).length} ${t("toast.analysisComplete")}`, "success");
-    } catch (err) { loader.classList.add("hidden"); showToast(err.message, "error"); }
+    } catch (err) {
+        clearInterval(pInt); progressContainer.classList.add("hidden");
+        showToast(err.message, "error");
+    }
     finally { btn.disabled = false; }
 }

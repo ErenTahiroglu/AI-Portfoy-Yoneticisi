@@ -1,6 +1,6 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US"):
+def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr"):
     """Gemini API'sini kullanarak seçili oranlara göre finansal rapor üretir."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key)
 
@@ -61,9 +61,11 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     if len(requirements) == 0:
         return "Gerekli analiz verisi seçilmediği için yorum üretilemedi."
         
+    lang_instruction = "Generate the response entirely in English." if lang == "en" else "Sonuçları daima Türkçe üret."
     prompt = f"""
     Sen teknik ve veriye odaklı konuşan kıdemli bir nicel finansal analistisin.
     Görev: {ticker} {"(ETF/Fon)" if is_etf else "(Hisse)"} sembolü için gereksiz giriş cümleleri KULLANMADAN aşağıdaki özellikleri inceleyip kısa net bir analiz çıkartmak. Piyasası: {"Türk Piyasası (BIST/TEFAS)" if market == "TR" else "ABD Piyasası"}.
+    {lang_instruction}
     
     MEVCUT SIFILTRENMİŞ VERİLER:
     {islamic_context}
@@ -91,7 +93,7 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
 
 import json
 
-def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = "gemini-2.5-flash") -> list:
+def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> list:
     """Kullanıcının metin girişini analiz edip ticker ve ağırlık öneren JSON döndürür."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key)
     
@@ -100,6 +102,8 @@ def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = 
     Kullanıcının aşağıda belirttiği profile, risk algısına veya temaya uygun olarak, BIST (TR) veya ABD (US) borsalarından en mantıklı 3 ile 8 arası hisse veya fon (ETF/TEFAS) barındıran bir portföy öner.
     
     Kullanıcı talebi: "{prompt_text}"
+    
+    Dil talimatı: { "Analyze the user request and respond in English if possible (JSON keys must remain English)." if lang == "en" else "Kullanıcının isteğini yanıtla (JSON keyleri daima İngilizce olsun)." }
     
     DİKKAT: YALNIZCA geçerli bir JSON array döndür. Yorum, giriş veya markdown backtick (```json) KULLANMA.
     Format Örneği:
