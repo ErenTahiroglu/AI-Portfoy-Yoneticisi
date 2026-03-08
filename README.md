@@ -47,6 +47,7 @@ Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerlem
 | 📊 **Karşılaştırma** | Hisseleri yan yana tablo ile kıyaslayın |
 | 📥 **Dışa Aktarım** | Excel, PDF, Word formatlarında rapor indirin |
 | ☪️ **İslami Analiz** | Opsiyonel AAOIFI uygunluk taraması (varsayılan kapalı) |
+| 💎 **Premium UX** | Glassmorphism tasarımı, Skeleton Loading, anlık hisse önizleme modalları ve akıcı animasyonlar |
 | ⚡ **Paralel Analiz** | Çoklu hisseler ThreadPoolExecutor ile 3-5x hızlı |
 | 💾 **Akıllı Cache** | Aynı hisse 5 dakika içinde tekrar sorgulanmaz |
 | 🔒 **API Şifreleme** | API anahtarları AES-GCM ile şifreli saklanır |

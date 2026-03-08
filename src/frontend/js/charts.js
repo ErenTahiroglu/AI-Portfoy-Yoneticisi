@@ -21,12 +21,12 @@ function createReturnChart(canvasId, fin) {
     const { grid, text } = getChartColors();
     destroyChart(canvasId);
     chartInstances[canvasId] = new Chart(canvas, {
-        type: "bar",
+        type: "line",
         data: {
             labels: years,
             datasets: [
-                { label: "Nominal (%)", data: years.map(y => fin.yg[y]), backgroundColor: years.map(y => fin.yg[y] >= 0 ? "rgba(99,102,241,0.7)" : "rgba(239,68,68,0.6)"), borderRadius: 4, barPercentage: 0.7 },
-                { label: "Reel (%)", data: years.map(y => fin.yr[y]), backgroundColor: years.map(y => fin.yr[y] >= 0 ? "rgba(56,189,248,0.6)" : "rgba(245,158,11,0.6)"), borderRadius: 4, barPercentage: 0.7 },
+                { type: "bar", label: "Nominal (%)", data: years.map(y => fin.yg[y]), backgroundColor: years.map(y => fin.yg[y] >= 0 ? "rgba(99,102,241,0.7)" : "rgba(239,68,68,0.6)"), borderRadius: 4, barPercentage: 0.7 },
+                { type: "line", label: "Reel (%)", data: years.map(y => fin.yr[y]), backgroundColor: "rgba(56,189,248,0.2)", borderColor: "rgba(56,189,248,1)", borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3, pointHoverRadius: 6 },
             ],
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "top", labels: { color: text, font: { size: 11, family: "Inter" }, boxWidth: 12 } } }, scales: { x: { grid: { display: false }, ticks: { color: text, font: { size: 11 } } }, y: { grid: { color: grid }, ticks: { color: text, font: { size: 11 }, callback: v => v + "%" } } } },

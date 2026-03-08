@@ -78,7 +78,7 @@ function renderResults(data) {
 
         // Card
         const card = document.createElement("div");
-        card.className = "result-card";
+        card.className = "result-card glass-panel stagger-enter stagger-" + ((idx % 5) + 1);
         const chartId = `chart-${idx}`;
 
         if (res.error) {

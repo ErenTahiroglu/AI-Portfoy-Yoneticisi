@@ -111,10 +111,29 @@ function setupAutocomplete() {
                 const res = await fetch(`${API_BASE}/api/suggest?q=${encodeURIComponent(lastWord)}`);
                 const data = await res.json();
                 if (data.suggestions && data.suggestions.length > 0) {
-                    dropdown.innerHTML = data.suggestions.map(s => `<div class="autocomplete-item" data-ticker="${s.ticker}"><span class="ticker-symbol">${s.ticker}</span><span class="ticker-name">${s.name}</span></div>`).join("");
+                    dropdown.innerHTML = data.suggestions.map(s => `<div class="autocomplete-item" data-ticker="${s.ticker}">
+                        <div style="flex:1; display:flex; align-items:center; gap:8px;" class="autocomplete-clickable">
+                            <span class="ticker-symbol">${s.ticker}</span><span class="ticker-name">${s.name}</span>
+                        </div>
+                        <i class="fas fa-info-circle ticker-info-btn" style="color:var(--primary); padding:8px;" data-ticker="${s.ticker}"></i>
+                    </div>`).join("");
                     dropdown.classList.remove("hidden");
-                    dropdown.querySelectorAll(".autocomplete-item").forEach(item => {
-                        item.addEventListener("click", () => { words[words.length - 1] = item.dataset.ticker; textarea.value = words.join(", ") + ", "; dropdown.classList.add("hidden"); textarea.focus(); });
+
+                    dropdown.querySelectorAll(".autocomplete-clickable").forEach(el => {
+                        el.addEventListener("click", (e) => {
+                            const ticker = e.currentTarget.parentElement.dataset.ticker;
+                            words[words.length - 1] = ticker;
+                            textarea.value = words.join(", ") + ", ";
+                            dropdown.classList.add("hidden");
+                            textarea.focus();
+                        });
+                    });
+
+                    dropdown.querySelectorAll(".ticker-info-btn").forEach(btn => {
+                        btn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            showTickerQuickModal(e.currentTarget.dataset.ticker);
+                        });
                     });
                 } else { dropdown.classList.add("hidden"); }
             } catch { dropdown.classList.add("hidden"); }
@@ -210,5 +229,133 @@ async function loadApiKeys() {
         document.getElementById("av-api-key").value = ak;
         const icon = document.getElementById("av-key-saved-icon");
         if (icon) icon.classList.remove("hidden");
+    }
+}
+
+// ═══════════════════════════════════════
+// TICKER QUICK VIEW MODAL
+// ═══════════════════════════════════════
+async function showTickerQuickModal(ticker) {
+    let overlay = document.getElementById("ticker-modal-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "ticker-modal-overlay";
+        overlay.className = "modal-overlay";
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+    }
+
+    // Yükleme durumu (Skeleton UI)
+    overlay.innerHTML = `
+        <div class="modal-content glass-panel" style="animation: slideUpFade 0.3s ease;">
+            <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+            <h3 style="margin-bottom:1rem;font-size:1.2rem;color:var(--text-main);"><i class="fas fa-search"></i> ${ticker} Hızlı Görünüm</h3>
+            <div class="skeleton-title" style="width: 40%"></div>
+            <div class="skeleton-box" style="margin-bottom: 1rem;"></div>
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text" style="width: 80%"></div>
+        </div>
+    `;
+
+    try {
+        const payload = {
+            tickers: [ticker],
+            use_ai: false,
+            api_key: "",
+            av_api_key: "",
+            model: "gemini-2.5-flash",
+            check_islamic: document.getElementById("check-islamic-toggle").checked,
+            check_financials: true,
+            lang: getLang()
+        };
+        const res = await fetch(`${API_BASE}/api/analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        const r = data.results && data.results[0];
+
+        if (!r || r.error) {
+            overlay.innerHTML = `
+                <div class="modal-content glass-panel">
+                    <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+                    <h3 style="margin-bottom:1rem;"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> ${ticker}</h3>
+                    <p style="color:var(--danger);">${r?.error || "Veri alınamadı."}</p>
+                </div>
+            `;
+            return;
+        }
+
+        const fin = r.financials || {};
+        const val = r.valuation || {};
+        const price = fin.son_fiyat?.fiyat ? fin.son_fiyat.fiyat.toFixed(2) : "-";
+        const ccy = fin.son_fiyat?.para_birimi || "";
+        const mcap = val.market_cap ? formatMarketCap(val.market_cap) : "-";
+
+        let statusText = r.status || "-";
+        if (getLang() === "en") {
+            if (statusText === "Uygun") statusText = "Compliant";
+            else if (statusText === "Uygun Değil") statusText = "Non-Compliant";
+            else if (statusText === "Katılım Fonu Değil") statusText = "Non-Participation";
+        }
+        const statusHTML = statusText !== "-" ? `<span style="padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem; background:rgba(34,197,94,0.1); color:var(--success); border:1px solid rgba(34,197,94,0.2);">${statusText}</span>` : "";
+
+        overlay.innerHTML = `
+            <div class="modal-content glass-panel" style="animation: slideUpFade 0.3s ease;">
+                <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem;">
+                    <div>
+                        <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.5px;color:var(--text-main); margin-bottom:0.2rem;">${r.ticker}</h2>
+                        <div style="font-size:0.85rem;color:var(--text-muted);">${r.full_name || fin.ad || ""}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.5rem;font-weight:700;color:var(--primary);">${price} ${ccy}</div>
+                        ${statusHTML}
+                    </div>
+                </div>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                    <div style="background:rgba(14,165,233,0.05); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">P/E</div>
+                        <div style="font-size:1.1rem; font-weight:600; color:var(--text-main);">${fmtNum(val.pe)}</div>
+                    </div>
+                    <div style="background:rgba(14,165,233,0.05); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">P/B</div>
+                        <div style="font-size:1.1rem; font-weight:600; color:var(--text-main);">${fmtNum(val.pb)}</div>
+                    </div>
+                    <div style="background:rgba(14,165,233,0.05); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Piyasa Değeri</div>
+                        <div style="font-size:1.1rem; font-weight:600; color:var(--text-main);">${mcap}</div>
+                    </div>
+                    <div style="background:rgba(14,165,233,0.05); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Beta</div>
+                        <div style="font-size:1.1rem; font-weight:600; color:var(--text-main);">${fmtNum(val.beta)}</div>
+                    </div>
+                </div>
+                
+                <button class="btn-primary" onclick="
+                    const tarea = document.getElementById('ticker-input');
+                    let words = tarea.value.split(/[\\s,;]+/);
+                    words = words.filter(w=>w.trim());
+                    if (words[words.length-1] !== '${r.ticker}') words.push('${r.ticker}');
+                    tarea.value = words.join(', ') + ', ';
+                    document.getElementById('ticker-modal-overlay').remove();
+                    tarea.focus();
+                ">
+                    <i class="fas fa-plus"></i> Listeye Ekle
+                </button>
+            </div>
+        `;
+    } catch (err) {
+        overlay.innerHTML = `
+            <div class="modal-content glass-panel">
+                <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+                <h3 style="margin-bottom:1rem;color:var(--danger)"><i class="fas fa-times-circle"></i> Hatası</h3>
+                <p>Beklenmeyen bir hata oluştu: ${err.message}</p>
+            </div>
+        `;
     }
 }
