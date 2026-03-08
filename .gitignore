@@ -29,9 +29,11 @@ build/
 dist/
 *.spec
 
-# User Output / Excel Exports
+# User Output / Reports
 *.xlsx
 *.csv
+*.docx
+*.pdf
 
 # Logs & Debug
 *.log
@@ -39,17 +41,12 @@ error.txt
 traceback.txt
 tefas_log.txt
 
-# Test Scripts and Outputs (geliştirici dosyaları)
+# Test Scripts and Outputs
 test_*.py
 test_*.json
 find_api.py
 fintables.html
 Full_File_List.txt
-tefas_log.txt
-*.xlsx
-*.csv
-*.docx
-*.pdf
 
 # Platform
 .DS_Store

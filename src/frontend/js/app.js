@@ -265,8 +265,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // AI settings toggle
     const aiToggle = document.getElementById("use-ai-toggle");
-    const aiSettings = document.getElementById("ai-settings");
-    const toggleAIVisibility = () => aiSettings.classList.toggle("hidden", !aiToggle.checked);
+    const apiKeyInput = document.getElementById("api-key");
+    const modelSelect = document.getElementById("model-select");
+    const geminiKeyGroup = document.getElementById("gemini-key-group");
+    const geminiModelGroup = document.getElementById("gemini-model-group");
+    const aiNote = document.getElementById("ai-note");
+
+    const toggleAIVisibility = () => {
+        const isAIEnabled = aiToggle.checked;
+        apiKeyInput.disabled = !isAIEnabled;
+        modelSelect.disabled = !isAIEnabled;
+
+        if (isAIEnabled) {
+            geminiKeyGroup.classList.remove("disabled");
+            geminiModelGroup.classList.remove("disabled");
+            aiNote.classList.remove("disabled");
+        } else {
+            geminiKeyGroup.classList.add("disabled");
+            geminiModelGroup.classList.add("disabled");
+            aiNote.classList.add("disabled");
+        }
+    };
     aiToggle.addEventListener("change", toggleAIVisibility);
     toggleAIVisibility();
 
