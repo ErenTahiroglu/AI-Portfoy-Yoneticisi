@@ -191,9 +191,14 @@ class TefasScraper:
         except Exception:
             pass
 
+import threading
+
+_tefas_lock = threading.Lock()
+
 def get_tefas_data_sync(fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
-    scraper = TefasScraper()
-    return scraper.fetch_sync(fonkod, start_date, end_date)
+    with _tefas_lock:
+        scraper = TefasScraper()
+        return scraper.fetch_sync(fonkod, start_date, end_date)
 
 if __name__ == "__main__":
     # Test execution

@@ -84,23 +84,13 @@ src/
 └── frontend/                → Web arayüzü (HTML/CSS/JS)
 ```
 
-### 🚀 Nasıl Çalıştırılır
-
-En kolay yol: projeyi indirin ve çift tıklayın!
-
-- **Windows:** `baslat_windows.bat`
-- **Mac/Linux:** `baslat_mac_linux.command`
-
-> **🤖 Python kurulu değil mi? Sorun değil!** Başlatıcı scriptleri Python bulamazsa otomatik olarak indirip kurar. Windows'ta `winget` veya Python.org'dan sessiz kurulum, Mac'te Homebrew, Linux'ta apt/dnf/pacman ile otomatik kurulum yapar.
-
-Manuel kurulum tercih ederseniz:
 ```bash
 git clone https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi.git
 cd AI-Portfoy-Yoneticisi
 python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
 playwright install chromium
-python src/desktop_app.py
+uvicorn src.api.main:app --reload
 ```
 
 ### ☁️ Canlı Ortamda Yayınlama (Vercel + Render Çift Mimari)
