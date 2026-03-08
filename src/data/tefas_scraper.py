@@ -139,8 +139,15 @@ class TefasScraper:
                     
                 return self._parse_tefas_data(all_data)
                 
+            except Exception as e:
+                err_msg = str(e)
+                if "Executable doesn't exist" in err_msg or "playwright install" in err_msg:
+                    logger.error("!!! CRITICAL: Playwright Chromium binary missing on Render !!!")
+                    raise RuntimeError("Render build command eksik! Lütfen Render ayarlarından Build Command kısmını şununla güncelleyin: pip install -r requirements.txt && playwright install chromium --with-deps")
+                raise e
             finally:
-                await browser.close()
+                if 'browser' in locals():
+                    await browser.close()
                 gc.collect()
 
     def _parse_tefas_data(self, data: list) -> pd.DataFrame:

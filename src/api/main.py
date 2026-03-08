@@ -12,6 +12,8 @@ Kullanım:
     uvicorn main:app --host 127.0.0.1 --port 8000
 """
 
+import logging
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -62,6 +64,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+logger = logging.getLogger(__name__)
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "message": "Portföy Analiz API aktif"}
 
 # ══════════════════════════════════════════════════════════════════════════
 # REQUEST / RESPONSE MODELLERİ
