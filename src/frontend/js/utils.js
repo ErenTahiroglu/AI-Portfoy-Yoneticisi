@@ -1,4 +1,5 @@
-const API_BASE = "";
+const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+const API_BASE = IS_LOCAL ? "" : "https://ai-portfoy-yoneticisi.onrender.com";
 let lastResults = null;
 let lastExtras = null;
 let chartInstances = {};
