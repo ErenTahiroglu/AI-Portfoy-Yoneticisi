@@ -120,9 +120,10 @@ _POPULAR_TICKERS = {
     "VESTL": "Vestel Elektronik", "HALKB": "Halkbank", "VAKBN": "VakıfBank",
     "GUBRF": "Gübre Fabrikaları", "KOZAA": "Koza Anadolu Metal",
     # TEFAS Popüler
-    "TP2": "TEB Portföy İkinci Değişken", "AKB": "Ak Portföy Birikim",
-    "ZP8": "Ziraat Portföy Birinci", "IPB": "İş Portföy Birikim",
-    "YAY": "Yapı Kredi Portföy", "TI2": "TEB Portföy İkinci",
+    "TP2": "TEB Portföy İkinci Fon Sepeti Fonu", "AKB": "Ak Portföy Birinci Değişken Fon",
+    "ZP8": "Ziraat Portföy Birinci Katılım Fonu", "IPB": "İş Portföy Birinci Değişken Fon",
+    "YAY": "Yapı Kredi Yabancı Teknoloji Hisse Senedi Fonu", "TI2": "TEB Portföy İş İştirakleri Fonu",
+    "MAC": "Marmara Capital Hisse Senedi Fonu", "AFA": "Ak Portföy Amerika Yabancı Hisse Fonu",
 }
 
 
