@@ -47,6 +47,22 @@ async function runWizard() {
 }
 
 // ═══════════════════════════════════════
+// HEALTH CHECK
+// ═══════════════════════════════════════
+async function checkServerHealth() {
+    try {
+        const res = await fetch(`${API_BASE}/api/health`, { method: "GET" });
+        if (res.ok) {
+            const data = await res.json();
+            return { online: true, message: data.message };
+        }
+        return { online: false, message: `Sunucu hatası: ${res.status}` };
+    } catch (e) {
+        return { online: false, message: "Sunucuya ulaşılamıyor (Cold start veya Bağlantı hatası)." };
+    }
+}
+
+// ═══════════════════════════════════════
 // DYNAMIC NEWS
 // ═══════════════════════════════════════
 async function loadNews(results) {
@@ -196,15 +212,30 @@ async function runAnalysis(payload, endpoint) {
         clearInterval(pInt); progressFill.style.width = "100%"; progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
         setTimeout(() => progressContainer.classList.add("hidden"), 500);
 
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Sunucu hatası (${res.status})`); }
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `Sunucu hatası (${res.status})`);
+        }
         const data = await res.json();
         renderResults(data);
         showToast(`${(data.results || []).length} ${t("toast.analysisComplete")}`, "success");
     } catch (err) {
         clearInterval(pInt); progressContainer.classList.add("hidden");
-        showToast(err.message, "error");
+        console.error("Analysis Error:", err);
+
+        if (err.message.indexOf("fetch") !== -1 || err.message.indexOf("Failed to fetch") !== -1) {
+            const health = await checkServerHealth();
+            if (health.online) {
+                showToast("Sunucu aktif ancak istek zaman aşımına uğradı. Birkaç saniye sonra tekrar deneyin.", "warning");
+            } else {
+                showToast(`Bağlantı Sorunu: ${health.message}`, "error");
+            }
+        } else {
+            showToast(err.message, "error");
+        }
+    } finally {
+        btn.disabled = false;
     }
-    finally { btn.disabled = false; }
 }
 
 async function runFileAnalysis(file) {
@@ -247,13 +278,28 @@ async function runFileAnalysis(file) {
         clearInterval(pInt); progressFill.style.width = "100%"; progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
         setTimeout(() => progressContainer.classList.add("hidden"), 500);
 
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Sunucu hatası (${res.status})`); }
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `Sunucu hatası (${res.status})`);
+        }
         const data = await res.json();
         renderResults(data);
         showToast(`${(data.results || []).length} ${t("toast.analysisComplete")}`, "success");
     } catch (err) {
         clearInterval(pInt); progressContainer.classList.add("hidden");
-        showToast(err.message, "error");
+        console.error("Analysis Error:", err);
+
+        if (err.message.indexOf("fetch") !== -1 || err.message.indexOf("Failed to fetch") !== -1) {
+            const health = await checkServerHealth();
+            if (health.online) {
+                showToast("Sunucu aktif ancak istek zaman aşımına uğradı. Birkaç saniye sonra tekrar deneyin.", "warning");
+            } else {
+                showToast(`Bağlantı Sorunu: ${health.message}`, "error");
+            }
+        } else {
+            showToast(err.message, "error");
+        }
+    } finally {
+        btn.disabled = false;
     }
-    finally { btn.disabled = false; }
 }
