@@ -334,20 +334,20 @@
                         <h4><i class="fas fa-piggy-bank" style="color:var(--primary)"></i> Temettü Emekliliği</h4>
                         <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Aylık eklemelerle
                             portföy veriminden hedef gelire ulaşma süresi (Mevcut Sermaye Hariç).</p>
-                        <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
-                            <div style="flex:1">
-                                <label style="font-size:0.75rem; color:var(--text-muted)">Aylık Ekleme</label>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
+                            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Aylık Ekleme</label>
                                 <input type="number" id="div-monthly-add" class="input" value="5000"
-                                    style="padding:0.4rem; font-size:0.9rem;">
+                                    style="padding:0.6rem; font-size:1rem; background:rgba(0,0,0,0.1); border:1px solid var(--glass-border); border-radius:6px; color:var(--text-main); font-weight:600; width:100%; box-sizing:border-box;">
                             </div>
-                            <div style="flex:1">
-                                <label style="font-size:0.75rem; color:var(--text-muted)">Aylık Hedef Gelir</label>
+                            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Aylık Hedef Gelir</label>
                                 <input type="number" id="div-target-income" class="input" value="17002"
-                                    style="padding:0.4rem; font-size:0.9rem;">
+                                    style="padding:0.6rem; font-size:1rem; background:rgba(0,0,0,0.1); border:1px solid var(--glass-border); border-radius:6px; color:var(--text-main); font-weight:600; width:100%; box-sizing:border-box;">
                             </div>
                         </div>
                         <div id="scenario-div-result"
-                            style="font-size:1.1rem; font-weight:600; text-align:center; padding:1rem; background:rgba(255,255,255,0.05); border-radius:0.5rem; color:var(--success)">
+                            style="font-size:1.05rem; line-height:1.5; text-align:center; padding:1.2rem; background:var(--primary-glow); border:1px solid rgba(14, 165, 233, 0.2); border-radius:0.5rem; color:var(--text-main);">
                             Hesaplanıyor...</div>
                     </div>
                 </div>
@@ -383,9 +383,9 @@
                                 <th data-i18n="th.price">Son Fiyat</th>
                                 <th data-i18n="th.compliance">Uyg. Tarama Oranı</th>
                                 <th data-i18n="th.status">Durum</th>
-                                <th>P/E</th>
-                                <th>P/B</th>
-                                <th>Beta</th>
+                                <th title="Fiyat/Kazanç Oranı. Hissenin ne kadar pahalı/ucuz olduğunu gösterir." data-i18n-title="tooltip.pe" style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">P/E <i class="fas fa-question-circle" style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
+                                <th title="Piyasa Değeri / Defter Değeri. Şirketin özsermayesine oranla fiyatı." data-i18n-title="tooltip.pb" style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">P/B <i class="fas fa-question-circle" style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
+                                <th title="Oynaklık ölçüsü. Piyasa 1'dir. 1'den büyükse piyasadan daha hareketlidir." data-i18n-title="tooltip.beta" style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">Beta <i class="fas fa-question-circle" style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
                             </tr>
                         </thead>
                         <tbody id="summary-table-body"></tbody>

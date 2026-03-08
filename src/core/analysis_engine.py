@@ -268,7 +268,8 @@ class AnalysisEngine:
                 if fin_data:
                     result_entry["financials"] = fin_data
                 else:
-                    result_entry["fin_error"] = "Detaylı finansal veri bulunamadı."
+                    msg = "Tarihsel getiri verisi çekilemedi. (Sadece anlık değerleme metrikleri gösteriliyor)" if check_financials and not is_tefas else "Fon verisi alınamadı (WAF engeli veya bağlantı sorunu)."
+                    result_entry["fin_error"] = msg
             except Exception as e:
                 result_entry["fin_error"] = _friendly_error(str(e))
         elif self._init_errors:
@@ -436,7 +437,11 @@ class AnalysisEngine:
             )
             result_entry["ai_comment"] = ai_comment
         except Exception as e:
-            result_entry["ai_comment"] = _friendly_error(str(e))
+            err_msg = str(e)
+            if "API_KEY_INVALID" in err_msg or "API key not valid" in err_msg:
+                result_entry["ai_comment"] = "❌ <b>Gemini API Hatası:</b> API Anahtarınız geçersiz. Lütfen ayarlar panelinden doğru bir anahtar girdiğinizden emin olun." if lang == "tr" else "❌ <b>Gemini API Error:</b> Your API Key is invalid. Please ensure you entered the correct key in the settings panel."
+            else:
+                result_entry["ai_comment"] = _friendly_error(err_msg)
 
 
 # ══════════════════════════════════════════════════════════════════════════

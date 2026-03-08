@@ -56,15 +56,24 @@ function renderResults(data) {
         const val = res.valuation || {};
         const sonFiyat = fin.son_fiyat ? `${fin.son_fiyat.fiyat?.toFixed(2) || "-"}` : "-";
         const purRatio = res.purification_ratio !== undefined ? `%${res.purification_ratio}` : "-";
-        const statusClass = res.status === "Uygun" ? "status-approved" : (res.status === "Uygun Değil" ? "status-rejected" : "");
-        const statusText = res.status || "-";
+
+        let statusText = res.status || "-";
+        if (getLang() === "en") {
+            if (statusText === "Uygun") statusText = "Compliant";
+            else if (statusText === "Uygun Değil") statusText = "Non-Compliant";
+            else if (statusText === "Katılım Fonu Değil") statusText = "Non-Participation";
+        }
+        const statusClass = res.status === "Uygun" ? "status-approved" : (res.status === "Uygun Değil" || res.status === "Katılım Fonu Değil" ? "status-rejected" : "");
 
         // Summary row
         const summaryFullName = res.full_name || fin.ad || "";
         const tickerDisplay = summaryFullName ? `<div style="font-weight:700">${res.ticker}</div><div style="font-size:0.7rem; color:var(--text-muted)">${summaryFullName}</div>` : `<span style="font-weight:700">${res.ticker}</span>`;
 
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${tickerDisplay}</td><td><span class="market-badge">${res.market || "?"}</span></td><td>${res.weight || 1}</td><td>${sonFiyat}</td><td>${purRatio}</td><td>${statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "-"}</td><td>${fmtNum(val.pe)}</td><td>${fmtNum(val.pb)}</td><td>${fmtNum(val.beta)}</td>`;
+        let marketText = res.market || "?";
+        if (getLang() === "tr" && marketText === "US") marketText = "ABD";
+
+        tr.innerHTML = `<td>${tickerDisplay}</td><td><span class="market-badge">${marketText}</span></td><td>${res.weight || 1}</td><td>${sonFiyat}</td><td>${purRatio}</td><td>${statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "-"}</td><td>${fmtNum(val.pe)}</td><td>${fmtNum(val.pb)}</td><td>${fmtNum(val.beta)}</td>`;
         summaryBody.appendChild(tr);
 
         // Card
@@ -82,9 +91,9 @@ function renderResults(data) {
 
         // Metrics
         let metricsHTML = "";
-        if (val.pe) metricsHTML += `<div class="metric-box"><div class="metric-label">P/E</div><div class="metric-value">${fmtNum(val.pe)}</div></div>`;
-        if (val.pb) metricsHTML += `<div class="metric-box"><div class="metric-label">P/B</div><div class="metric-value">${fmtNum(val.pb)}</div></div>`;
-        if (val.beta) metricsHTML += `<div class="metric-box"><div class="metric-label">Beta</div><div class="metric-value">${fmtNum(val.beta)}</div></div>`;
+        if (val.pe) metricsHTML += `<div class="metric-box" title="${t("tooltip.pe")}"><div class="metric-label">P/E <i class="fas fa-question-circle" style="font-size:0.65rem;opacity:0.6"></i></div><div class="metric-value">${fmtNum(val.pe)}</div></div>`;
+        if (val.pb) metricsHTML += `<div class="metric-box" title="${t("tooltip.pb")}"><div class="metric-label">P/B <i class="fas fa-question-circle" style="font-size:0.65rem;opacity:0.6"></i></div><div class="metric-value">${fmtNum(val.pb)}</div></div>`;
+        if (val.beta) metricsHTML += `<div class="metric-box" title="${t("tooltip.beta")}"><div class="metric-label">Beta <i class="fas fa-question-circle" style="font-size:0.65rem;opacity:0.6"></i></div><div class="metric-value">${fmtNum(val.beta)}</div></div>`;
         if (val.market_cap) metricsHTML += `<div class="metric-box"><div class="metric-label">Piyasa Değeri</div><div class="metric-value">${formatMarketCap(val.market_cap)}</div></div>`;
         if (val.div_yield) metricsHTML += `<div class="metric-box"><div class="metric-label">Temettü</div><div class="metric-value">${fmtNum(val.div_yield, "%")}</div></div>`;
         if (val.eps) metricsHTML += `<div class="metric-box"><div class="metric-label">EPS</div><div class="metric-value">${fmtNum(val.eps)}</div></div>`;
@@ -105,7 +114,18 @@ function renderResults(data) {
         if (res.debt_ratio !== undefined) metricsHTML += `<div class="metric-box"><div class="metric-label">Borçluluk</div><div class="metric-value">${fmtNum(res.debt_ratio, "%")}</div></div>`;
 
         // Sector badge
-        let sectorBadge = res.sector ? `<span class="market-badge" style="font-size:0.65rem">${res.sector}</span>` : "";
+        let sectorText = res.sector || "Bilinmiyor";
+        if (getLang() === "tr") {
+            if (sectorText === "Technology") sectorText = "Teknoloji";
+            else if (sectorText === "Healthcare") sectorText = "Sağlık";
+            else if (sectorText === "Financial Services") sectorText = "Finans";
+            else if (sectorText === "Consumer Cyclical") sectorText = "Tüketici Ürünleri";
+            else if (sectorText === "Bilinmiyor" && res.market === "TR") sectorText = "Yatırım Fonu";
+        } else if (getLang() === "en") {
+            if (sectorText === "Bilinmiyor" && res.market === "TR") sectorText = "Investment Fund";
+            else if (sectorText === "Bilinmiyor") sectorText = "Unknown";
+        }
+        let sectorBadge = sectorText ? `<span class="market-badge" style="font-size:0.65rem">${sectorText}</span>` : "";
 
         // Technical indicators
         let techHTML = renderTechnicals(res.technicals);
@@ -137,7 +157,7 @@ function renderResults(data) {
         let errHTML = res.islamic_error ? `<p style="font-size:0.78rem; color:var(--warning); margin:0.5rem 0"><i class="fas fa-exclamation-triangle"></i> ${res.islamic_error}</p>` : "";
         errHTML += res.fin_error ? `<p style="font-size:0.78rem; color:var(--warning); margin:0.5rem 0"><i class="fas fa-exclamation-triangle"></i> ${res.fin_error}</p>` : "";
 
-        let statusBadge = res.status ? `<span class="${res.status === "Uygun" ? "status-approved" : (res.status === "Uygun Değil" || res.status === "Katılım Fonu Değil" ? "status-rejected" : "")}">${res.status}</span>` : "";
+        let statusBadgeFinal = statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "";
 
         const fullName = res.full_name || fin.ad || "";
         const nameBadge = (fullName && fullName !== res.ticker) ? `<span style="font-size:0.85rem; color:var(--text-muted); margin-left:0.5rem; font-weight:normal">${fullName}</span>` : "";
@@ -145,7 +165,7 @@ function renderResults(data) {
         card.innerHTML = `
             <div class="card-header">
                 <div><span class="ticker-name">${res.ticker}</span>${nameBadge}</div>
-                <div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${res.market || "?"}</span>${sectorBadge}${statusBadge}</div>
+                <div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${marketText}</span>${sectorBadge}${statusBadgeFinal}</div>
             </div>
             ${fundHTML}${errHTML}
             ${metricsHTML ? `<div class="metrics-grid">${metricsHTML}</div>` : ""}
