@@ -1,9 +1,9 @@
 """
-🧩 TEFAS FON YARDIMCISI (Impersonation Versiyonu)
+🧩 TEFAS FON YARDIMCISI (Optimized Playwright - Render Uyumlu)
 ============================================================
-Render.com Free Tier (512MB RAM) üzerinde Playwright OOM (Out of Memory)
-hatası verdiği için Chromium tarayıcısı açmak yerine curl_cffi ile
-TLS/JA3 parmak izi taklidi (Impersonation) kullanılarak WAF aşılır.
+Render.com Free Tier (512MB RAM) limitine uymak için
+özel bellek optimizasyonlu Chromium ayarları ile çalışır.
+Browser her istekte bir kez açılır ve tüm chunklar bitince kapatılır.
 """
 
 import json
@@ -12,31 +12,54 @@ import asyncio
 from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
+import gc
+from playwright.async_api import async_playwright
 
 logger = logging.getLogger(__name__)
-
-from curl_cffi import requests
 
 class TefasScraper:
     def __init__(self):
         self.url = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo"
-        self.session = requests.AsyncSession(impersonate="chrome110")
 
-    async def _fetch_chunk(self, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
-        payload = f"fontip={fontip}&sfonkod={fonkod}&bastarih={start_date}&bittarih={end_date}"
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Origin': 'https://www.tefas.gov.tr',
-            'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx',
-            'Accept': 'application/json, text/javascript, */*; q=0.01',
-            'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
-        }
-        
+    async def _fetch_chunk_with_page(self, page, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
         try:
-            response = await self.session.post(self.url, data=payload, headers=headers, timeout=15)
-            result_text = response.text
+            # Sadece gerekli JSON POST isteklerini geçirerek belleği korur
+            await page.route(
+                "**/*", 
+                lambda route: route.continue_() if route.request.resource_type in ["document", "xhr", "fetch"] else route.abort()
+            )
             
+            await page.goto("https://www.tefas.gov.tr/FonAnaliz.aspx", wait_until="domcontentloaded", timeout=20000)
+            
+            payload = f"fontip={fontip}&sfonkod={fonkod}&bastarih={start_date}&bittarih={end_date}"
+            
+            js_code = f"""
+            async () => {{
+                try {{
+                    const response = await fetch('{self.url}', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Origin': 'https://www.tefas.gov.tr',
+                            'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx',
+                            'Accept': 'application/json, text/javascript, */*; q=0.01'
+                        }},
+                        body: '{payload}'
+                    }});
+                    const text = await response.text();
+                    return text;
+                }} catch (e) {{
+                    return "ERROR: " + e.message;
+                }}
+            }}
+            """
+            
+            result_text = await page.evaluate(js_code)
+            
+            if result_text.startswith("ERROR:"):
+                raise ValueError(f"Browser Fetch Error: {result_text}")
+                
             try:
                 json_data = json.loads(result_text)
                 return json_data.get("data", [])
@@ -48,47 +71,72 @@ class TefasScraper:
                 raise ValueError(f"WAF Block (HTML received): {clean_text}")
                 
         except Exception as e:
-            raise ValueError(f"Request Error: {str(e)}")
+            logger.error(f"Chunk fetch failed for {fonkod}: {e}")
+            return []
 
     async def _fetch_async(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
-        logger.info(f"[{fonkod}] TEFAS curl_cffi Fetching data from {start_date} to {end_date} in 90-day chunks...")
+        logger.info(f"[{fonkod}] TEFAS Optimized Playwright Fetching from {start_date} to {end_date}...")
         
         all_data = []
         current_start = start_date
         
-        try:
-            while current_start <= end_date:
-                current_end = current_start + datetime.timedelta(days=89)
-                if current_end > end_date:
-                    current_end = end_date
-                    
-                str_start = current_start.strftime("%d.%m.%Y")
-                str_end = current_end.strftime("%d.%m.%Y")
-                
-                try:
-                    chunk_data = await self._fetch_chunk(fonkod, str_start, str_end, "YAT")
-                    if not chunk_data:
-                        chunk_data = await self._fetch_chunk(fonkod, str_start, str_end, "EMK")
-                    
-                    if chunk_data:
-                        all_data.extend(chunk_data)
-                        logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
-                    else:
-                        logger.warning(f"[{fonkod}] Chunk response empty for {str_start} - {str_end}")
-                        
-                except Exception as e:
-                    logger.error(f"[{fonkod}] Failed to fetch chunk {str_start} - {str_end}: {e}")
-                    
-                current_start = current_end + datetime.timedelta(days=1)
-                
-            if not all_data:
-                logger.warning(f"[{fonkod}] No data returned from TEFAS.")
-                return pd.DataFrame(columns=["Close"]).rename_axis("Date")
-                
-            return self._parse_tefas_data(all_data)
+        async with async_playwright() as p:
+            # Memory Optimized Chromium Arguments for 512MB RAM Linux
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    '--disable-gpu',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-blink-features=AutomationControlled',
+                    '--single-process',
+                    '--disable-extensions',
+                    '--js-flags=--max-old-space-size=128',
+                    '--disable-software-rasterizer',
+                    '--mute-audio'
+                ]
+            )
             
-        finally:
-            await self.close_async()
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={'width': 800, 'height': 600}
+            )
+            
+            page = await context.new_page()
+            
+            try:
+                while current_start <= end_date:
+                    current_end = current_start + datetime.timedelta(days=89)
+                    if current_end > end_date:
+                        current_end = end_date
+                        
+                    str_start = current_start.strftime("%d.%m.%Y")
+                    str_end = current_end.strftime("%d.%m.%Y")
+                    
+                    try:
+                        chunk_data = await self._fetch_chunk_with_page(page, fonkod, str_start, str_end, "YAT")
+                        if not chunk_data:
+                            chunk_data = await self._fetch_chunk_with_page(page, fonkod, str_start, str_end, "EMK")
+                        
+                        if chunk_data:
+                            all_data.extend(chunk_data)
+                            logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
+                            
+                    except Exception as e:
+                        logger.error(f"[{fonkod}] Failed to fetch chunk {str_start} - {str_end}: {e}")
+                        
+                    current_start = current_end + datetime.timedelta(days=1)
+                    
+                if not all_data:
+                    logger.warning(f"[{fonkod}] No data returned from TEFAS.")
+                    return pd.DataFrame(columns=["Close"]).rename_axis("Date")
+                    
+                return self._parse_tefas_data(all_data)
+                
+            finally:
+                await browser.close()
+                gc.collect()
 
     def _parse_tefas_data(self, data: list) -> pd.DataFrame:
         df = pd.DataFrame(data)
@@ -104,13 +152,6 @@ class TefasScraper:
         df.set_index("Date", inplace=True)
         df.sort_index(inplace=True)
         return df[["Close"]]
-
-    async def close_async(self):
-        if self.session:
-            try:
-                await self.session.close()
-            except:
-                pass
 
     def fetch_sync(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
         try:
