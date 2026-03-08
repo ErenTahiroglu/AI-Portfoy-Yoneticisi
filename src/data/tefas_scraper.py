@@ -1,105 +1,42 @@
 """
-🧩 TEFAS FON YARDIMCISI (Playwright Versiyonu - Render Uyumlu)
+🧩 TEFAS FON YARDIMCISI (Impersonation Versiyonu)
 ============================================================
-Cloudflare WAF'ı aşmak için başsız (headless) Chromium tarayıcı kullanır.
-Render.com (Backend) üzerinde çalışacak şekilde boyut limitlerine takılmaz.
+Render.com Free Tier (512MB RAM) üzerinde Playwright OOM (Out of Memory)
+hatası verdiği için Chromium tarayıcısı açmak yerine curl_cffi ile
+TLS/JA3 parmak izi taklidi (Impersonation) kullanılarak WAF aşılır.
 """
 
 import json
 import logging
 import asyncio
-import nest_asyncio
 from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
-from playwright.async_api import async_playwright
 
-nest_asyncio.apply()
 logger = logging.getLogger(__name__)
 
-# Global state to prevent OOM on Render
-_global_playwright = None
-_global_browser = None
-_global_browser_lock = asyncio.Lock()
-
-async def get_global_browser():
-    global _global_playwright, _global_browser
-    async with _global_browser_lock:
-        if not _global_browser:
-            if not _global_playwright:
-                _global_playwright = await async_playwright().start()
-            _global_browser = await _global_playwright.chromium.launch(
-                headless=True,
-                args=[
-                    '--disable-gpu',
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled',
-                    '--single-process'
-                ]
-            )
-    return _global_browser
+from curl_cffi import requests
 
 class TefasScraper:
     def __init__(self):
         self.url = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo"
-        self._context = None
+        self.session = requests.AsyncSession(impersonate="chrome110")
 
-    async def _init_browser(self):
+    async def _fetch_chunk(self, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
+        payload = f"fontip={fontip}&sfonkod={fonkod}&bastarih={start_date}&bittarih={end_date}"
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Origin': 'https://www.tefas.gov.tr',
+            'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx',
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+        }
+        
         try:
-            browser = await get_global_browser()
-            self._context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={'width': 1280, 'height': 720}
-            )
-        except Exception as e:
-            logger.error(f"Context başlatılamadı: {e}")
-            raise
-
-    async def _fetch_chunk_with_browser(self, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
-        if not self._context:
-            await self._init_browser()
+            response = await self.session.post(self.url, data=payload, headers=headers, timeout=15)
+            result_text = response.text
             
-        page = await self._context.new_page()
-        try:
-            # Sadece gerekli istekleri geçirerek hızı maksimize et
-            await page.route(
-                "**/*", 
-                lambda route: route.continue_() if route.request.resource_type in ["document", "xhr", "fetch"] else route.abort()
-            )
-            
-            await page.goto("https://www.tefas.gov.tr/FonAnaliz.aspx", wait_until="domcontentloaded", timeout=15000)
-            
-            payload = f"fontip={fontip}&sfonkod={fonkod}&bastarih={start_date}&bittarih={end_date}"
-            
-            js_code = f"""
-            async () => {{
-                try {{
-                    const response = await fetch('{self.url}', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Origin': 'https://www.tefas.gov.tr',
-                            'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx',
-                            'Accept': 'application/json, text/javascript, */*; q=0.01'
-                        }},
-                        body: '{payload}'
-                    }});
-                    const text = await response.text();
-                    return text;
-                }} catch (e) {{
-                    return "ERROR: " + e.message;
-                }}
-            }}
-            """
-            
-            result_text = await page.evaluate(js_code)
-            
-            if result_text.startswith("ERROR:"):
-                raise ValueError(f"Browser Fetch Error: {result_text}")
-                
             try:
                 json_data = json.loads(result_text)
                 return json_data.get("data", [])
@@ -110,11 +47,11 @@ class TefasScraper:
                     clean_text = clean_text[:200] + "..."
                 raise ValueError(f"WAF Block (HTML received): {clean_text}")
                 
-        finally:
-            await page.close()
+        except Exception as e:
+            raise ValueError(f"Request Error: {str(e)}")
 
     async def _fetch_async(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
-        logger.info(f"[{fonkod}] TEFAS Playwright Fetching data from {start_date} to {end_date} in 90-day chunks...")
+        logger.info(f"[{fonkod}] TEFAS curl_cffi Fetching data from {start_date} to {end_date} in 90-day chunks...")
         
         all_data = []
         current_start = start_date
@@ -129,13 +66,15 @@ class TefasScraper:
                 str_end = current_end.strftime("%d.%m.%Y")
                 
                 try:
-                    chunk_data = await self._fetch_chunk_with_browser(fonkod, str_start, str_end, "YAT")
+                    chunk_data = await self._fetch_chunk(fonkod, str_start, str_end, "YAT")
                     if not chunk_data:
-                        chunk_data = await self._fetch_chunk_with_browser(fonkod, str_start, str_end, "EMK")
+                        chunk_data = await self._fetch_chunk(fonkod, str_start, str_end, "EMK")
                     
                     if chunk_data:
                         all_data.extend(chunk_data)
                         logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
+                    else:
+                        logger.warning(f"[{fonkod}] Chunk response empty for {str_start} - {str_end}")
                         
                 except Exception as e:
                     logger.error(f"[{fonkod}] Failed to fetch chunk {str_start} - {str_end}: {e}")
@@ -167,13 +106,11 @@ class TefasScraper:
         return df[["Close"]]
 
     async def close_async(self):
-        # Yalnızca context'i kapatıyoruz, global browser açık kalıyor.
-        if self._context:
+        if self.session:
             try:
-                await self._context.close()
+                await self.session.close()
             except:
                 pass
-            self._context = None
 
     def fetch_sync(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
         try:
@@ -188,16 +125,6 @@ class TefasScraper:
         else:
             return loop.run_until_complete(self._fetch_async(fonkod, start_date, end_date))
 
-    def close(self):
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.run_coroutine_threadsafe(self.close_async(), loop)
-            else:
-                loop.run_until_complete(self.close_async())
-        except Exception:
-            pass
-
 import threading
 
 _tefas_lock = threading.Lock()
@@ -208,7 +135,6 @@ def get_tefas_data_sync(fonkod: str, start_date: datetime.date, end_date: dateti
         return scraper.fetch_sync(fonkod, start_date, end_date)
 
 if __name__ == "__main__":
-    # Test execution
     logging.basicConfig(level=logging.INFO)
     end = datetime.date.today()
     start = end - datetime.timedelta(days=150)
