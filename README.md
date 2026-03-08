@@ -163,22 +163,13 @@ Each file has a single responsibility and can be developed independently:
 
 ```
 src/
-├── main.py              → FastAPI HTTP layer + export/autocomplete
-├── analysis_engine.py   → Orchestrator (parallel + cache + valuation)
-├── market_detector.py   → Market detection (US / TR / TEFAS)
-├── base_analyzer.py     → Shared calculation logic (DRY)
-├── portfolio_analyzer.py→ US stock analysis
-├── bist_analyzer.py     → BIST & TEFAS analysis
-├── tefas_scraper.py     → Chunked requests TEFAS WAF bypass
-├── islamic_analyzer.py  → AAOIFI compliance audit (optional)
-├── ai_agent.py          → Gemini AI commentary generation
-├── data_sources.py      → SSL bypass, logging, constants
-├── file_processor.py    → Excel/DOCX/PDF read & write
-├── desktop_app.py       → Desktop launcher
-└── frontend/
-    ├── index.html       → UI structure
-    ├── styles.css       → Theme (auto light/dark) + responsive
-    └── app.js           → All frontend logic
+├── api/                 → FastAPI Layer
+├── core/                → Analysis & AI Engines
+├── analyzers/           → Market-specific Analyzers
+├── data/                → Data Sources & Scrapers
+├── utils/                → File Processing Utilities
+├── desktop_app.py       → Desktop Launcher (Entry Point)
+└── frontend/            → Web UI
 ```
 
 ### 🚀 How to Run
