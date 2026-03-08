@@ -2,25 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxDuration": 60
-      }
-    },
-    {
       "src": "src/frontend/**",
       "use": "@vercel/static"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
+      "source": "/api/(.*)",
+      "destination": "https://ai-portfolio-assistant.onrender.com/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/src/frontend/$1"
+      "source": "/(.*)",
+      "destination": "/src/frontend/$1"
     }
   ]
 }

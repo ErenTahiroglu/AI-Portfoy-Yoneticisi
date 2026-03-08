@@ -103,14 +103,24 @@ playwright install chromium
 python src/desktop_app.py
 ```
 
-### ☁️ İnternette Yayınlama (Vercel)
-Uygulamanın ön yüzünü (frontend) ücretsiz olarak tüm dünyaya açmak için Vercel'i kullanabilirsiniz.
-Aşağıdaki komutları çalıştırarak PWA destekli önyüzünüzü anında yayına alabilirsiniz (FastAPI arkayüzü yerelinizde veya başka bir sunucuda çalışmalıdır):
-```bash
-npm install -g vercel
-cd src/frontend
-vercel
-```
+### ☁️ Canlı Ortamda Yayınlama (Vercel + Render Çift Mimari)
+
+Bu proje, alan adınızı kullanabilmeniz ve TEFAS sunucularının ağır "Cloudflare" bot engellerini aşabilmeniz için **Çift Sunucu (Monorepo) Mimarisi** kullanır. 
+Ücretsiz ve sorunsuz canlıya almak için aşağıdaki adımları izleyin:
+
+#### 1. Backend'i Render.com'a Yükleme (Veri Motoru)
+Render.com, TEFAS verilerini engelsiz kazıyan "Sanal Tarayıcı (Playwright)" kütüphanesini barındıracak kapasiteye sahip ücretsiz arka uç sunucunuzdur.
+*   **render.com** adresine gidip GitHub'ınızla giriş yapın.
+*   "New" > "Web Service" > "Build and deploy from a Git repository" seçeneğini tıklayın.
+*   Bu deponuzu (AI-Portfoy-Yoneticisi) seçin.
+*   **Blueprint:** Otomatik olarak depodaki `render.yaml` dosyasını bulacak ve tüm Python kurulumlarını sizin yerinize şipşak halledecektir. 
+*   Bittiğinde size bir API linki verecek (Örn: `https://ai-portfolio-assistant.onrender.com`).
+
+#### 2. Frontend'i Vercel'e Yükleme (Kullanıcı Arayüzü)
+Vercel, kullanıcılarınızın sitenize ışık hızında erişmesini sağlayacak ve alan adınızı bağlayacağınız vitrindir.
+*   İlk aşamadan aldığınız Render API adresini, bu klasördeki `vercel.json` dosyası içindeki `destination` kısmına (`https://RENDER_API_LINKINIZ/api/$1` şeklinde) yapıştırın ve değişiklikleri GitHub'a yollayın.
+*   **vercel.com** adresinde "Add New Project" deyip bu repoyu seçin ve hiçbir ayara dokunmadan "Deploy" tuşuna basın.
+*   Vercel otomatik olarak HTML arayüzünüzü kuracak ve "Analiz Et" butonuna basıldığında bu yükü gizlice kendi kurduğunuz Render Python sunucunuza aktaracaktır!
 
 ### 📦 Bağımlılıklar
 
