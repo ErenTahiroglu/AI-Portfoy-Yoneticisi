@@ -271,7 +271,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Analyze & Wizard buttons
     document.getElementById("btn-run-wizard").addEventListener("click", runWizard);
-    document.getElementById("analyze-btn").addEventListener("click", () => {
+
+    const analyzeBtn = document.getElementById("analyze-btn");
+    analyzeBtn.addEventListener("click", () => {
         const checkIslamic = document.getElementById("check-islamic-toggle").checked;
         const checkFinancials = document.getElementById("check-financials-toggle").checked;
         const useAI = aiToggle.checked;
@@ -285,6 +287,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!text) { showToast(t("toast.noTickers"), "warning"); return; }
         const tickers = text.split(/[\s,;]+/).filter(t => t.length > 0).map(t => t.toUpperCase());
         runAnalysis({ tickers, use_ai: useAI, api_key: apiKey, av_api_key: avKey, model, check_islamic: checkIslamic, check_financials: checkFinancials, lang: getLang() }, "/api/analyze");
+    });
+
+    // Enter key triggers analysis
+    const tickerInput = document.getElementById("ticker-input");
+    tickerInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            analyzeBtn.click();
+        }
     });
 
     // Export & Compare
