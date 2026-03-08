@@ -4,3 +4,8 @@ services:
     env: python
     buildCommand: "pip install -r requirements.txt && playwright install chromium"
     startCommand: "uvicorn src.api.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "/opt/render/project/.playwright-browsers"
+      - key: PYTHON_VERSION
+        value: "3.11.5"

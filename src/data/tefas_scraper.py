@@ -143,7 +143,7 @@ class TefasScraper:
                 err_msg = str(e)
                 if "Executable doesn't exist" in err_msg or "playwright install" in err_msg:
                     logger.error("!!! CRITICAL: Playwright Chromium binary missing on Render !!!")
-                    raise RuntimeError("Render build command eksik! Lütfen Render ayarlarından Build Command kısmını şununla güncelleyin: pip install -r requirements.txt && playwright install chromium --with-deps")
+                    raise RuntimeError("Render build command veya PLAYWRIGHT_BROWSERS_PATH eksik! Lütfen Render Dashboard üzerinden Environment Variables kısmına 'PLAYWRIGHT_BROWSERS_PATH' = '/opt/render/project/.playwright-browsers' ekleyin ve Build Command'i güncelleyin.")
                 raise e
             finally:
                 if 'browser' in locals():
