@@ -36,7 +36,7 @@ engine = AnalysisEngine()
 
 # ── Statik dosya servisi (Frontend) ───────────────────────────────────────
 base_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_path = os.path.join(base_dir, "frontend")
+frontend_path = os.path.join(os.path.dirname(base_dir), "frontend")
 
 if os.path.exists(frontend_path):
     app.mount("/ui", StaticFiles(directory=frontend_path, html=True), name="ui")
