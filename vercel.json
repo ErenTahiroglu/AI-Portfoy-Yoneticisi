@@ -9,7 +9,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://ai-portfolio-assistant.onrender.com/api/$1"
+      "destination": "https://ai-portfoy-yoneticisi.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
