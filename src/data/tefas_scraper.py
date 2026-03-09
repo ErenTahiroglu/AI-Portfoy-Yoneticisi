@@ -12,6 +12,7 @@ import asyncio
 import pandas as pd
 import datetime
 import gc
+import time
 from curl_cffi import requests
 from bs4 import BeautifulSoup
 
@@ -23,6 +24,7 @@ class TefasScraper:
         self.url_api = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo"
         # Impersonate chrome to bypass WAF
         self.session = requests.Session(impersonate="chrome")
+        self.fund_type_cache = {} # Cache for fonkod -> fontip (YAT/EMK)
 
     def _ensure_session(self):
         """WAF ve Cookie oturumu için ana sayfayı bir kez ziyaret et."""
@@ -54,7 +56,7 @@ class TefasScraper:
                     "Referer": self.url_base,
                     "Origin": "https://www.tefas.gov.tr"
                 },
-                timeout=30
+                timeout=(15, 60) # Connect: 15s, Read: 60s
             )
             
             if response.status_code != 200:
@@ -84,8 +86,11 @@ class TefasScraper:
         all_data = []
         current_start = start_date
         
+        # Determine fund type once per request if not cached
+        fontip = self.fund_type_cache.get(fonkod)
+        
         while current_start <= end_date:
-            current_end = current_start + datetime.timedelta(days=89)
+            current_end = current_start + datetime.timedelta(days=364) # 1 Year chunks
             if current_end > end_date:
                 current_end = end_date
                 
@@ -93,17 +98,30 @@ class TefasScraper:
             str_end = current_end.strftime("%d.%m.%Y")
             
             try:
-                # Önce YAT deneyelim
-                chunk_data = self._fetch_chunk(fonkod, str_start, str_end, "YAT")
-                
-                # Veri yoksa EMK (Emeklilik) deneyelim
-                if not chunk_data:
-                    chunk_data = self._fetch_chunk(fonkod, str_start, str_end, "EMK")
+                chunk_data = []
+                if fontip:
+                    # Use known fund type
+                    chunk_data = self._fetch_chunk(fonkod, str_start, str_end, fontip)
+                else:
+                    # Detect fund type (YAT is most common)
+                    chunk_data = self._fetch_chunk(fonkod, str_start, str_end, "YAT")
+                    if chunk_data:
+                        fontip = "YAT"
+                        self.fund_type_cache[fonkod] = "YAT"
+                    else:
+                        # Try EMK (Emeklilik)
+                        chunk_data = self._fetch_chunk(fonkod, str_start, str_end, "EMK")
+                        if chunk_data:
+                            fontip = "EMK"
+                            self.fund_type_cache[fonkod] = "EMK"
                 
                 if chunk_data:
                     all_data.extend(chunk_data)
                     logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
-                    
+                
+                # Small delay to respect WAF
+                time.sleep(0.3)
+                
             except Exception as e:
                 logger.error(f"[{fonkod}] Failed to fetch chunk {str_start} - {str_end}: {e}")
                 
@@ -148,7 +166,7 @@ def get_tefas_data_sync(fonkod: str, start_date: datetime.date, end_date: dateti
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     end = datetime.date.today()
-    start = end - datetime.timedelta(days=150)
-    df = get_tefas_data_sync("TP2", start, end)
-    print("TP2 Data:")
+    start = end - datetime.timedelta(days=730) # 2 Years
+    df = get_tefas_data_sync("TI1", start, end)
+    print("TI1 Data:")
     print(df.tail() if not df.empty else "No Data")

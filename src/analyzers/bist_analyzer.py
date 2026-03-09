@@ -24,6 +24,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 
 import yfinance as yf
+# Render.com/Vercel gibi ortamlarda yazma izni sorunu olmaması için cache'i /tmp/ altına alıyoruz
+try:
+    yf.set_tz_cache_location("/tmp/py-yfinance")
+except Exception:
+    pass
 import pandas as pd
 from io import StringIO
 from datetime import datetime
