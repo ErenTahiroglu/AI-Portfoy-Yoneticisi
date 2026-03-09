@@ -41,6 +41,7 @@ const TRANSLATIONS = {
         "btn.analyze": "Portföyü Analiz Et",
         "btn.compare": "Karşılaştır",
         "btn.share": "Paylaş",
+        "btn.export": "Dışa Aktar",
         // Results
         "results.title": "Analiz Sonuçları",
         "results.summary": "Portföy Özeti",
@@ -128,6 +129,7 @@ const TRANSLATIONS = {
         "btn.analyze": "Analyze Portfolio",
         "btn.compare": "Compare",
         "btn.share": "Share",
+        "btn.export": "Export",
         "results.title": "Analysis Results",
         "results.summary": "Portfolio Summary",
         "results.weightedReturn": "Weighted Return (5Y)",
@@ -192,7 +194,12 @@ function setLanguage(lang) {
     });
     // Update the language button text
     const langBtn = document.getElementById("lang-toggle-btn");
-    if (langBtn) langBtn.textContent = t("lang.toggle");
+    if (langBtn) {
+        // Preserve the icon if it exists
+        const icon = langBtn.querySelector("i");
+        langBtn.textContent = t("lang.toggle");
+        if (icon) langBtn.prepend(icon);
+    }
 }
 
 function toggleLanguage() {

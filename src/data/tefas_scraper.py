@@ -1,160 +1,128 @@
 """
-🧩 TEFAS FON YARDIMCISI (Super-Optimized Playwright - Render Uyumlu)
+🧩 TEFAS FON YARDIMCISI (Super-Optimized - curl_cffi & Render Uyumlu)
 ============================================================
 Render.com Free Tier (512MB RAM) limitine uymak için
-özel bellek optimizasyonlu Chromium ayarları ile çalışır.
-Sayfa (goto) her istekte YALNIZCA BİR KEZ açılır, 
-ardından tüm tarih aralıkları (chunklar) aynı sayfada fetch edilir.
-Bu sayede hız 2-3 kat artar ve zaman aşımı (timeout) riski azalır.
+Playwright yerine curl_cffi (impersonate="chrome") kullanır.
+WAF ve Cookie engellerini aşmak için tarayıcıyı taklit eder.
 """
 
 import json
 import logging
 import asyncio
-from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
 import gc
-from playwright.async_api import async_playwright
+from curl_cffi import requests
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
 class TefasScraper:
     def __init__(self):
-        self.url = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo"
+        self.url_base = "https://www.tefas.gov.tr/FonAnaliz.aspx"
+        self.url_api = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo"
+        # Impersonate chrome to bypass WAF
+        self.session = requests.Session(impersonate="chrome")
 
-    async def _fetch_chunk_with_page(self, page, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
+    def _ensure_session(self):
+        """WAF ve Cookie oturumu için ana sayfayı bir kez ziyaret et."""
         try:
-            payload = f"fontip={fontip}&sfonkod={fonkod}&bastarih={start_date}&bittarih={end_date}"
+            # Sadece bir kere ana sayfaya gitmek yeterlidir
+            if not hasattr(self, '_session_ready'):
+                logger.info("Initializing TEFAS session...")
+                self.session.get(self.url_base, timeout=15)
+                self._session_ready = True
+        except Exception as e:
+            logger.error(f"Failed to initialize TEFAS session: {e}")
+
+    def _fetch_chunk(self, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
+        try:
+            payload = {
+                "fontip": fontip,
+                "sfonkod": fonkod,
+                "bastarih": start_date,
+                "bittarih": end_date
+            }
             
-            # ASPX oturumu (cookie/WAF) zaten page.goto ile sağlandı. 
-            # Şimdi doğrudan JS içinden JSON API'sini çağırıyoruz.
-            js_code = f"""
-            async () => {{
-                try {{
-                    const response = await fetch('{self.url}', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Origin': 'https://www.tefas.gov.tr',
-                            'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx',
-                            'Accept': 'application/json, text/javascript, */*; q=0.01'
-                        }},
-                        body: '{payload}'
-                    }});
-                    const text = await response.text();
-                    return text;
-                }} catch (e) {{
-                    return "ERROR: " + e.message;
-                }}
-            }}
-            """
+            response = self.session.post(
+                self.url_api, 
+                data=payload,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "Referer": self.url_base,
+                    "Origin": "https://www.tefas.gov.tr"
+                },
+                timeout=30
+            )
             
-            result_text = await page.evaluate(js_code)
-            
-            if result_text.startswith("ERROR:"):
-                # Belki sayfa zaman aşımına uğradı, bir kez daha ana sayfaya gitmeyi deneyebiliriz ama şimdilik hata verelim
-                raise ValueError(f"Browser Fetch Error: {result_text}")
+            if response.status_code != 200:
+                logger.error(f"HTTP Error {response.status_code} for {fonkod}")
+                return []
                 
             try:
-                json_data = json.loads(result_text)
+                json_data = response.json()
                 return json_data.get("data", [])
             except json.JSONDecodeError:
-                soup = BeautifulSoup(result_text, "html.parser")
+                # WAF Block veya HTML döndü
+                soup = BeautifulSoup(response.text, "html.parser")
                 clean_text = soup.get_text(separator=' ', strip=True)
-                if len(clean_text) > 200:
-                    clean_text = clean_text[:200] + "..."
-                raise ValueError(f"WAF Block (HTML received): {clean_text}")
+                if "WAF" in clean_text or "Cloudflare" in clean_text:
+                    logger.warning(f"TEFAS WAF Block detected for {fonkod}")
+                return []
                 
         except Exception as e:
             logger.error(f"Chunk fetch failed for {fonkod}: {e}")
             return []
 
-    async def _fetch_async(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
-        logger.info(f"[{fonkod}] TEFAS Super-Optimized Playwright Fetching from {start_date} to {end_date}...")
+    def fetch_sync(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
+        logger.info(f"[{fonkod}] TEFAS Optimized curl_cffi Fetching from {start_date} to {end_date}...")
+        
+        self._ensure_session()
         
         all_data = []
         current_start = start_date
         
-        async with async_playwright() as p:
-            # Memory Optimized Chromium Arguments for 512MB RAM Linux
-            browser = await p.chromium.launch(
-                headless=True,
-                args=[
-                    '--disable-gpu',
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled',
-                    '--single-process',
-                    '--disable-extensions',
-                    '--js-flags=--max-old-space-size=128',
-                    '--disable-software-rasterizer',
-                    '--mute-audio'
-                ]
-            )
-            
-            context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={'width': 800, 'height': 600}
-            )
-            
-            page = await context.new_page()
+        while current_start <= end_date:
+            current_end = current_start + datetime.timedelta(days=89)
+            if current_end > end_date:
+                current_end = end_date
+                
+            str_start = current_start.strftime("%d.%m.%Y")
+            str_end = current_end.strftime("%d.%m.%Y")
             
             try:
-                # WAF ve Cookie oturumu için ana sayfayı BİR KEZ açıyoruz
-                logger.info(f"[{fonkod}] Opening TEFAS analysis page for session...")
-                await page.route(
-                    "**/*", 
-                    lambda route: route.continue_() if route.request.resource_type in ["document", "xhr", "fetch"] else route.abort()
-                )
-                await page.goto("https://www.tefas.gov.tr/FonAnaliz.aspx", wait_until="domcontentloaded", timeout=25000)
+                # Önce YAT deneyelim
+                chunk_data = self._fetch_chunk(fonkod, str_start, str_end, "YAT")
                 
-                # Şimdi tüm chunkları bu sayfa üzerinden fetch ediyoruz (goto yok)
-                while current_start <= end_date:
-                    current_end = current_start + datetime.timedelta(days=89)
-                    if current_end > end_date:
-                        current_end = end_date
-                        
-                    str_start = current_start.strftime("%d.%m.%Y")
-                    str_end = current_end.strftime("%d.%m.%Y")
-                    
-                    try:
-                        chunk_data = await self._fetch_chunk_with_page(page, fonkod, str_start, str_end, "YAT")
-                        if not chunk_data:
-                            chunk_data = await self._fetch_chunk_with_page(page, fonkod, str_start, str_end, "EMK")
-                        
-                        if chunk_data:
-                            all_data.extend(chunk_data)
-                            logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
-                    except Exception as e:
-                        logger.error(f"[{fonkod}] Failed to fetch chunk {str_start} - {str_end}: {e}")
-                        
-                    current_start = current_end + datetime.timedelta(days=1)
-                    
-                if not all_data:
-                    logger.warning(f"[{fonkod}] No data returned from TEFAS.")
-                    return pd.DataFrame(columns=["Close"]).rename_axis("Date")
-                    
-                return self._parse_tefas_data(all_data)
+                # Veri yoksa EMK (Emeklilik) deneyelim
+                if not chunk_data:
+                    chunk_data = self._fetch_chunk(fonkod, str_start, str_end, "EMK")
                 
+                if chunk_data:
+                    all_data.extend(chunk_data)
+                    logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
+                    
             except Exception as e:
-                err_msg = str(e)
-                if "Executable doesn't exist" in err_msg or "playwright install" in err_msg:
-                    logger.error("!!! CRITICAL: Playwright Chromium binary missing on Render !!!")
-                    raise RuntimeError("Render build command veya PLAYWRIGHT_BROWSERS_PATH eksik! Lütfen Render Dashboard üzerinden Environment Variables kısmına 'PLAYWRIGHT_BROWSERS_PATH' = '/opt/render/project/.playwright-browsers' ekleyin ve Build Command'i güncelleyin.")
-                raise e
-            finally:
-                if 'browser' in locals():
-                    await browser.close()
-                gc.collect()
+                logger.error(f"[{fonkod}] Failed to fetch chunk {str_start} - {str_end}: {e}")
+                
+            current_start = current_end + datetime.timedelta(days=1)
+            
+        if not all_data:
+            logger.warning(f"[{fonkod}] No data returned from TEFAS.")
+            return pd.DataFrame(columns=["Close"]).rename_axis("Date")
+            
+        df = self._parse_tefas_data(all_data)
+        gc.collect()
+        return df
 
     def _parse_tefas_data(self, data: list) -> pd.DataFrame:
         df = pd.DataFrame(data)
-        if "TARIH" not in df.columns or "FIYAT" not in df.columns:
+        if df.empty or "TARIH" not in df.columns or "FIYAT" not in df.columns:
             return pd.DataFrame(columns=["Close"]).rename_axis("Date")
             
+        # Handle /Date(123456789)/ format if present
         if df["TARIH"].astype(str).str.contains("/Date").any():
             df["TARIH"] = df["TARIH"].astype(str).str.extract(r'\/Date\((\d+)\)\/')
             
@@ -163,23 +131,13 @@ class TefasScraper:
         df.dropna(subset=["Date", "Close"], inplace=True)
         df.set_index("Date", inplace=True)
         df.sort_index(inplace=True)
+        
+        # Remove duplicates
+        df = df[~df.index.duplicated(keep='first')]
+        
         return df[["Close"]]
 
-    def fetch_sync(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
-        if loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self._fetch_async(fonkod, start_date, end_date), loop)
-            return future.result()
-        else:
-            return loop.run_until_complete(self._fetch_async(fonkod, start_date, end_date))
-
 import threading
-
 _tefas_lock = threading.Lock()
 
 def get_tefas_data_sync(fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:

@@ -190,7 +190,7 @@ class AnalysisEngine:
         # ── ADIM 2: Finansal Getiri Analizi ───────────────────────────────
         fin_data = None
         if check_financials:
-            fin_data = self._run_financial_check(ticker, market, is_tefas, result_entry)
+            fin_data = self._run_financial_check(ticker, market, is_tefas, result_entry, check_financials)
         
         # ── ADIM 3: Temel Değerleme Metrikleri ────────────────────────────
         if not is_tefas:
@@ -253,7 +253,7 @@ class AnalysisEngine:
         
         return data
     
-    def _run_financial_check(self, ticker: str, market: str, is_tefas: bool, result_entry: dict) -> dict:
+    def _run_financial_check(self, ticker: str, market: str, is_tefas: bool, result_entry: dict, check_financials: bool) -> dict:
         """Finansal getiri analizi."""
         analyzer = self._tr_analyzer if market == "TR" else self._us_analyzer
         fin_data = None

@@ -219,7 +219,7 @@ class HisseAnaliz(BaseAnalyzer):
                     else:
                         logger.warning(f"     ⚠️  {kaynak_adi} hata: {e}")
 
-        fiyatlar = kaynaklar["Yahoo"] or kaynaklar["Stooq"] or kaynaklar["AlphaVantage"]
+        fiyatlar = kaynaklar["Yahoo"] if kaynaklar["Yahoo"] is not None else (kaynaklar["Stooq"] if kaynaklar["Stooq"] is not None else kaynaklar["AlphaVantage"])
         if fiyatlar is None:
             if av_rate_limited:
                 raise Exception("ALPHA_VANTAGE_RATE_LIMIT")

@@ -316,7 +316,7 @@ class HisseAnaliz(BaseAnalyzer):
                     logger.warning(f"     ⚠️  {kaynak_adi} hata: {e}")
 
         # En az bir kaynak lazım
-        fiyatlar = kaynaklar["Yahoo"] or kaynaklar["Stooq"] or kaynaklar["AlphaVantage"]
+        fiyatlar = kaynaklar["Yahoo"] if kaynaklar["Yahoo"] is not None else (kaynaklar["Stooq"] if kaynaklar["Stooq"] is not None else kaynaklar["AlphaVantage"])
         if fiyatlar is None:
             logger.error(f"  ❌ {temiz}: hiçbir kaynaktan veri alınamadı.")
             return None

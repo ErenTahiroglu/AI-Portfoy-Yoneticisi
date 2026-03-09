@@ -340,28 +340,22 @@
                 <div class="scenarios-grid"
                     style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
                     <!-- Stress Test Card -->
-                    <div class="scenario-card"
-                        style="padding:1.5rem; border-radius:var(--radius); background:var(--card-bg); border:1px solid var(--card-border);">
+                    <div class="scenario-card">
                         <h4><i class="fas fa-bolt" style="color:var(--warning)"></i> Stres Testi</h4>
-                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Portföyünüzün Beta
-                            sayısına dayalı tahmini şok tepkisi.</p>
-                        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                        <p>Portföyünüzün Beta sayısına dayalı tahmini şok tepkisi.</p>
+                        <div class="stress-controls">
                             <button class="btn btn-outline" id="btn-scenario-2008" style="flex:1; font-size:0.8rem">2008
                                 Krizi (-%50)</button>
                             <button class="btn btn-outline" id="btn-scenario-covid"
                                 style="flex:1; font-size:0.8rem">Covid-19 (-%30)</button>
                         </div>
-                        <div id="scenario-stress-result"
-                            style="font-size:1.1rem; font-weight:600; text-align:center; padding:1rem; background:rgba(255,255,255,0.05); border-radius:0.5rem;">
-                            -</div>
+                        <div id="scenario-stress-result" class="stress-result-box">-</div>
                     </div>
 
                     <!-- Dividend FI/RE Card -->
-                    <div class="scenario-card"
-                        style="padding:1.5rem; border-radius:var(--radius); background:var(--card-bg); border:1px solid var(--card-border);">
+                    <div class="scenario-card">
                         <h4><i class="fas fa-piggy-bank" style="color:var(--primary)"></i> Temettü Emekliliği</h4>
-                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Aylık eklemelerle
-                            portföy veriminden hedef gelire ulaşma süresi (Mevcut Sermaye Hariç).</p>
+                        <p>Aylık eklemelerle portföy veriminden hedef gelire ulaşma süresi (Mevcut Sermaye Hariç).</p>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
                             <div style="display:flex; flex-direction:column; gap:0.4rem;">
                                 <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Aylık
@@ -376,9 +370,7 @@
                                     style="padding:0.6rem; font-size:1rem; background:rgba(0,0,0,0.1); border:1px solid var(--glass-border); border-radius:6px; color:var(--text-main); font-weight:600; width:100%; box-sizing:border-box;">
                             </div>
                         </div>
-                        <div id="scenario-div-result"
-                            style="font-size:1.05rem; line-height:1.5; text-align:center; padding:1.2rem; background:var(--primary-glow); border:1px solid rgba(14, 165, 233, 0.2); border-radius:0.5rem; color:var(--text-main);">
-                            Hesaplanıyor...</div>
+                        <div id="scenario-div-result" class="stress-result-box">Hesaplanıyor...</div>
                     </div>
                 </div>
             </div>

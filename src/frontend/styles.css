@@ -167,6 +167,65 @@ body {
     background-clip: text;
 }
 
+/* ── Scenario & Stress Test Cards ── */
+.scenario-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    background-image: var(--gradient-card);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.scenario-card:hover {
+    border-color: rgba(14, 165, 233, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.scenario-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-main);
+}
+
+.scenario-card p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.stress-controls {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.stress-result-box {
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 1.25rem;
+    background: rgba(14, 165, 233, 0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    color: var(--text-main);
+    transition: all 0.3s;
+}
+
+.stress-result-box.active {
+    background: var(--primary-glow);
+    border-color: rgba(14, 165, 233, 0.2);
+    box-shadow: inset 0 0 20px rgba(14, 165, 233, 0.05);
+}
+
 .sidebar-section {
     padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--glass-border);
@@ -449,7 +508,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════
-   MAIN CONTENT
+   MAIN CONTENT & LAYOUT
 ═══════════════════════════════════════════ */
 .main-content {
     margin-left: 300px;
@@ -788,7 +847,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════
-   RESULTS SECTION
+   RESULTS AREA (HERO, TABLES, CARDS)
 ═══════════════════════════════════════════ */
 .hidden {
     display: none !important;
@@ -1007,9 +1066,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* ═══════════════════════════════════════════
-   RESULT CARDS
-═══════════════════════════════════════════ */
+/* ── Metrics & Technicals ── */
 .results-grid {
     display: grid;
     gap: 1.25rem;
@@ -1567,6 +1624,17 @@ body {
     .sidebar.open {
         transform: translateX(0);
         box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .sidebar-logo {
+        padding: 2rem 1.5rem;
+        background: rgba(14, 165, 233, 0.03);
+        display: flex !important;
+        /* Ensure visibility */
+    }
+
+    .logo-text {
+        font-size: 1.2rem;
     }
 
     .main-content {
