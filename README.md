@@ -23,7 +23,7 @@ Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerlem
 | Özellik | Açıklama |
 |---------|----------|
 | 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
-| 🛡️ **TEFAS Entegrasyonu** | Resmi `tefas` kütüphanesiyle kesintisiz ve hatasız yatırım fonu (TP2, ZP8 vb.) veri çekimi |
+| 🛡️ **TEFAS Entegrasyonu** | `curl_cffi` tabanlı gelişmiş scraper ile WAF engellerini aşan, 180 günlük akıllı chunk'larla hızlı veri çekimi |
 | 📊 **Değerleme Metrikleri** | P/E, P/B, Beta, Piyasa Değeri, EPS, ROE, Temüttü, 52 hafta aralığı |
 | 📈 **Reel Getiri** | ABD ($) ve Türkiye (₺) enflasyon verilerinden arındırılmış gerçek getiri |
 | 🎯 **Risk Analizi** | Sharpe Ratio, Maximum Drawdown, yıllık/aylık getiri dağılımı |
@@ -52,6 +52,7 @@ Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerlem
 | 💾 **Akıllı Cache** | Aynı hisse 5 dakika içinde tekrar sorgulanmaz |
 | 🔒 **API Şifreleme** | API anahtarları AES-GCM ile şifreli saklanır |
 | 🛡️ **Gizlilik** | %100 yerel — verileriniz hiçbir sunucuya gitmez |
+| 🧠 **Memory Safe** | Render 512MB RAM limiti için optimize edilmiş düşük thread (max 4) kullanımı ve aktif GC |
 | 🐳 **Docker** | `docker compose up` ile tek komutla çalıştırma |
 
 ### 🧩 Modüler Mimari (Puzzle Modeli)
@@ -75,7 +76,7 @@ src/
 │   └── islamic_analyzer.py  → AAOIFI uygunluk denetimi (opsiyonel)
 ├── data/
 │   ├── data_sources.py      → SSL bypass, logging, sabitler
-│   ├── tefas_scraper.py     → TEFAS fon veri sağlayıcısı (tefas API)
+│   ├── tefas_scraper.py     → TEFAS fon veri sağlayıcısı (Optimized curl_cffi Fetcher)
 │   ├── market_detector.py   → Pazar algılama (US / TR / TEFAS)
 │   └── news_fetcher.py      → AI destekli haber akışı
 ├── utils/
@@ -142,7 +143,7 @@ It calculates financial metrics (returns, inflation adjustments, dividends, Shar
 | 🎯 **Risk Analysis** | Sharpe Ratio, Max Drawdown, yearly/monthly return breakdowns |
 | 🧪 **Stress Tests** | Simulate 2008 Crash and Covid-19 drops based on Portfolio Beta |
 | 🏦 **Dividend FI/RE** | Calculate time to reach target passive income with monthly contributions |
-| 🛡️ **TEFAS Fetching** | Reliable mutual fund data retrieval using the official `tefas` API client |
+| 🛡️ **TEFAS Fetching** | Reliable mutual fund data retrieval using custom `curl_cffi` scraper with WAF bypass |
 | ⚖️ **Optimization** | Markowitz Efficient Frontier optimization for Maximum Sharpe ratio weights |
 | 🪄 **AI Wizard** | Create tailored portfolios instantly from natural language prompts |
 | 📰 **Dynamic News** | AI-filtered impactful market news with Sentiment Analysis (Bullish/Bearish) |
@@ -204,5 +205,8 @@ python src/desktop_app.py
 | `python-docx` + `fpdf2` + `openpyxl` | Report export |
 
 ---
+
+---
+*Not: Render.com Free Tier (512MB RAM) limiti için uygulama eşzamanlı analiz sayısını 2 ticker ile sınırlandıracak şekilde optimize edilmiştir.*
 
 *Disclaimer: This software is for informational and educational purposes only. It does not constitute financial or investment advice. Always verify AI-generated analyses with your own research.*

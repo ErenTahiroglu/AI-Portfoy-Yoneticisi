@@ -88,5 +88,3 @@ xxhash==3.6.0
 yahooquery==2.4.1
 yfinance==1.2.0
 zstandard==0.25.0
-nest_asyncio>=1.6.0
-beautifulsoup4>=4.12.0

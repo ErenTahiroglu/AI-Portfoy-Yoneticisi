@@ -65,3 +65,4 @@ playwright-browsers/
 
 # Misc
 *.vbs
+py-yfinance/
