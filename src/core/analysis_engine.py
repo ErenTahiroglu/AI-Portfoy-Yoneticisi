@@ -131,8 +131,8 @@ class AnalysisEngine:
                 )
                 results.append(result)
         else:
-            # Çoklu ticker → paralel
-            with ThreadPoolExecutor(max_workers=min(5, len(clean_tickers))) as pool:
+            # Çoklu ticker → paralel (Render 512MB RAM için limitli: 2)
+            with ThreadPoolExecutor(max_workers=2) as pool:
                 future_map = {}
                 for ticker in clean_tickers:
                     future = pool.submit(

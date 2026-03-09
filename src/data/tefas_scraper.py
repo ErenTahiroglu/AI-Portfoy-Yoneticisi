@@ -90,7 +90,7 @@ class TefasScraper:
         fontip = self.fund_type_cache.get(fonkod)
         
         while current_start <= end_date:
-            current_end = current_start + datetime.timedelta(days=364) # 1 Year chunks
+            current_end = current_start + datetime.timedelta(days=180) # 6 Month chunks (RAM safe)
             if current_end > end_date:
                 current_end = end_date
                 
@@ -118,6 +118,9 @@ class TefasScraper:
                 if chunk_data:
                     all_data.extend(chunk_data)
                     logger.debug(f"[{fonkod}] Fetched {len(chunk_data)} records for {str_start} - {str_end}")
+                    # Explicit memory cleanup for large lists
+                    del chunk_data
+                    gc.collect()
                 
                 # Small delay to respect WAF
                 time.sleep(0.3)

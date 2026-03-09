@@ -302,7 +302,8 @@ class HisseAnaliz(BaseAnalyzer):
                         time.sleep(1)
             return None
 
-        with ThreadPoolExecutor(max_workers=3) as pool:
+        # Render 512MB limitine uymak için kaynak paralelliğini de 2'ye düşürüyoruz
+        with ThreadPoolExecutor(max_workers=2) as pool:
             futures = {
                 pool.submit(_yahoo_retry): "Yahoo",
                 pool.submit(self._stooq_cek, sembol, baslangic, bitis): "Stooq",
