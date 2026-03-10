@@ -116,6 +116,8 @@ _POPULAR_TICKERS = {
     "AMD": "Advanced Micro Devices", "CRM": "Salesforce Inc.", "AVGO": "Broadcom Inc.",
     "COST": "Costco Wholesale", "ABBV": "AbbVie Inc.", "MRK": "Merck & Co.",
     "TMO": "Thermo Fisher", "ACN": "Accenture plc", "LLY": "Eli Lilly & Co.",
+    "PYPL": "PayPal Holdings", "NKE": "Nike Inc.", "ADBE": "Adobe Inc.",
+    "CSCO": "Cisco Systems", "ORCL": "Oracle Corp.", "TXN": "Texas Instruments",
     # BIST Popüler
     "THYAO": "Türk Hava Yolları", "ASELS": "Aselsan", "GARAN": "Garanti Bankası",
     "AKBNK": "Akbank", "YKBNK": "Yapı Kredi Bankası", "EREGL": "Ereğli Demir Çelik",
@@ -126,12 +128,15 @@ _POPULAR_TICKERS = {
     "SASA": "SASA Polyester", "TTKOM": "Türk Telekom", "ARCLK": "Arçelik",
     "MGROS": "Migros", "PETKM": "PETKİM", "SOKM": "Şok Marketler",
     "VESTL": "Vestel Elektronik", "HALKB": "Halkbank", "VAKBN": "VakıfBank",
-    "GUBRF": "Gübre Fabrikaları", "KOZAA": "Koza Anadolu Metal",
+    "GUBRF": "Gübre Fabrikaları", "KOZAA": "Koza Anadolu Metal", "ODAS": "Odaş Elektrik",
+    "KRDMD": "Kardemir D", "AEFES": "Anadolu Efes", "ENKAI": "Enka İnşaat",
+    "DOHOL": "Doğan Holding", "ISCTR": "İş Bankası C", "ALARK": "Alarko Holding",
     # TEFAS Popüler
     "TP2": "Tera Portföy Para Piyasası Fonu", "AKB": "Ak Portföy Birinci Değişken Fon",
     "ZP8": "Ziraat Portföy Kehribar Para Piyasası Katılım Serbest Fon", "IPB": "İş Portföy Birinci Değişken Fon",
     "YAY": "Yapı Kredi Yabancı Teknoloji Hisse Senedi Fonu", "TI2": "TEB Portföy İş İştirakleri Fonu",
     "MAC": "Marmara Capital Hisse Senedi Fonu", "AFA": "Ak Portföy Amerika Yabancı Hisse Fonu",
+    "TDF": "TEB Portföy Amerika Yabancı Hisse Fonu", "KTM": "Kuveyt Türk Portföy Katılım Serbest Fon",
 }
 
 
@@ -271,19 +276,28 @@ async def analyze_from_file(
 @app.get("/api/suggest")
 async def suggest_tickers(q: str = ""):
     """Ticker autocomplete önerileri döndürür."""
-    if not q or len(q) < 1:
+    q = q.strip()
+    if not q:
         return {"suggestions": []}
     
-    q_upper = q.upper().strip()
+    q_upper = q.upper()
     matches = []
     
+    # 1. Tam eşleşme veya başlangıç eşleşmesi (Ticker)
     for ticker, name in _POPULAR_TICKERS.items():
-        if q_upper in ticker or q.lower() in name.lower():
+        if ticker.startswith(q_upper) or q_upper in ticker:
             matches.append({"ticker": ticker, "name": name})
-            if len(matches) >= 10:
-                break
+            if len(matches) >= 15: break
+
+    # 2. İsim içinde eşleşme (Eğer liste dolmadıysa)
+    if len(matches) < 10:
+        for ticker, name in _POPULAR_TICKERS.items():
+            if any(m["ticker"] == ticker for m in matches): continue
+            if q.lower() in name.lower():
+                matches.append({"ticker": ticker, "name": name})
+                if len(matches) >= 15: break
     
-    return {"suggestions": matches}
+    return {"suggestions": matches[:15]}
 
 
 # ══════════════════════════════════════════════════════════════════════════

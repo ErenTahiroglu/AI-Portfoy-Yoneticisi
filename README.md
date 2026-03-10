@@ -70,42 +70,79 @@ src/
 │   ├── analysis_engine.py   → Orkestratör (paralel + cache + teknik göstergeler + sektör)
 │   ├── optimization_engine.py → Portföy optimizasyonu (MPT)
 │   ├── ai_agent.py          → Gemini AI yorum üretimi
-│   └── portfolio_analyzer.py → ABD hisse analizi
-├── analyzers/
-│   ├── base_analyzer.py     → Ortak hesaplama mantığı (DRY)
-│   ├── bist_analyzer.py     → BIST hisse analizi
-│   └── islamic_analyzer.py  → AAOIFI uygunluk denetimi (opsiyonel)
-├── data/
-│   ├── data_sources.py      → SSL bypass, logging, sabitler
-│   ├── tefas_scraper.py     → TEFAS fon veri sağlayıcısı (Optimized curl_cffi Fetcher)
-│   ├── market_detector.py   → Pazar algılama (US / TR / TEFAS)
-│   └── news_fetcher.py      → AI destekli haber akışı
-├── utils/
-│   ├── file_processor.py    → Excel/DOCX/PDF okuma & yazma
-│   └── report_generator.py  → Rapor şablon yönetimi
-├── desktop_app.py           → Masaüstü başlatıcı (Giriş noktası)
-└── frontend/                → Web arayüzü (HTML/CSS/JS)
-```
+# 🚀 AI Destekli Portföy Analiz Platformu (v4.0)
 
+Hisselerinizi ve yatırım fonlarınızı (ABD & Türkiye) saniyeler içinde analiz eden, yapay zeka destekli ve kullanıcı dostu bir yatırım platformu.
+
+## ✨ Öne Çıkan Özellikler
+
+*   **🔍 Akıllı Ticker Algılama:** ABD (NYSE/NASDAQ) ve Türkiye (BIST/TEFAS) sembollerini otomatik tanır.
+*   **🤖 AI Portföy Sihirbazı:** Sadece ne tür bir portföy istediğinizi yazın (örn: "Yüksek temettülü 5 BIST hissesi"), AI sizin için tasarlasın.
+*   **📊 İnteraktif Finansal Metrikler:** P/E, P/B, Beta gibi metriklere tıklayarak AI'dan o hisseye özel derinlemesine analiz alın.
+*   **⚡ Hızlı Autocomplete:** Sadece 1-2 harf yazarak binlerce sembol arasından doğru olanı bulun.
+*   **🛡️ Stres Testleri:** 2008 Krizi, Pandemi veya Teknoloji Çöküşü gibi senaryolarda portföyünüzün nasıl etkileneceğini görün.
+*   **📈 Monte Carlo Simülasyonu:** Portföyünüzün 1 yıllık gelecekteki olası getiri dağılımını bilimsel yöntemlerle tahmin edin.
+*   **☪️ İslami Uygunluk (Opsiyonel):** Katılım Finansı ilkelerine göre otomatik tarama ve arındırma oranları.
+*   **📄 Çoklu Dışa Aktarma:** Analiz sonuçlarını **Excel**, **PDF** veya **Word** formatında indirin.
+
+## 🛠️ Kurulum ve Çalıştırma
+
+### 1. Gereksinimler
+*   Python 3.10+
+*   Google Gemini API Key (AI yorumları için)
+
+### 2. Yerelde Çalıştırma
 ```bash
+# Depoyu klonlayın
 git clone https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi.git
 cd AI-Portfoy-Yoneticisi
-python -m venv .venv && .venv\Scripts\activate
+
+# Sanal ortam oluşturun ve aktif edin
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Bağımlılıkları yükleyin
 pip install -r requirements.txt
-playwright install chromium
+
+# Uygulamayı başlatın
 uvicorn src.api.main:app --reload
 ```
+Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
+
+## 📂 Proje Yapısı
+
+*   `src/api/`: FastAPI endpointleri ve API mantığı.
+*   `src/core/`: Analiz orkestratörü ve Monte Carlo motoru.
+*   `src/analyzers/`: BIST ve US pazar analiz araçları.
+*   `src/frontend/`: Glassmorphism tasarımlı, i18n destekli modern arayüz.
+*   `src/utils/`: Dosya işleme ve dışa aktarma araçları.
+
+## 🔒 Güvenlik Notu
+API anahtarlarınız asla sunucuya kaydedilmez, tarayıcınızın yerel depolamasında (localStorage) AES-GCM ile şifrelenmiş olarak tutulur.
+
+## 📄 Lisans
+Bu proje MIT lisansı ile lisanslanmıştır. Kullanım sorumluluğu tamamen kullanıcıya aittir. Yatırım tavsiyesi değildir.
 
 ### ☁️ Canlı Ortamda Yayınlama (Vercel + Render Çift Mimari)
 
 Bu proje, alan adınızı kullanabilmeniz ve TEFAS sunucularının ağır "Cloudflare" bot engellerini aşabilmeniz için **Çift Sunucu (Monorepo) Mimarisi** kullanır. 
-Ücretsiz ve sorunsuz canlıya almak için aşağıdaki adımları izleyin:
 
 #### 1. Backend'i Render.com'a Yükleme (Veri Motoru)
-Render.com, TEFAS verilerini engelsiz kazıyan "Sanal Tarayıcı (Playwright)" kütüphanesini barındıracak kapasiteye sahip ücretsiz arka uç sunucunuzdur.
 *   **render.com** adresine gidip GitHub'ınızla giriş yapın.
-*   "New" > "Web Service" > "Build and deploy from a Git repository" seçeneğini tıklayın.
-*   Bu deponuzu (AI-Portfoy-Yoneticisi) seçin.
+*   "New" > "Web Service" seçeneğini tıklayın.
+*   Bu deponuzu seçin.
+*   **Root Directory:** Boş bırakın.
+*   **Build Command:** `pip install -r requirements.txt`
+*   **Start Command:** `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
+*   "Create Web Service" butonuna basın. Render size bir URL verecektir (örn: `https://projeniz.onrender.com`).
+
+#### 2. Frontend'i Vercel'e Yükleme (Hızlı Arayüz)
+*   `src/frontend/js/utils.js` dosyasındaki `API_BASE` değişkenini Render'dan aldığınız URL ile güncelleyin.
+*   Vercel'e gidin ve projeyi import edin.
+*   Vercel otomatik olarak `src/frontend` dizinini algılayacak ve yayına alacaktır.
+
+---
+Geliştirici: [Eren Tahiroğlu](https://github.com/ErenTahiroglu)
 *   **Blueprint:** Otomatik olarak depodaki `render.yaml` dosyasını bulacak ve tüm Python kurulumlarını sizin yerinize şipşak halledecektir. 
 *   Bittiğinde size bir API linki verecek (Örn: `https://ai-portfolio-assistant.onrender.com`).
 

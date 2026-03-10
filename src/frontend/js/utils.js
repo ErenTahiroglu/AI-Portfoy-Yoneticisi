@@ -97,49 +97,90 @@ function saveCurrentPortfolio() {
 // ═══════════════════════════════════════
 // AUTOCOMPLETE
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// AUTOCOMPLETE
+// ═══════════════════════════════════════
 let autocompleteTimeout = null;
 function setupAutocomplete() {
     const textarea = document.getElementById("ticker-input");
     const dropdown = document.getElementById("autocomplete-dropdown");
+    if (!textarea || !dropdown) return;
+
     textarea.addEventListener("input", () => {
         clearTimeout(autocompleteTimeout);
-        const words = textarea.value.split(/[\s,;]+/);
-        const lastWord = words[words.length - 1];
-        if (!lastWord || lastWord.length < 1) { dropdown.classList.add("hidden"); return; }
+
+        // Get the current word being typed (the one after the last comma/space)
+        const content = textarea.value;
+        const words = content.split(/[\s,;]+/);
+        const lastWord = words[words.length - 1].trim();
+
+        // Show suggestions even for a single character
+        if (!lastWord || lastWord.length < 1) {
+            dropdown.classList.add("hidden");
+            return;
+        }
+
         autocompleteTimeout = setTimeout(async () => {
             try {
                 const res = await fetch(`${API_BASE}/api/suggest?q=${encodeURIComponent(lastWord)}`);
+                if (!res.ok) throw new Error("API error");
+
                 const data = await res.json();
                 if (data.suggestions && data.suggestions.length > 0) {
-                    dropdown.innerHTML = data.suggestions.map(s => `<div class="autocomplete-item" data-ticker="${s.ticker}">
-                        <div style="flex:1; display:flex; align-items:center; gap:8px;" class="autocomplete-clickable">
-                            <span class="ticker-symbol">${s.ticker}</span><span class="ticker-name">${s.name}</span>
-                        </div>
-                        <i class="fas fa-info-circle ticker-info-btn" style="color:var(--primary); padding:8px;" data-ticker="${s.ticker}"></i>
-                    </div>`).join("");
+                    dropdown.innerHTML = data.suggestions.map(s => `
+                        <div class="autocomplete-item" data-ticker="${s.ticker}">
+                            <div style="flex:1; display:flex; align-items:center; gap:8px;" class="autocomplete-clickable">
+                                <span class="ticker-symbol">${s.ticker}</span>
+                                <span class="ticker-name">${s.name}</span>
+                            </div>
+                            <i class="fas fa-info-circle ticker-info-btn" title="Hızlı Bilgi" data-ticker="${s.ticker}"></i>
+                        </div>`).join("");
+
                     dropdown.classList.remove("hidden");
 
+                    // Handle suggestion click
                     dropdown.querySelectorAll(".autocomplete-clickable").forEach(el => {
                         el.addEventListener("click", (e) => {
                             const ticker = e.currentTarget.parentElement.dataset.ticker;
-                            words[words.length - 1] = ticker;
-                            textarea.value = words.join(", ") + ", ";
+                            const currentWords = textarea.value.split(/([\s,;]+)/); // Preserve separators
+
+                            // Replace the last non-separator word
+                            let found = false;
+                            for (let i = currentWords.length - 1; i >= 0; i--) {
+                                if (currentWords[i].trim() && !found) {
+                                    currentWords[i] = ticker;
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                            textarea.value = currentWords.join("") + ", ";
                             dropdown.classList.add("hidden");
                             textarea.focus();
                         });
                     });
 
+                    // Handle info button click
                     dropdown.querySelectorAll(".ticker-info-btn").forEach(btn => {
                         btn.addEventListener("click", (e) => {
                             e.stopPropagation();
                             showTickerQuickModal(e.currentTarget.dataset.ticker);
                         });
                     });
-                } else { dropdown.classList.add("hidden"); }
-            } catch { dropdown.classList.add("hidden"); }
-        }, 200);
+                } else {
+                    dropdown.classList.add("hidden");
+                }
+            } catch (err) {
+                console.warn("Autocomplete fetch error:", err);
+                dropdown.classList.add("hidden");
+            }
+        }, 150); // Slightly faster debounce
     });
-    textarea.addEventListener("blur", () => setTimeout(() => dropdown.classList.add("hidden"), 200));
+
+    // Hide dropdown on blur unless clicking inside it
+    textarea.addEventListener("blur", () => {
+        setTimeout(() => dropdown.classList.add("hidden"), 250);
+    });
 }
 
 // ═══════════════════════════════════════

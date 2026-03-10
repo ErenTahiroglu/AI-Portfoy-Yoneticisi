@@ -9,8 +9,14 @@ charset-normalizer==3.4.4
 click==8.3.1
 cloudscraper==1.2.71
 colorama==0.4.6
-cryptography
-curl_cffi==0.13.0
+crequests==2.31.0
+curl_cffi==0.6.0b9
+python-docx==1.1.0
+fpdf2==2.7.8
+openpyxl==3.1.2
+python-dotenv==1.0.1
+lxml==5.1.0
+xlrd==2.0.1
 cycler
 defusedxml==0.7.1
 distro==1.9.0

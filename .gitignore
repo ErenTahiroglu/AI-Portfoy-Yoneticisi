@@ -11,6 +11,29 @@ ENV/
 env.bak/
 venv.bak/
 
+# Project specific
+api_keys.json
+.env
+.env.local
+*.xlsx
+*.pdf
+*.docx
+*.log
+.gemini/
+.agents/
+.agent/
+data/*.json
+!data/market_metadata.json
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+build/
+.vscode/
+.idea/
+*.pdf
+
 # Python Cache
 __pycache__/
 *.py[cod]
