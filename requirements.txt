@@ -9,7 +9,7 @@ charset-normalizer==3.4.4
 click==8.3.1
 cloudscraper==1.2.71
 colorama==0.4.6
-crequests==2.31.0
+requests==2.31.0
 curl_cffi==0.6.0b9
 python-docx==1.1.0
 fpdf2==2.7.8
