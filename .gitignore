@@ -59,7 +59,7 @@ desktop.ini
 .agents/
 .agent/
 
-# Test Scripts (Temporary)
+# Test Scripts & Temporary
 test_*.py
 test_*.json
 find_api.py
