@@ -273,6 +273,15 @@ async def analyze_from_file(
 # TICKER SUGGESTION ENDPOINT
 # ══════════════════════════════════════════════════════════════════════════
 
+# ── Yardımcı Fonksiyonlar ────────────────────────────────────────────────
+def tr_lower(text: str) -> str:
+    """Türkçe karakter duyarlı küçük harfe çevirme."""
+    return text.replace('İ', 'i').replace('I', 'ı').lower()
+
+def tr_upper(text: str) -> str:
+    """Türkçe karakter duyarlı büyük harfe çevirme."""
+    return text.replace('i', 'İ').replace('ı', 'I').upper()
+
 @app.get("/api/suggest")
 async def suggest_tickers(q: str = ""):
     """Ticker autocomplete önerileri döndürür."""
@@ -280,20 +289,22 @@ async def suggest_tickers(q: str = ""):
     if not q:
         return {"suggestions": []}
     
-    q_upper = q.upper()
+    q_norm = tr_lower(q)
     matches = []
     
-    # 1. Tam eşleşme veya başlangıç eşleşmesi (Ticker)
+    # 1. Ticker üzerinden arama (Sembol)
     for ticker, name in _POPULAR_TICKERS.items():
-        if ticker.startswith(q_upper) or q_upper in ticker:
+        ticker_norm = tr_lower(ticker)
+        if ticker_norm.startswith(q_norm) or q_norm in ticker_norm:
             matches.append({"ticker": ticker, "name": name})
             if len(matches) >= 15: break
 
-    # 2. İsim içinde eşleşme (Eğer liste dolmadıysa)
+    # 2. İsim üzerinden arama (Eğer liste dolmadıysa)
     if len(matches) < 10:
         for ticker, name in _POPULAR_TICKERS.items():
             if any(m["ticker"] == ticker for m in matches): continue
-            if q.lower() in name.lower():
+            name_norm = tr_lower(name)
+            if q_norm in name_norm:
                 matches.append({"ticker": ticker, "name": name})
                 if len(matches) >= 15: break
     
