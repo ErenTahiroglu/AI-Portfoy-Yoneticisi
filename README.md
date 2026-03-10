@@ -27,8 +27,9 @@ Finansal verileri (getiri, enflasyon, temettü, risk metrikleri, temel değerlem
 | 📊 **Değerleme Metrikleri** | P/E, P/B, Beta, Piyasa Değeri, EPS, ROE, Temüttü, 52 hafta aralığı |
 | 📈 **Reel Getiri** | ABD ($) ve Türkiye (₺) enflasyon verilerinden arındırılmış gerçek getiri |
 | 🎯 **Risk Analizi** | Sharpe Ratio, Maximum Drawdown, yıllık/aylık getiri dağılımı |
-| 🧪 **Stres Testleri** | 2008 Krizi, Covid-19 simülasyonları ile portföy şok analizi |
-| 🏦 **Temettü Emekliliği** | İstenilen pasif gelire aylık katkılarla ulaşma süresini hesaplayan finansal simülatör |
+| 🔍 **İnteraktif Metrikler** | Finansal oranlara (F/K, PDD vb.) tıklayarak statik tanımlar ve **AI destekli özel içgörüler** |
+| 🧪 **Premium Stres Testleri** | Tech Crash, 2008 Krizi, Covid-19 simülasyonları ile modern **Market Shock Gauge** kadranı |
+| 🏦 **Temettü Emekliliği** | İstenilen pasif gelire aylık katkılarla ulaşma süresini hesaplayan gelişmiş simülatör |
 | 📉 **Teknik Göstergeler** | RSI 14, MACD 12/26/9, EMA 20/50/100/200, SMA 20/50/100/200 |
 | 🧩 **Sektör Dağılımı** | Portföy genelinde sektör pasta grafiği ve interaktif ısı haritası (Treemap) |
 | 🔗 **Korelasyon Matrisi** | Hisseler arası renk kodlu korelasyon ısı haritası |
@@ -141,7 +142,8 @@ It calculates financial metrics (returns, inflation adjustments, dividends, Shar
 | 📊 **Valuation Metrics** | P/E, P/B, Beta, Market Cap, EPS, ROE, Dividend Yield, 52w range |
 | 📈 **Real Returns** | Inflation-adjusted returns using US/TR CPI data from FRED |
 | 🎯 **Risk Analysis** | Sharpe Ratio, Max Drawdown, yearly/monthly return breakdowns |
-| 🧪 **Stress Tests** | Simulate 2008 Crash and Covid-19 drops based on Portfolio Beta |
+| 🔍 **Interactive Metrics** | Click on financial ratios for static definitions and **AI-powered custom insights** |
+| 🧪 **Premium Stress Tests** | Tech Crash, 2008 Crash, Covid-19 simulations with modern **Market Shock Gauge** |
 | 🏦 **Dividend FI/RE** | Calculate time to reach target passive income with monthly contributions |
 | 🛡️ **TEFAS Fetching** | Reliable mutual fund data retrieval using custom `curl_cffi` scraper with WAF bypass |
 | ⚖️ **Optimization** | Markowitz Efficient Frontier optimization for Maximum Sharpe ratio weights |

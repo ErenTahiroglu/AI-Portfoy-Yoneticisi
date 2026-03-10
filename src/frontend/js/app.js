@@ -37,6 +37,69 @@ function showComparison() {
 }
 
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// METRIC DETAILS & MODAL
+// ═══════════════════════════════════════
+const METRIC_DESCRIPTIONS = {
+    pe: {
+        tr: "Fiyat/Kazanç Oranı (P/E): Şirketin piyasa değerinin yıllık karına oranıdır. Şirketin her 1 TL'lik karı için piyasanın ne kadar ödemeye razı olduğunu gösterir. Düşük oran 'ucuz', yüksek oran 'büyüme beklentisi' veya 'pahalı' olarak yorumlanabilir.",
+        en: "Price-to-Earnings Ratio (P/E): The ratio of a company's share price to its earnings per share. High P/E could mean that a stock's price is high relative to earnings and possibly overvalued. Conversely, a low P/E might indicate that the current stock price is low relative to earnings."
+    },
+    pb: {
+        tr: "Piyasa Değeri/Defter Değeri (P/B): Şirketin piyasa değerinin, özsermayesine (net varlıklarına) oranıdır. 1'in altı genellikle şirketin varlıklarından daha ucuza satıldığını gösterir.",
+        en: "Price-to-Book Ratio (P/B): Compares a firm's market capitalization to its book value. A P/B ratio under 1.0 is considered a good P/B value, indicating a potentially undervalued stock."
+    },
+    beta: {
+        tr: "Beta: Hissenin piyasaya (endekse) göre oynaklığını ölçer. Beta > 1 ise hisse piyasadan daha hareketli, Beta < 1 ise daha durağandır. Risk iştahınıza göre kritik bir göstergedir.",
+        en: "Beta: A measure of a stock's volatility in relation to the overall market. A beta greater than 1.0 suggests that the stock is more volatile than the market, while a beta less than 1.0 indicates it is less volatile."
+    },
+    sharpe: {
+        tr: "Sharpe Oranı: Risk birimi başına elde edilen getiriyi ölçer. Oranın yüksek olması (özellikle 1 ve üzeri), alınan riskin karşılığının iyi bir getiriyle alındığını gösterir.",
+        en: "Sharpe Ratio: Measures the performance of an investment compared to a risk-free asset, after adjusting for its risk. A higher Sharpe ratio is better."
+    },
+    max_dd: {
+        tr: "Maximum Drawdown (Max DD): Bir varlığın zirve noktasından en dip noktasına kadar yaşadığı en büyük değer kaybıdır. Portföyün 'en kötü senaryoda' ne kadar düşebileceğini gösterir.",
+        en: "Maximum Drawdown (Max DD): The maximum observed loss from a peak to a trough of a portfolio, before a new peak is attained. It's a key indicator of downside risk."
+    },
+    div: {
+        tr: "Temettü Verimi: Şirketin dağıttığı temettünün hisse fiyatına oranıdır. Pasif gelir odaklı yatırımcılar için ana performans göstergesidir.",
+        en: "Dividend Yield: A financial ratio that shows how much a company pays out in dividends each year relative to its stock price."
+    },
+    s5: {
+        tr: "5 Yıllık Reel Getiri: Son 5 yıldaki toplam getirinin enflasyondan arındırılmış halidir. Paranızı enflasyona karşı ne kadar koruduğunuzu ve büyüttüğünüzü temsil eder.",
+        en: "5-Year Real Return: The total return over the last 5 years adjusted for inflation. Represents how much you have grown your purchasing power."
+    }
+};
+
+function openMetricModal(ticker, metricKey, label, aiCommentRaw) {
+    const modal = document.getElementById("metric-modal");
+    const title = document.getElementById("metric-detail-title");
+    const tickerEl = document.getElementById("metric-detail-ticker");
+    const desc = document.getElementById("metric-static-desc");
+    const aiBox = document.getElementById("metric-ai-insight");
+
+    title.textContent = label;
+    tickerEl.textContent = ticker;
+
+    const lang = getLang();
+    desc.textContent = METRIC_DESCRIPTIONS[metricKey] ? METRIC_DESCRIPTIONS[metricKey][lang] : "Bu metrik hakkında detaylı bilgi bulunmuyor.";
+
+    // Parse AI Insights from commentary
+    let insight = "Bu metrik için yapay zeka analizi henüz hazır değil veya analiz sırasında üretilmedi.";
+    if (aiCommentRaw) {
+        const match = aiCommentRaw.match(/<!--METRIC_INSIGHTS:\s*([\s\S]*?)\s*-->/);
+        if (match) {
+            try {
+                const insights = JSON.parse(match[1]);
+                if (insights[metricKey]) insight = insights[metricKey];
+            } catch (e) { console.error("JSON parse error for metric insights:", e); }
+        }
+    }
+
+    aiBox.textContent = insight;
+    modal.classList.remove("hidden");
+}
+
 // RENDER RESULTS
 // ═══════════════════════════════════════
 function renderResults(data) {
@@ -91,27 +154,37 @@ function renderResults(data) {
 
         // Metrics
         let metricsHTML = "";
-        if (val.pe) metricsHTML += `<div class="metric-box" title="${t("tooltip.pe")}"><div class="metric-label">P/E <i class="fas fa-question-circle" style="font-size:0.65rem;opacity:0.6"></i></div><div class="metric-value">${fmtNum(val.pe)}</div></div>`;
-        if (val.pb) metricsHTML += `<div class="metric-box" title="${t("tooltip.pb")}"><div class="metric-label">P/B <i class="fas fa-question-circle" style="font-size:0.65rem;opacity:0.6"></i></div><div class="metric-value">${fmtNum(val.pb)}</div></div>`;
-        if (val.beta) metricsHTML += `<div class="metric-box" title="${t("tooltip.beta")}"><div class="metric-label">Beta <i class="fas fa-question-circle" style="font-size:0.65rem;opacity:0.6"></i></div><div class="metric-value">${fmtNum(val.beta)}</div></div>`;
-        if (val.market_cap) metricsHTML += `<div class="metric-box"><div class="metric-label">Piyasa Değeri</div><div class="metric-value">${formatMarketCap(val.market_cap)}</div></div>`;
-        if (val.div_yield) metricsHTML += `<div class="metric-box"><div class="metric-label">Temettü</div><div class="metric-value">${fmtNum(val.div_yield, "%")}</div></div>`;
-        if (val.eps) metricsHTML += `<div class="metric-box"><div class="metric-label">EPS</div><div class="metric-value">${fmtNum(val.eps)}</div></div>`;
-        if (val.roe) metricsHTML += `<div class="metric-box"><div class="metric-label">ROE</div><div class="metric-value">${fmtNum(val.roe, "%")}</div></div>`;
-        if (val.high_52w) metricsHTML += `<div class="metric-box"><div class="metric-label">52H Yüksek</div><div class="metric-value">${fmtNum(val.high_52w)}</div></div>`;
-        if (val.low_52w) metricsHTML += `<div class="metric-box"><div class="metric-label">52H Düşük</div><div class="metric-value">${fmtNum(val.low_52w)}</div></div>`;
+        const ticker = res.ticker;
+        const aiRaw = res.ai_comment || "";
+
+        function createMetricBox(label, value, key, classes = "") {
+            return `<div class="metric-box ${classes}" onclick='openMetricModal("${ticker}", "${key}", "${label}", ${JSON.stringify(aiRaw)})'>
+                <div class="metric-label">${label} <i class="fas fa-info-circle" style="font-size:0.65rem;opacity:0.6"></i></div>
+                <div class="metric-value">${value}</div>
+            </div>`;
+        }
+
+        if (val.pe) metricsHTML += createMetricBox("P/E", fmtNum(val.pe), "pe");
+        if (val.pb) metricsHTML += createMetricBox("P/B", fmtNum(val.pb), "pb");
+        if (val.beta) metricsHTML += createMetricBox("Beta", fmtNum(val.beta), "beta");
+        if (val.market_cap) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Piyasa Değeri</div><div class="metric-value">${formatMarketCap(val.market_cap)}</div></div>`;
+        if (val.div_yield) metricsHTML += createMetricBox("Temettü", fmtNum(val.div_yield, "%"), "div");
+        if (val.eps) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">EPS</div><div class="metric-value">${fmtNum(val.eps)}</div></div>`;
+        if (val.roe) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">ROE</div><div class="metric-value">${fmtNum(val.roe, "%")}</div></div>`;
+        if (val.high_52w) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">52H Yüksek</div><div class="metric-value">${fmtNum(val.high_52w)}</div></div>`;
+        if (val.low_52w) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">52H Düşük</div><div class="metric-value">${fmtNum(val.low_52w)}</div></div>`;
         if (fin.risk) {
-            if (fin.risk.sharpe_ratio !== null) metricsHTML += `<div class="metric-box"><div class="metric-label">Sharpe</div><div class="metric-value ${colorClass(fin.risk.sharpe_ratio)}">${fmtNum(fin.risk.sharpe_ratio)}</div></div>`;
-            if (fin.risk.max_drawdown !== null) metricsHTML += `<div class="metric-box"><div class="metric-label">Max DD</div><div class="metric-value negative">${fmtNum(fin.risk.max_drawdown, "%")}</div></div>`;
+            if (fin.risk.sharpe_ratio !== null) metricsHTML += createMetricBox("Sharpe", fmtNum(fin.risk.sharpe_ratio), "sharpe", colorClass(fin.risk.sharpe_ratio));
+            if (fin.risk.max_drawdown !== null) metricsHTML += createMetricBox("Max DD", fmtNum(fin.risk.max_drawdown, "%"), "max_dd", "negative");
         }
         if (fin.son_fiyat) {
-            metricsHTML += `<div class="metric-box"><div class="metric-label">Son Fiyat</div><div class="metric-value">${fmtNum(fin.son_fiyat.fiyat)}</div></div>`;
-            if (fin.son_fiyat.degisim !== undefined) metricsHTML += `<div class="metric-box"><div class="metric-label">Değişim</div><div class="metric-value ${colorClass(fin.son_fiyat.degisim)}">${fmtNum(fin.son_fiyat.degisim, "%")}</div></div>`;
+            metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Son Fiyat</div><div class="metric-value">${fmtNum(fin.son_fiyat.fiyat)}</div></div>`;
+            if (fin.son_fiyat.degisim !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Değişim</div><div class="metric-value ${colorClass(fin.son_fiyat.degisim)}">${fmtNum(fin.son_fiyat.degisim, "%")}</div></div>`;
         }
-        if (fin.s5 !== null && fin.s5 !== undefined) metricsHTML += `<div class="metric-box"><div class="metric-label">5Y Getiri</div><div class="metric-value ${colorClass(fin.s5)}">${fmtNum(fin.s5, "%")}</div></div>`;
-        if (fin.s3 !== null && fin.s3 !== undefined) metricsHTML += `<div class="metric-box"><div class="metric-label">3Y Getiri</div><div class="metric-value ${colorClass(fin.s3)}">${fmtNum(fin.s3, "%")}</div></div>`;
-        if (res.purification_ratio !== undefined) metricsHTML += `<div class="metric-box"><div class="metric-label">Arındırma</div><div class="metric-value">${fmtNum(res.purification_ratio, "%")}</div></div>`;
-        if (res.debt_ratio !== undefined) metricsHTML += `<div class="metric-box"><div class="metric-label">Borçluluk</div><div class="metric-value">${fmtNum(res.debt_ratio, "%")}</div></div>`;
+        if (fin.s5 !== null && fin.s5 !== undefined) metricsHTML += createMetricBox("5Y Getiri", fmtNum(fin.s5, "%"), "s5", colorClass(fin.s5));
+        if (fin.s3 !== null && fin.s3 !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">3Y Getiri</div><div class="metric-value ${colorClass(fin.s3)}">${fmtNum(fin.s3, "%")}</div></div>`;
+        if (res.purification_ratio !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Arındırma</div><div class="metric-value">${fmtNum(res.purification_ratio, "%")}</div></div>`;
+        if (res.debt_ratio !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Borçluluk</div><div class="metric-value">${fmtNum(res.debt_ratio, "%")}</div></div>`;
 
         // Sector badge
         let sectorText = res.sector || "Bilinmiyor";
@@ -262,6 +335,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Theme toggle
     document.getElementById("theme-toggle-btn").addEventListener("click", toggleTheme);
+    document.getElementById("metric-modal-close").addEventListener("click", () => document.getElementById("metric-modal").classList.add("hidden"));
+    window.addEventListener("click", (e) => {
+        if (e.target === document.getElementById("metric-modal")) document.getElementById("metric-modal").classList.add("hidden");
+    });
 
     // AI settings toggle
     const aiToggle = document.getElementById("use-ai-toggle");

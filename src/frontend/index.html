@@ -32,6 +32,38 @@
         <i class="fas fa-bars"></i>
     </button>
 
+    <!-- Metric Detail Modal -->
+    <div id="metric-modal" class="modal-overlay hidden">
+        <div class="modal-content premium-card">
+            <button class="modal-close" id="metric-modal-close"><i class="fas fa-times"></i></button>
+            <div class="card-glow"></div>
+            <div class="card-inner">
+                <div class="card-head">
+                    <span class="card-icon" id="metric-detail-icon"><i class="fas fa-info-circle"></i></span>
+                    <div class="card-titles">
+                        <h4 id="metric-detail-title">Metrik Detayı</h4>
+                        <span id="metric-detail-ticker">Hisse Sembolü</span>
+                    </div>
+                </div>
+
+                <div class="metric-detail-body">
+                    <div class="detail-section">
+                        <label class="control-label">Nedir?</label>
+                        <p id="metric-static-desc" class="detail-text">Bu metrik, şirketin piyasa değerinin defter
+                            değerine oranını gösterir.</p>
+                    </div>
+
+                    <div class="detail-section ai-insight-section">
+                        <label class="control-label"><i class="fas fa-robot"></i> AI Analizi</label>
+                        <div id="metric-ai-insight" class="ai-insight-box">
+                            Yükleniyor...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SIDEBAR -->
     <aside class="sidebar glass-panel" id="sidebar">
         <div class="sidebar-logo">
@@ -336,41 +368,100 @@
 
             <!-- Scenarios & Dividend FI/RE Calculator -->
             <div id="scenarios-wrap" class="hidden" style="margin-bottom:2rem;">
-                <h3 data-i18n="results.scenarios"><i class="fas fa-flask"></i> Senaryo & Stres Testleri</h3>
-                <div class="scenarios-grid"
-                    style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+                <div class="section-header">
+                    <h3 data-i18n="results.scenarios"><i class="fas fa-flask"></i> Senaryo & Stres Testleri</h3>
+                    <p class="section-desc">Portföyünüzün piyasa şoklarına dayanıklılığını ve gelecek hedeflerinizi test
+                        edin.</p>
+                </div>
+                <div class="scenarios-grid">
                     <!-- Stress Test Card -->
-                    <div class="scenario-card">
-                        <h4><i class="fas fa-bolt" style="color:var(--warning)"></i> Stres Testi</h4>
-                        <p>Portföyünüzün Beta sayısına dayalı tahmini şok tepkisi.</p>
-                        <div class="stress-controls">
-                            <button class="btn btn-outline" id="btn-scenario-2008" style="flex:1; font-size:0.8rem">2008
-                                Krizi (-%50)</button>
-                            <button class="btn btn-outline" id="btn-scenario-covid"
-                                style="flex:1; font-size:0.8rem">Covid-19 (-%30)</button>
+                    <div class="scenario-card premium-card">
+                        <div class="card-glow"></div>
+                        <div class="card-inner">
+                            <div class="card-head">
+                                <span class="card-icon"><i class="fas fa-bolt"></i></span>
+                                <div class="card-titles">
+                                    <h4>Piyasa Stres Testi</h4>
+                                    <span>Beklenen şok tepki analizi</span>
+                                </div>
+                            </div>
+
+                            <div class="shock-gauge-wrap">
+                                <div class="shock-gauge-bg"></div>
+                                <div class="shock-gauge-fill" id="shock-gauge-fill"></div>
+                                <div class="shock-gauge-center">
+                                    <span id="scenario-stress-result-val">-%0.0</span>
+                                    <small id="scenario-stress-name">2008 Krizi</small>
+                                </div>
+                            </div>
+
+                            <div class="stress-controls-modern">
+                                <div class="control-label">Senaryo Seçin:</div>
+                                <div class="scenario-buttons">
+                                    <button class="scen-btn active" id="btn-scenario-2008">2008 Krizi
+                                        <small>-%50</small></button>
+                                    <button class="scen-btn" id="btn-scenario-covid">Covid-19
+                                        <small>-%33</small></button>
+                                    <button class="scen-btn" id="btn-scenario-tech">Tech Crash
+                                        <small>-%40</small></button>
+                                </div>
+                            </div>
+
+                            <div class="beta-indicator">
+                                <span>Portföy Beta Değeri:</span>
+                                <strong id="portfolio-beta-val">1.00</strong>
+                            </div>
                         </div>
-                        <div id="scenario-stress-result" class="stress-result-box">-</div>
                     </div>
 
                     <!-- Dividend FI/RE Card -->
-                    <div class="scenario-card">
-                        <h4><i class="fas fa-piggy-bank" style="color:var(--primary)"></i> Temettü Emekliliği</h4>
-                        <p>Aylık eklemelerle portföy veriminden hedef gelire ulaşma süresi (Mevcut Sermaye Hariç).</p>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
-                            <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Aylık
-                                    Ekleme</label>
-                                <input type="number" id="div-monthly-add" class="input" value="5000"
-                                    style="padding:0.6rem; font-size:1rem; background:rgba(0,0,0,0.1); border:1px solid var(--glass-border); border-radius:6px; color:var(--text-main); font-weight:600; width:100%; box-sizing:border-box;">
+                    <div class="scenario-card premium-card">
+                        <div class="card-glow"></div>
+                        <div class="card-inner">
+                            <div class="card-head">
+                                <span class="card-icon"><i class="fas fa-piggy-bank"></i></span>
+                                <div class="card-titles">
+                                    <h4>Temettü Emekliliği</h4>
+                                    <span>FI/RE Hedef Hesaplayıcı</span>
+                                </div>
                             </div>
-                            <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Aylık Hedef
-                                    Gelir</label>
-                                <input type="number" id="div-target-income" class="input" value="17002"
-                                    style="padding:0.6rem; font-size:1rem; background:rgba(0,0,0,0.1); border:1px solid var(--glass-border); border-radius:6px; color:var(--text-main); font-weight:600; width:100%; box-sizing:border-box;">
+
+                            <div class="fire-inputs">
+                                <div class="fire-input-group">
+                                    <label>Aylık Ekleme</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-coins"></i>
+                                        <input type="number" id="div-monthly-add" value="5000">
+                                    </div>
+                                </div>
+                                <div class="fire-input-group">
+                                    <label>Aylık Hedef Gelir</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-bullseye"></i>
+                                        <input type="number" id="div-target-income" value="17002">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fire-result-display">
+                                <div class="fire-stat">
+                                    <span class="fire-stat-label">Hedef Süre</span>
+                                    <span class="fire-stat-val" id="fire-years">-</span>
+                                    <span class="fire-stat-unit">Yıl</span>
+                                </div>
+                                <div class="fire-divider"></div>
+                                <div class="fire-stat">
+                                    <span class="fire-stat-label">Hedef Sermaye</span>
+                                    <span class="fire-stat-val" id="fire-capital">-</span>
+                                    <span class="fire-stat-unit">₺</span>
+                                </div>
+                            </div>
+
+                            <div class="yield-info">
+                                <span>Portföy Verimi:</span>
+                                <strong id="avg-div-yield-val">%0.00</strong>
                             </div>
                         </div>
-                        <div id="scenario-div-result" class="stress-result-box">Hesaplanıyor...</div>
                     </div>
                 </div>
             </div>

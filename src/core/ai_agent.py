@@ -58,6 +58,9 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
         """
         requirements.append(f"{len(requirements)+1}. **📈 Finansal Getiri Performansı:** (Şirketin 5 yıllık {market_label} oranını, varsa son temettü oranını ve risk metriklerini (Sharpe Ratio, Max Drawdown) değerlendir.)")
     
+    # Metrik bazlı kısa içgörüler (Frontend modal için)
+    requirements.append(f"{len(requirements)+1}. **🔍 Metrik İçgörüleri:** Her bir finansal metrik (P/E, P/B, Beta, Sharpe vb.) için sadece o metriğe özel, 1-2 cümlelik çok kısa profesyonel bir yorum hazırla.")
+
     if len(requirements) == 0:
         return "Gerekli analiz verisi seçilmediği için yorum üretilemedi."
         
@@ -73,6 +76,19 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     
     Aşağıdaki başlık formatlarını kullanarak kısa, net ve gereksiz cümlesiz bir rapor hazırla:
     {chr(10).join(requirements)}
+    
+    ÖNEMLİ: Raporun en sonuna, KESİNLİKLE başka bir metin eklemeden, aşağıdaki JSON formatında bir gizli blok ekle (bu veriler metrik kutularına tıklandığında gösterilecek):
+    <!--METRIC_INSIGHTS:
+    {{
+      "pe": "P/E oranı hakkında kısa yorum",
+      "pb": "P/B oranı hakkında kısa yorum",
+      "beta": "Beta hakkında kısa yorum",
+      "sharpe": "Sharpe rasyosu yorumu",
+      "max_dd": "Max Drawdown yorumu",
+      "div": "Temettü verimi yorumu",
+      "s5": "5 yıllık getiri yorumu"
+    }}
+    -->
     
     ÖNEMLİ KURALLAR:
     1. İstenmeyen şeyleri yorumlamayın! (Sadece size verilen İslami veya Finansal verilere odaklanın).

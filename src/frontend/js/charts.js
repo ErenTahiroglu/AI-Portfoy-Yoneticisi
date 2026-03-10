@@ -298,54 +298,87 @@ function renderScenarios(results) {
     });
 
     const avgBeta = totalWeight > 0 ? weightedBeta / totalWeight : 1;
-    const avgDivYield = totalWeight > 0 ? weightedDiv / totalWeight : 0; // percentage, e.g. 5 means 5%
+    const avgDivYield = totalWeight > 0 ? weightedDiv / totalWeight : 0;
 
-    // Stress Tests
-    const resStress = document.getElementById("scenario-stress-result");
-    const btn2008 = document.getElementById("btn-scenario-2008");
-    const btnCovid = document.getElementById("btn-scenario-covid");
+    // Update UI Indicators
+    document.getElementById("portfolio-beta-val").textContent = avgBeta.toFixed(2);
+    document.getElementById("avg-div-yield-val").textContent = `%${avgDivYield.toFixed(2)}`;
 
-    function calcStress(dropPct, name) {
+    // Stress Test Logic
+    const gaugeFill = document.getElementById("shock-gauge-fill");
+    const resultVal = document.getElementById("scenario-stress-result-val");
+    const resultName = document.getElementById("scenario-stress-name");
+
+    const btns = {
+        '2008': document.getElementById("btn-scenario-2008"),
+        'covid': document.getElementById("btn-scenario-covid"),
+        'tech': document.getElementById("btn-scenario-tech")
+    };
+
+    function updateStressUI(dropPct, name, btnKey) {
         const expectedDrop = dropPct * avgBeta;
-        resStress.innerHTML = `${name} Senaryosunda: <br><span style="color:var(--danger)"> Tahmini Düşüş: -%${expectedDrop.toFixed(1)}</span> <br><span style="font-size:0.8rem;color:var(--text-muted)">(Portföy Beta: ${avgBeta.toFixed(2)})</span>`;
+        resultVal.textContent = `-%${expectedDrop.toFixed(1)}`;
+        resultName.textContent = name;
+
+        // Gauge rotation: -45deg is 0%, 135deg is 100% (range of 180deg)
+        // We limit max visualization to 100% drop
+        const rotation = -45 + (Math.min(expectedDrop, 100) * 1.8);
+        gaugeFill.style.transform = `rotate(${rotation}deg)`;
+
+        // Set active button
+        Object.values(btns).forEach(b => b?.classList.remove("active"));
+        btns[btnKey]?.classList.add("active");
     }
 
-    btn2008.onclick = () => calcStress(50, "2008 Krizi");
-    btnCovid.onclick = () => calcStress(33, "Covid-19");
+    if (btns['2008']) btns['2008'].onclick = () => updateStressUI(50, "2008 Krizi", '2008');
+    if (btns['covid']) btns['covid'].onclick = () => updateStressUI(33, "Covid-19", 'covid');
 
-    // Set default view
-    calcStress(50, "2008 Krizi");
+    // Tech Crash: Simulated 40% drop in high-beta tech stocks.
+    if (btns['tech']) btns['tech'].onclick = () => updateStressUI(40, "Tech Crash", 'tech');
+
+    // Default view
+    updateStressUI(50, "2008 Krizi", '2008');
 
     // Dividend FI/RE Calculator
-    const resDiv = document.getElementById("scenario-div-result");
     const inMonthlyAdd = document.getElementById("div-monthly-add");
     const inTargetIncome = document.getElementById("div-target-income");
+    const resYears = document.getElementById("fire-years");
+    const resCapital = document.getElementById("fire-capital");
+
+    let userInteracted = false;
 
     function calcDivFIRE() {
-        if (avgDivYield <= 0.1) {
-            resDiv.innerHTML = `<span style="color:var(--warning)">Portföy temettü verimi çok düşük (%${avgDivYield.toFixed(2)}). Hedefe ulaşmak mümkün görünmüyor.</span>`;
+        if (!userInteracted) {
+            resYears.textContent = "---";
+            resCapital.textContent = "---";
             return;
         }
 
         const P = parseFloat(inMonthlyAdd.value);
         const targetMonthly = parseFloat(inTargetIncome.value);
-        if (!P || !targetMonthly || P <= 0 || targetMonthly <= 0) {
-            resDiv.textContent = "Lütfen geçerli değerler girin."; return;
+
+        if (avgDivYield <= 0.1 || !P || !targetMonthly || P <= 0 || targetMonthly <= 0) {
+            resYears.textContent = "---";
+            resCapital.textContent = "---";
+            return;
         }
 
-        const r = avgDivYield / 100; // e.g. 0.05
-        const targetCapital = (targetMonthly * 12) / r;
+        const r = (avgDivYield / 100) / 12;
+        const targetCap = targetMonthly / r;
+        resCapital.textContent = targetCap.toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + " ₺";
 
-        // n (months) = Math.log((Capital * r/12 + P) / P) / Math.log(1 + r/12)
-        const rateMonthly = r / 12;
-        const months = Math.log((targetCapital * rateMonthly + P) / P) / Math.log(1 + rateMonthly);
-        const years = months / 12;
-
-        resDiv.innerHTML = `Ortalama Verim: <strong>%${avgDivYield.toFixed(2)}</strong><br>Hedef Sermaye: <strong>${targetCapital.toLocaleString("tr-TR", { maximumFractionDigits: 0 })}</strong><br> Süre: <strong>${years.toFixed(1)} Yıl</strong>`;
+        if (r > 0) {
+            const months = Math.log(1 + (targetCap * r) / P) / Math.log(1 + r);
+            resYears.textContent = (months / 12).toFixed(1);
+        } else {
+            resYears.textContent = "∞";
+        }
     }
 
-    inMonthlyAdd.addEventListener("input", calcDivFIRE);
-    inTargetIncome.addEventListener("input", calcDivFIRE);
+    inMonthlyAdd.oninput = () => { userInteracted = true; calcDivFIRE(); };
+    inTargetIncome.oninput = () => { userInteracted = true; calcDivFIRE(); };
+
+    // Initial call (will show --- because userInteracted is false)
     calcDivFIRE();
 }
 
