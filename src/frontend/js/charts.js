@@ -318,10 +318,9 @@ function renderScenarios(results) {
     function updateStressUI(dropPct, name, btnKey) {
         const expectedDrop = dropPct * avgBeta;
         resultVal.textContent = `-%${expectedDrop.toFixed(1)}`;
-        resultName.textContent = name;
+        resultName.innerHTML = `${name}<div style="font-size:0.7rem; color:var(--text-muted); font-weight:normal; margin-top:0.2rem;">Piyasa Şoku: -%${dropPct} | Portföy Etkisi</div>`;
 
         // Gauge rotation: -45deg is 0%, 135deg is 100% (range of 180deg)
-        // We limit max visualization to 100% drop
         const rotation = -45 + (Math.min(expectedDrop, 100) * 1.8);
         gaugeFill.style.transform = `rotate(${rotation}deg)`;
 

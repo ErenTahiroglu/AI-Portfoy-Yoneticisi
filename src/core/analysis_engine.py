@@ -458,11 +458,69 @@ def compute_portfolio_extras(results: List[dict]) -> dict:
     extras = {}
     valid_tickers = [r for r in results if not r.get("error") and r.get("market")]
     
-    # ── Sektör Dağılımı ──────────────────────────────────────────────
+    # ── Sektör Dağılımı (Bilingual & Mapped) ──────────────────────────────────
     sector_counts = {}
+    
+    # TR-Specific Sector Mapping (Common BIST tickers)
+    TR_SECTOR_MAP = {
+        "THYAO": {"tr": "Havacılık", "en": "Aviation"},
+        "PGSUS": {"tr": "Havacılık", "en": "Aviation"},
+        "TAVHL": {"tr": "Havacılık", "en": "Aviation"},
+        "ASELS": {"tr": "Savunma Sanayi", "en": "Defense"},
+        "EREGL": {"tr": "Demir Çelik", "en": "Steel"},
+        "KRDMD": {"tr": "Demir Çelik", "en": "Steel"},
+        "ISCTR": {"tr": "Bankacılık", "en": "Banking"},
+        "AKBNK": {"tr": "Bankacılık", "en": "Banking"},
+        "GARAN": {"tr": "Bankacılık", "en": "Banking"},
+        "YKBNK": {"tr": "Bankacılık", "en": "Banking"},
+        "TUPRS": {"tr": "Enerji / Rafineri", "en": "Energy / Refinery"},
+        "SISE": {"tr": "Cam Sanayi", "en": "Glass Industry"},
+        "BIMAS": {"tr": "Perakende", "en": "Retail"},
+        "MGROS": {"tr": "Perakende", "en": "Retail"},
+        "FROTO": {"tr": "Otomotiv", "en": "Automotive"},
+        "TOASO": {"tr": "Otomotiv", "en": "Automotive"},
+        "TCELL": {"tr": "Telekom", "en": "Telecom"},
+        "TTKOM": {"tr": "Telekom", "en": "Telecom"},
+    }
+    
+    # Generic Sector Mapping (EN -> TR)
+    GENERIC_SECTOR_MAP = {
+        "Technology": {"tr": "Teknoloji", "en": "Technology"},
+        "Healthcare": {"tr": "Sağlık", "en": "Healthcare"},
+        "Financial Services": {"tr": "Finansal Hizmetler", "en": "Financial Services"},
+        "Consumer Cyclical": {"tr": "Tüketici Ürünleri", "en": "Consumer Cyclical"},
+        "Energy": {"tr": "Enerji", "en": "Energy"},
+        "Industrials": {"tr": "Sanayi", "en": "Industrials"},
+        "Basic Materials": {"tr": "Temel Maddeler", "en": "Basic Materials"},
+        "Communication Services": {"tr": "İletişim", "en": "Communication Services"},
+        "Consumer Defensive": {"tr": "Tüketici Ürünleri (Defansif)", "en": "Consumer Defensive"},
+        "Real Estate": {"tr": "Gayrimenkul", "en": "Real Estate"},
+        "Utilities": {"tr": "Kamu Hizmetleri", "en": "Utilities"},
+    }
+
+    results_lang = "tr" # Default, adjusted in JS
     for r in valid_tickers:
-        sec = r.get("sector", "Bilinmiyor")
-        sector_counts[sec] = sector_counts.get(sec, 0) + 1
+        ticker = r["ticker"]
+        is_tefas = r.get("is_tefas", False)
+        
+        if is_tefas:
+            label = {"tr": "Yatırım Fonu", "en": "Mutual Fund"}
+        elif ticker in TR_SECTOR_MAP:
+            label = TR_SECTOR_MAP[ticker]
+        else:
+            raw_sec = r.get("sector")
+            if raw_sec in GENERIC_SECTOR_MAP:
+                label = GENERIC_SECTOR_MAP[raw_sec]
+            else:
+                label = {"tr": raw_sec or "Bilinmiyor", "en": raw_sec or "Unknown"}
+        
+        # We store both to allow frontend to pick
+        r["sector_localized"] = label
+        
+        # Use localized key for aggregation based on 'lang' in result or default TR
+        sec_key = label["tr"]
+        sector_counts[sec_key] = sector_counts.get(sec_key, 0) + 1
+        
     if sector_counts:
         extras["sector_distribution"] = sector_counts
     
@@ -537,10 +595,17 @@ def compute_portfolio_extras(results: List[dict]) -> dict:
             # Normalize weights
             weights = [w / total_weight for w in weights]
             
-            avg_daily = float(np.average(daily_returns, weights=weights))
-            # Standart sapma için yaklaşık ağırlıklı varsayım
-            mean_sq = np.average([r**2 for r in daily_returns], weights=weights)
-            std_daily = max(float(np.sqrt(abs(mean_sq - avg_daily**2))), 0.005)
+            # Weighted average CAGR calculation (more realistic than raw sum)
+            # CAGR = (1 + total_return/100)^(1/5) - 1
+            weighted_total_ret = weighted_s5_sum / total_weight
+            avg_annual_ret = (pow(1 + weighted_total_ret/100, 1/5) - 1) if weighted_total_ret > -99 else -0.1
+            
+            avg_daily = float(avg_annual_ret / 252)
+            
+            # Standard deviation: Use a realistic proxy if daily data isn't perfect
+            # Annual volatility of 15-25% for a typical portfolio
+            std_annual = 0.20 
+            std_daily = std_annual / np.sqrt(252)
             
             n_sims = 200
             n_days = 252

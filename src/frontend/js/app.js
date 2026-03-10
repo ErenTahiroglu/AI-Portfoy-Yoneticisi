@@ -187,18 +187,8 @@ function renderResults(data) {
         if (res.debt_ratio !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Borçluluk</div><div class="metric-value">${fmtNum(res.debt_ratio, "%")}</div></div>`;
 
         // Sector badge
-        let sectorText = res.sector || "Bilinmiyor";
-        if (getLang() === "tr") {
-            if (sectorText === "Technology") sectorText = "Teknoloji";
-            else if (sectorText === "Healthcare") sectorText = "Sağlık";
-            else if (sectorText === "Financial Services") sectorText = "Finans";
-            else if (sectorText === "Consumer Cyclical") sectorText = "Tüketici Ürünleri";
-            else if (sectorText === "Bilinmiyor" && res.market === "TR") sectorText = "Yatırım Fonu";
-        } else if (getLang() === "en") {
-            if (sectorText === "Bilinmiyor" && res.market === "TR") sectorText = "Investment Fund";
-            else if (sectorText === "Bilinmiyor") sectorText = "Unknown";
-        }
-        let sectorBadge = sectorText ? `<span class="market-badge" style="font-size:0.65rem">${sectorText}</span>` : "";
+        let sectorLabel = res.sector_localized ? res.sector_localized[getLang()] : (res.sector || "Bilinmiyor");
+        let sectorBadge = `<span class="market-badge" style="font-size:0.65rem">${sectorLabel}</span>`;
 
         // Technical indicators
         let techHTML = renderTechnicals(res.technicals);
