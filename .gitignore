@@ -2,62 +2,41 @@
 # Portföy Analiz Platformu — .gitignore
 # ═══════════════════════════════════════════════════
 
-# Environments
+# Environments & Keys
 .env
+.env.local
+api_keys.json
 .venv/
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
-
-# Project specific
-api_keys.json
-.env
-.env.local
-*.xlsx
-*.pdf
-*.docx
-*.log
-.gemini/
-.agents/
-.agent/
-data/*.json
-!data/market_metadata.json
-__pycache__/
-*.pyc
-.venv/
 node_modules/
-dist/
-build/
-.vscode/
-.idea/
-*.pdf
 
-# Python Cache
+# Python Cache & Build
 __pycache__/
 *.py[cod]
 *$py.class
-.env
-.venv
 *.egg-info/
+build/
+dist/
+*.spec
+*.pyc
 
 # IDE and Editor files
 .vscode/
 .idea/
 .pyre_configuration
 *.code-workspace
+*.swp
+*.swo
 
-# PyInstaller & Build artifacts
-build/
-dist/
-*.spec
-
-# User Output / Reports
+# User Output / Reports (Generated files)
 *.xlsx
 *.csv
 *.docx
 *.pdf
+results/
+reports/
 
 # Logs & Debug
 *.log
@@ -65,27 +44,25 @@ error.txt
 traceback.txt
 tefas_log.txt
 
-# Test Scripts and Outputs
-test_*.py
-test_*.json
-find_api.py
-fintables.html
-Full_File_List.txt
+# Large Data & Binary
+playwright-browsers/
+data/*.json
+!data/market_metadata.json
+py-yfinance/
 
-# Platform
+# Platform & Deployment
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# Playwright browsers (büyük, her makinede yeniden indirilmeli)
-playwright-browsers/
-
-# Gemini Agent artifacts
-.gemini/
-
-# Deployment
 .vercel/
+.gemini/
+.agents/
+.agent/
 
-# Misc
-*.vbs
-py-yfinance/
+# Test Scripts (Temporary)
+test_*.py
+test_*.json
+find_api.py
+*remote.py
+fintables.html
+Full_File_List.txt
