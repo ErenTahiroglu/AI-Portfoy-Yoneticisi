@@ -62,6 +62,8 @@ desktop.ini
 # Test Scripts & Temporary
 test_*.py
 test_*.json
+.pytest_cache/
+htmlcov/
 find_api.py
 *remote.py
 fintables.html

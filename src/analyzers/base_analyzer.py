@@ -1,7 +1,7 @@
 """
 🧩 Puzzle Parça: Temel Analizör Sınıfı
 ========================================
-bist_analyzer.py ve portfolio_analyzer.py arasında paylaşılan
+bist_analyzer.py ve us_analyzer.py arasında paylaşılan
 hesaplama mantığını DRY (Don't Repeat Yourself) prensibiyle
 tek bir yerde toplar.
 

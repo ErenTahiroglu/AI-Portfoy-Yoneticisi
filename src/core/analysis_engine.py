@@ -4,7 +4,7 @@
 Tüm analiz adımlarını koordine eder:
   1. Pazar algılama (market_detector)
   2. İslami uygunluk kontrolü (islamic_analyzer)
-  3. Finansal getiri analizi (portfolio_analyzer / bist_analyzer)
+  3. Finansal getiri analizi (us_analyzer / bist_analyzer)
   4. Temel değerleme metrikleri (P/E, P/B, Beta, Piyasa Değeri)
   5. Teknik göstergeler (RSI, MACD, EMA, SMA)
   6. Sektör bilgisi
@@ -81,7 +81,7 @@ class AnalysisEngine:
         self._init_errors = []
         self._last_av_key = av_api_key
         try:
-            from .portfolio_analyzer import HisseAnaliz
+            from src.analyzers.us_analyzer import HisseAnaliz
             self._us_analyzer = HisseAnaliz(av_key=av_api_key)
         except Exception as e:
             import traceback
