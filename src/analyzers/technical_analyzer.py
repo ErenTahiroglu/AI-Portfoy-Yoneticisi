@@ -1,0 +1,109 @@
+"""
+🧩 Puzzle Parça: Technical Analyzer (Teknik Analiz)
+=====================================================
+Hisselerin (Fonsuz) teknik analiz metriklerini (RSI, MACD, EMA vb.)
+hesaplama ve TradingView-style güç kadranı değerleme (Gauge Score) mantığı.
+"""
+
+import logging
+import pandas as pd
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
+def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
+    """Teknik göstergeleri hesaplar: RSI 14, MACD 12/26/9, EMA & SMA (20/50/100/200)."""
+    try:
+        import yfinance as yf
+        hist = yf.Ticker(fetcher_ticker).history(period="1y")
+        if hist is None or hist.empty or len(hist) < 30:
+            return
+        
+        close = hist["Close"]
+        technicals = {}
+        
+        # ── RSI 14 ──
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0.0).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
+        rs = gain / loss.replace(0, np.nan)
+        rsi = 100 - (100 / (1 + rs))
+        if not rsi.empty and not np.isnan(rsi.iloc[-1]):
+            technicals["rsi_14"] = round(float(rsi.iloc[-1]), 2)
+        
+        # ── MACD (12, 26, 9) ──
+        ema12 = close.ewm(span=12, adjust=False).mean()
+        ema26 = close.ewm(span=26, adjust=False).mean()
+        macd_line = ema12 - ema26
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        macd_hist = macd_line - signal_line
+        if not macd_line.empty:
+            technicals["macd"] = round(float(macd_line.iloc[-1]), 4)
+            technicals["macd_signal"] = round(float(signal_line.iloc[-1]), 4)
+            technicals["macd_hist"] = round(float(macd_hist.iloc[-1]), 4)
+        
+        # ── EMA (20, 50, 100, 200) ──
+        for period in [20, 50, 100, 200]:
+            if len(close) >= period:
+                ema = close.ewm(span=period, adjust=False).mean()
+                technicals[f"ema_{period}"] = round(float(ema.iloc[-1]), 2)
+        
+        # ── SMA (20, 50, 100, 200) ──
+        for period in [20, 50, 100, 200]:
+            if len(close) >= period:
+                sma = close.rolling(window=period).mean()
+                technicals[f"sma_{period}"] = round(float(sma.iloc[-1]), 2)
+        
+        # ── Mevcut fiyat (gösterge referansı) ──
+        technicals["last_close"] = round(float(close.iloc[-1]), 2)
+        
+        # TradingView-style Technical Gauge Score (0-100)
+        gauge_score = 50
+        bullish_signals = 0
+        total_signals = 0
+        
+        if "rsi_14" in technicals:
+            total_signals += 1
+            if technicals["rsi_14"] > 50: bullish_signals += 1
+        if "macd_hist" in technicals:
+            total_signals += 1
+            if technicals["macd_hist"] > 0: bullish_signals += 1
+        if "ema_20" in technicals:
+            total_signals += 1
+            if technicals["last_close"] > technicals["ema_20"]: bullish_signals += 1
+        if "sma_50" in technicals:
+            total_signals += 1
+            if technicals["last_close"] > technicals["sma_50"]: bullish_signals += 1
+            
+        if total_signals > 0:
+            gauge_score = int((bullish_signals / total_signals) * 100)
+        
+        technicals["gauge_score"] = gauge_score
+        
+        # Koyfin-style Relative Performance (Stock vs SPY or XU100)
+        benchmark_ticker = "XU100.IS" if fetcher_ticker.endswith(".IS") else "SPY"
+        try:
+            bm_hist = yf.Ticker(benchmark_ticker).history(period="1y")["Close"]
+            if not bm_hist.empty and len(bm_hist) > 30:
+                # Align dates
+                df = pd.DataFrame({"stock": close, "bm": bm_hist}).dropna()
+                if len(df) > 30:
+                    # Rebase to 100
+                    stock_perf = (df["stock"] / df["stock"].iloc[0]) * 100
+                    bm_perf = (df["bm"] / df["bm"].iloc[0]) * 100
+                    
+                    # Pack into minimal JSON-friendly arrays for the chart
+                    # To save space, take weekly data roughly (every 5th day)
+                    technicals["relative_performance"] = {
+                        "benchmark": benchmark_ticker,
+                        "dates": [d.strftime('%Y-%m-%d') for d in df.index[::5]],
+                        "stock_history": [round(float(v), 2) for v in stock_perf.iloc[::5]],
+                        "bm_history": [round(float(v), 2) for v in bm_perf.iloc[::5]]
+                    }
+        except Exception as e:
+            logger.debug(f"Relative performance fetch failed for {fetcher_ticker} vs {benchmark_ticker}: {e}")
+        
+        if technicals:
+            result_entry["technicals"] = technicals
+    except Exception as e:
+        logger.debug(f"Technical indicators failed for {fetcher_ticker}: {e}")
