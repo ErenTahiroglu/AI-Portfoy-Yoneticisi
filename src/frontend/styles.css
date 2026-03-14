@@ -133,16 +133,16 @@ body {
     border-bottom: 1px solid var(--glass-border);
 }
 
-.logo-icon {
+.logo-img {
     width: 38px;
     height: 38px;
-    background: var(--gradient-primary);
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    font-size: 1.1rem;
-    color: white;
-    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2);
+}
+
+.logo-icon {
+    display: none; /* Replaced by logo-img */
 }
 
 .logo-text {
@@ -1588,18 +1588,23 @@ body {
 .mobile-menu-btn {
     display: none;
     position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 200;
-    width: 42px;
-    height: 42px;
+    top: 1.25rem;
+    left: 1.25rem;
+    z-index: 1001; /* Higher than sidebar */
+    width: 44px;
+    height: 44px;
     background: var(--gradient-primary);
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-menu-btn:active {
+    transform: scale(0.9);
 }
 
 @media (max-width: 900px) {
@@ -1619,14 +1624,21 @@ body {
     }
 
     .sidebar-logo {
-        padding: 2rem 1.5rem;
-        background: rgba(14, 165, 233, 0.03);
+        padding: 1.25rem 1.5rem;
+        padding-left: 5rem; /* Space for the hamburger button */
+        background: rgba(14, 165, 233, 0.05);
         display: flex !important;
-        /* Ensure visibility */
+        align-items: center;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .logo-img {
+        width: 32px;
+        height: 32px;
     }
 
     .logo-text {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
 
     .main-content {
