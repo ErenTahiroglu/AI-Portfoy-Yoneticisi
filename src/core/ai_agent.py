@@ -143,3 +143,48 @@ def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = 
         return data
     except Exception as e:
         raise ValueError(f"AI yanıtı çözümlenemedi veya kota aşıldı: {str(e)}")
+
+def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> str:
+    """Yüzen Chatbot (Copilot) için kullanıcının portföy verisi üzerinden konuşma tabanlı (conversational) yanıt üretir."""
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
+    
+    # Portföy bağlamını temiz bir string'e dönüştür
+    portfolio_summary = json.dumps(context, indent=2, ensure_ascii=False)
+    
+    system_instruction = f"""
+    Sen, bu uygulamanın (Portföy Analiz Platformu) içine entegre edilmiş, profesyonel ama dost canlısı bir "Yapay Zeka Portföy Asistanı"sın (AI Copilot).
+    Kullanıcı sana portföyü hakkında sorular soracak veya analiz isteyecek.
+    Aşağıda kullanıcının ŞU AN EKRANINDA GÖRDÜĞÜ portföyünün arka plan (JSON) analizi ve verileri bulunuyor:
+    
+    === PORTFÖY VERİLERİ ===
+    {portfolio_summary}
+    ========================
+    
+    KURALLAR:
+    1. Kullanıcının sorusuna doğrudan ve net yanıt ver. Sadece elindeki verileri (JSON) referans al.
+    2. Cevapların kısa, güven verici ve teknik olarak doğru olsun (Markdown formatı kullan; kalın metinler, listeler vs.).
+    3. Kullanıcı "en riskli hissem hangisi" diye sorarsa, P/E oranı, Beta değeri veya Drawdown oranlarına bakarak mantıklı bir çıkarım yap.
+    4. Sektör dağılımını veya ağırlıkları sormadan pat diye listeleme, sadece sorulana cevap ver.
+    5. Dil: {"Cevaplarını her zaman İngilizce üret" if lang == "en" else "Cevaplarını her zaman Türkçe dilinde üret"}.
+    """
+    
+    from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+    
+    langchain_msgs = [SystemMessage(content=system_instruction)]
+    
+    for msg in messages:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if role == "user":
+            langchain_msgs.append(HumanMessage(content=content))
+        elif role == "assistant":
+            langchain_msgs.append(AIMessage(content=content))
+            
+    try:
+        response = llm.invoke(langchain_msgs)
+        return str(response.content)
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            return "Kota sınırı aşıldı. Lütfen birkaç dakika bekleyin."
+        return f"Üzgünüm, şu an bağlantı kuramıyorum (Hata: {error_msg})"

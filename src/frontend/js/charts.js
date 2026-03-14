@@ -283,7 +283,15 @@ function renderHeatmap(results) {
     const container = document.getElementById("portfolio-heatmap");
     container.innerHTML = "";
 
-    const validResults = results.filter(r => !r.error && r.financials && r.financials.son_fiyat && r.financials.son_fiyat.degisim !== undefined);
+    const filterSelect = document.getElementById("heatmap-filter");
+    const filterType = filterSelect ? filterSelect.value : "change";
+
+    const validResults = results.filter(r => {
+        if (r.error) return false;
+        if (filterType === "pe") return r.valuation && r.valuation.pe !== undefined && r.valuation.pe !== null;
+        if (filterType === "div") return r.valuation && r.valuation.div_yield !== undefined && r.valuation.div_yield !== null;
+        return r.financials && r.financials.son_fiyat && r.financials.son_fiyat.degisim !== undefined && r.financials.son_fiyat.degisim !== null;
+    });
 
     if (validResults.length === 0) {
         wrap.classList.add("hidden");
@@ -295,45 +303,82 @@ function renderHeatmap(results) {
     // Total weight sum for flex-basis calculations
     const totalWeight = validResults.reduce((sum, r) => sum + (r.weight || 1), 0);
 
-    // Calculate colors properly like S&P 500 heatmaps
+    function getMetricValue(r) {
+        if (filterType === "pe") return r.valuation.pe;
+        if (filterType === "div") return r.valuation.div_yield;
+        return r.financials.son_fiyat.degisim;
+    }
+
+    function getFormattedValue(val) {
+        if (val === null || val === undefined) return "-";
+        if (filterType === "pe") return val.toFixed(2);
+        if (filterType === "div") return `%${val.toFixed(2)}`;
+        return `${val > 0 ? '+' : ''}%${val.toFixed(2)}`;
+    }
+
+    // Calculate colors properly
     function getHeatmapColor(val) {
-        if (val === null || val === undefined) return "#334155"; // bg-slate-700
-        if (val > 3) return "#166534"; // Strong green
-        if (val > 1) return "#22c55e"; // Mid green
-        if (val > 0) return "#86efac"; // Light green (black text usually)
-        if (val > -1) return "#fca5a5"; // Light red
-        if (val > -3) return "#ef4444"; // Mid red
-        return "#991b1b"; // Strong red
+        if (val === null || val === undefined) return "#334155";
+        if (filterType === "pe") {
+            if (val <= 0) return "#991b1b"; // Negative PE is bad
+            if (val < 10) return "#166534"; // Very good
+            if (val < 15) return "#22c55e"; // Good
+            if (val < 20) return "#86efac"; // Neutral-good
+            if (val < 30) return "#fca5a5"; // Expensive
+            return "#ef4444"; // Very expensive
+        }
+        if (filterType === "div") {
+            if (val > 5) return "#166534";
+            if (val > 3) return "#22c55e";
+            if (val > 1) return "#86efac";
+            return "#fca5a5";
+        }
+        // Change
+        if (val > 3) return "#166534";
+        if (val > 1) return "#22c55e";
+        if (val > 0) return "#86efac";
+        if (val > -1) return "#fca5a5";
+        if (val > -3) return "#ef4444";
+        return "#991b1b";
     }
 
     // Determine text color based on background luminance
-    function getTextColor(val) {
-        if (val > 0 && val <= 1) return "#064e3b"; // Dark green text on light green bg
-        if (val < 0 && val >= -1) return "#7f1d1d"; // Dark red text on light red bg
+    function getTextColorCustom(val) {
+        if (val === null || val === undefined) return "white";
+        if (filterType === "pe") {
+            if (val >= 15 && val < 20) return "#064e3b"; // light green text is dark
+            if (val >= 20 && val < 30) return "#7f1d1d"; // light red text is dark
+            return "white";
+        }
+        if (filterType === "div") {
+            if (val > 1 && val <= 3) return "#064e3b";
+            if (val <= 1) return "#7f1d1d";
+            return "white";
+        }
+        // Change
+        if (val > 0 && val <= 1) return "#064e3b";
+        if (val < 0 && val >= -1) return "#7f1d1d";
         return "white";
     }
 
     validResults.forEach(r => {
-        const change = r.financials.son_fiyat.degisim;
+        const val = getMetricValue(r);
         const weight = r.weight || 1;
         const percentArea = (weight / totalWeight) * 100;
 
         const cell = document.createElement("div");
         cell.className = "heatmap-cell";
 
-        // Use flex-basis to size proportionally. For a true 2D treemap, CSS Grid would be highly complex, 
-        // flex-wrap provides a decent approximation for small portfolios.
         cell.style.flex = `1 1 calc(${percentArea}% - 0.5rem)`;
-        cell.style.backgroundColor = getHeatmapColor(change);
-        cell.style.color = getTextColor(change);
+        cell.style.backgroundColor = getHeatmapColor(val);
+        cell.style.color = getTextColorCustom(val);
 
-        // Hide text if the cell is too small
         if (percentArea < 3 && validResults.length > 10) {
-            cell.title = `${r.ticker}: %${change.toFixed(2)}`;
+            cell.title = `${r.ticker}: ${getFormattedValue(val)}`;
         } else {
             cell.innerHTML = `
                 <span class="hm-ticker">${r.ticker}</span>
-                <span class="hm-val">%${change.toFixed(2)}</span>
+                <span class="hm-val">${getFormattedValue(val)}</span>
             `;
             cell.title = `${r.ticker} (Ağırlık: ${weight})`;
         }
@@ -529,4 +574,184 @@ window.switchOptTab = function(type, btnObj) {
         </div>`;
     }
     content.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// NEW PRO UX CHARTS
+// ═══════════════════════════════════════
+
+function createRadarChart(canvasId, result) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !result.radar_score || result.error) return;
+
+    const { profitability, growth, value, debt } = result.radar_score;
+    // Radar needs an array of data points
+    const dataPoints = [profitability, growth, value, debt];
+    
+    destroyChart(canvasId);
+    
+    chartInstances[canvasId] = new Chart(canvas, {
+        type: 'radar',
+        data: {
+            labels: ['Karlılık', 'Büyüme', 'Değerleme', 'Borçluluk (Güç)'],
+            datasets: [{
+                label: 'Finansal Sağlık Skoru',
+                data: dataPoints,
+                backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                borderColor: 'rgba(14, 165, 233, 1)',
+                pointBackgroundColor: 'rgba(14, 165, 233, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(14, 165, 233, 1)',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: getChartColors().grid },
+                    grid: { color: getChartColors().grid },
+                    pointLabels: {
+                        color: getChartColors().text,
+                        font: { size: 10, family: 'Inter' }
+                    },
+                    ticks: {
+                        display: false,
+                        min: 0,
+                        max: 100,
+                        stepSize: 25
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+function createGaugeChart(canvasId, score, labelId, valId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || score === undefined || score === null) return;
+    
+    // Determine color and text based on score
+    let color = '#38bdf8'; // Neutral blue
+    let label = 'Nötr';
+    
+    if (score >= 80) { color = '#166534'; label = 'Güçlü Al'; }
+    else if (score >= 60) { color = '#22c55e'; label = 'Al'; }
+    else if (score <= 20) { color = '#991b1b'; label = 'Güçlü Sat'; }
+    else if (score <= 40) { color = '#ef4444'; label = 'Sat'; }
+
+    // Update the DOM text if elements exist
+    if (valId && document.getElementById(valId)) {
+        document.getElementById(valId).textContent = score;
+        document.getElementById(valId).style.color = color;
+    }
+    if (labelId && document.getElementById(labelId)) {
+        document.getElementById(labelId).textContent = label;
+    }
+
+    destroyChart(canvasId);
+    
+    chartInstances[canvasId] = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [score, 100 - score],
+                backgroundColor: [color, 'rgba(255,255,255,0.05)'],
+                borderWidth: 0,
+                circumference: 180,
+                rotation: 270,
+                cutout: '75%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            },
+            animation: { animateRotate: true, animateScale: false }
+        }
+    });
+}
+
+function createRelativePerformanceChart(canvasId, relPerfData) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !relPerfData) return;
+
+    const { benchmark, dates, stock_history, bm_history } = relPerfData;
+    const { grid, text } = getChartColors();
+    
+    destroyChart(canvasId);
+    
+    chartInstances[canvasId] = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: 'Hisse',
+                    data: stock_history,
+                    borderColor: 'rgba(14, 165, 233, 1)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    tension: 0.2
+                },
+                {
+                    label: benchmark,
+                    data: bm_history,
+                    borderColor: 'rgba(245, 158, 11, 0.8)',
+                    backgroundColor: 'transparent',
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    tension: 0.2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: text, font: { size: 10, family: 'Inter' }, boxWidth: 12 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y.toFixed(1);
+                                if (context.dataIndex === 0) label += ' (Baslangıc)';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: false, // hide dates to save space
+                },
+                y: {
+                    grid: { color: grid },
+                    ticks: { color: text, font: { size: 10 } }
+                }
+            }
+        }
+    });
 }

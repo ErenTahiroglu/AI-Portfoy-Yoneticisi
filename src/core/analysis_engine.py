@@ -245,11 +245,23 @@ class AnalysisEngine:
                 result_entry["fund_start_date"] = data.get('fund_start_date')
                 result_entry["fund_age"] = data.get('fund_age', '')
             else:
-                result_entry["purification_ratio"] = round(data.get('purification_ratio', 0), 2)
-                result_entry["debt_ratio"] = round(data.get('debt_ratio', 0), 2)
-                result_entry["interest"] = data.get('interest', 0)
-                result_entry["status"] = data.get('status', 'Bilinmiyor')
+                p_ratio = round(data.get('purification_ratio', 0), 2)
+                d_ratio = round(data.get('debt_ratio', 0), 2)
+                i_ratio = round(data.get('interest', 0), 2)
+                status = data.get('status', 'Bilinmiyor')
+                
+                result_entry["purification_ratio"] = p_ratio
+                result_entry["debt_ratio"] = d_ratio
+                result_entry["interest"] = i_ratio
+                result_entry["status"] = status
                 result_entry["is_etf"] = data.get("is_etf", False)
+                
+                # Zoya-style compliance details (Limits: Debt < 33%, Interest < 5%, Haram < 5%)
+                result_entry["compliance_details"] = {
+                    "debt": {"value": d_ratio, "limit": 33.33, "pass": d_ratio < 33.33},
+                    "interest": {"value": i_ratio, "limit": 33.33, "pass": i_ratio < 33.33},
+                    "haram_income": {"value": p_ratio, "limit": 5.0, "pass": p_ratio < 5.0}
+                }
         
         return data
     
@@ -334,8 +346,35 @@ class AnalysisEngine:
                             if eps and isinstance(eps, (int, float)):
                                 valuation['eps'] = round(eps, 2)
                     
-                    if valuation:
-                        result_entry["valuation"] = valuation
+                    # Fintables-style Radar Scores (0-100)
+                    financial_health = {}
+                    
+                    # 1. Profitability (ROE based)
+                    roe_val = valuation.get('roe', 0)
+                    if roe_val > 25: financial_health['profitability'] = 90
+                    elif roe_val > 15: financial_health['profitability'] = 75
+                    elif roe_val > 0: financial_health['profitability'] = 50
+                    else: financial_health['profitability'] = 20
+                    
+                    # 2. Value (P/E based)
+                    pe_val = valuation.get('pe', 0)
+                    if 0 < pe_val < 10: financial_health['value'] = 90
+                    elif 10 <= pe_val < 20: financial_health['value'] = 70
+                    elif pe_val >= 20: financial_health['value'] = 40
+                    else: financial_health['value'] = 10 # Negative P/E
+                    
+                    # 3. Growth (EPS based simple proxy)
+                    eps_val = valuation.get('eps', 0)
+                    if eps_val > 5: financial_health['growth'] = 85
+                    elif eps_val > 1: financial_health['growth'] = 60
+                    elif eps_val > 0: financial_health['growth'] = 40
+                    else: financial_health['growth'] = 15
+                    
+                    # 4. Debt (Will be updated globally if islamic check runs, else neutral)
+                    financial_health['debt'] = 50
+                    
+                    result_entry["financial_health"] = financial_health
+
         except Exception as e:
             logger.debug(f"Valuation check failed for {fetcher_ticker}: {e}")
     
@@ -384,6 +423,52 @@ class AnalysisEngine:
             
             # ── Mevcut fiyat (gösterge referansı) ──
             technicals["last_close"] = round(float(close.iloc[-1]), 2)
+            
+            # TradingView-style Technical Gauge Score (0-100)
+            gauge_score = 50
+            bullish_signals = 0
+            total_signals = 0
+            
+            if "rsi_14" in technicals:
+                total_signals += 1
+                if technicals["rsi_14"] > 50: bullish_signals += 1
+            if "macd_hist" in technicals:
+                total_signals += 1
+                if technicals["macd_hist"] > 0: bullish_signals += 1
+            if "ema_20" in technicals:
+                total_signals += 1
+                if technicals["last_close"] > technicals["ema_20"]: bullish_signals += 1
+            if "sma_50" in technicals:
+                total_signals += 1
+                if technicals["last_close"] > technicals["sma_50"]: bullish_signals += 1
+                
+            if total_signals > 0:
+                gauge_score = int((bullish_signals / total_signals) * 100)
+            
+            technicals["gauge_score"] = gauge_score
+            
+            # Koyfin-style Relative Performance (Stock vs SPY or XU100)
+            benchmark_ticker = "XU100.IS" if fetcher_ticker.endswith(".IS") else "SPY"
+            try:
+                bm_hist = yf.Ticker(benchmark_ticker).history(period="1y")["Close"]
+                if not bm_hist.empty and len(bm_hist) > 30:
+                    # Align dates
+                    df = pd.DataFrame({"stock": close, "bm": bm_hist}).dropna()
+                    if len(df) > 30:
+                        # Rebase to 100
+                        stock_perf = (df["stock"] / df["stock"].iloc[0]) * 100
+                        bm_perf = (df["bm"] / df["bm"].iloc[0]) * 100
+                        
+                        # Pack into minimal JSON-friendly arrays for the chart
+                        # To save space, take weekly data roughly (every 5th day)
+                        technicals["relative_performance"] = {
+                            "benchmark": benchmark_ticker,
+                            "dates": [d.strftime('%Y-%m-%d') for d in df.index[::5]],
+                            "stock_history": [round(float(v), 2) for v in stock_perf.iloc[::5]],
+                            "bm_history": [round(float(v), 2) for v in bm_perf.iloc[::5]]
+                        }
+            except Exception as e:
+                logger.debug(f"Relative performance fetch failed for {fetcher_ticker} vs {benchmark_ticker}: {e}")
             
             if technicals:
                 result_entry["technicals"] = technicals

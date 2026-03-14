@@ -25,11 +25,13 @@ Finansal verileri hesaplar, opsiyonel olarak İslami uygunluk (AAOIFI) denetimi 
 | 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
 | 🛡️ **TEFAS Entegrasyonu** | `curl_cffi` tabanlı scraper ile WAF engellerini aşan, 180 günlük akıllı chunk'larla hızlı veri çekimi |
 | 🌟 **Portfolio Visualizer (PV)** | Kompakt Profesyonel Mod, Dinamik Nakit Akışı & Yeniden Dengeleme Simülatörü ve Drawdown Sualtı Grafikleri |
-| 🤖 **AI Portföy Sihirbazı** | Metin girişiyle (örn: "Temettü veren 5 şirket") yapay zekaya anında özel portföy kurdurma |
+| 🤖 **AI Portföy Sihirbazı & Copilot** | Metin girişiyle portföy kurdurma ve yüzen **AI Copilot** widget'ı ile anında portföy sorgulama |
+| 📊 **Premium UX Grafikleri** | Fintables stili **Finansal Sağlık Radarı**, TradingView stili **Teknik Kadran (Gauge)** ve Koyfin stili **Göreli Performans** |
+| 🕌 **İslami Finans (Zoya Stili)** | Hisse bazında detaylı Haram Gelir ve Faizli Borç ilerleme çubukları |
+| 🗺️ **Dinamik Isı Haritası** | Finviz stili anlık F/K, Temettü ve Günlük Değişim filtreli interaktif Treemap |
 | 🔍 **Gelişmiş Metrikler** | Sortino, Calmar, Max Drawdown hesaplamaları ve ABD pazarı için Fama-French proxy Faktör Regresyonu |
 | 🛡️ **Stres Testleri** | Tech Crash, 2008 Krizi, Covid-19 simülasyonları ile modern **Market Shock Gauge** kadranı |
 | 📈 **Teknik Göstergeler** | RSI, MACD, EMA/SMA hareketli ortalamalar ve trend analizi |
-| 🧩 **Sektör Dağılımı** | Portföy genelinde sektör pasta grafiği ve interaktif ısı haritası (Treemap) |
 | 🎲 **Monte Carlo** | 200 simülasyon × 1 yıl — portföy risk/getiri fan grafiği |
 | 🪄 **Autocomplete** | Türkçe/İngilizce harf duyarlı, 1-2 harften itibaren akıllı öneriler |
 | 📥 **Dışa Aktarım** | Excel, PDF, Word formatlarında profesyonel rapor indirme |
@@ -73,7 +75,10 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 | Feature | Description |
 |---------|-------------|
 | 🌍 **Multi-Market** | Mix US, BIST and TEFAS tickers — market is **auto-detected** |
-| 🪄 **AI Wizard** | Create tailored portfolios instantly from natural language prompts |
+| 🪄 **AI Wizard & Copilot** | Create tailored portfolios instantly from natural language prompts, plus a floating **AI Chat Widget** |
+| 📊 **Premium Dashboards** | Financial Health **Radar**, Technical **Gauge** indicators, and Relative Performance charts |
+| 🗺️ **Dynamic Heatmap** | Interactive Treemap with P/E, Dividend Yield, and Daily Change filters |
+| 🕌 **Shariah Compliance** | Zoya-style detailed purification and debt ratio progress bars |
 | 🔍 **Interactive Metrics** | AI-powered custom insights for financial ratios |
 | 🌟 **Portfolio Visualizer (PV)** | Compact Professional Mode, Cash Flow Simulation, Max Drawdown Charts and US Factor Regression |
 | 🧪 **Premium Stress Tests** | Realistic simulations with modern **Market Shock Gauge** |

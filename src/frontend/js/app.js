@@ -183,12 +183,53 @@ function renderResults(data) {
         }
         if (fin.s5 !== null && fin.s5 !== undefined) metricsHTML += createMetricBox("5Y Getiri", fmtNum(fin.s5, "%"), "s5", colorClass(fin.s5));
         if (fin.s3 !== null && fin.s3 !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">3Y Getiri</div><div class="metric-value ${colorClass(fin.s3)}">${fmtNum(fin.s3, "%")}</div></div>`;
-        if (res.purification_ratio !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Arındırma</div><div class="metric-value">${fmtNum(res.purification_ratio, "%")}</div></div>`;
-        if (res.debt_ratio !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Borçluluk</div><div class="metric-value">${fmtNum(res.debt_ratio, "%")}</div></div>`;
+        
+        // Removed old Arındırma and Borçluluk outputs to replace them with Zoya Bars
 
         // Sector badge
         let sectorLabel = res.sector_localized ? res.sector_localized[getLang()] : (res.sector || "Bilinmiyor");
         let sectorBadge = `<span class="market-badge" style="font-size:0.65rem">${sectorLabel}</span>`;
+
+        // Zoya-style Compliance Bars
+        let compHTML = "";
+        if (res.purification_ratio !== undefined && res.debt_ratio !== undefined) {
+            const pr = res.purification_ratio;
+            const dr = res.debt_ratio;
+            const prClass = pr <= 5 ? "comp-pass" : "comp-fail";
+            const drClass = dr <= 30 ? "comp-pass" : "comp-fail";
+            
+            compHTML = `
+            <div class="compliance-bars">
+                <div class="comp-bar-row"><span>Haram Gelir (%${pr.toFixed(2)})</span><span>Sınır: %5</span></div>
+                <div class="comp-bar-bg"><div class="comp-bar-fill ${prClass}" style="width:${Math.min(pr, 100)}%"></div></div>
+                
+                <div class="comp-bar-row" style="margin-top:0.4rem"><span>Faizli Borç (%${dr.toFixed(2)})</span><span>Sınır: %30</span></div>
+                <div class="comp-bar-bg"><div class="comp-bar-fill ${drClass}" style="width:${Math.min((dr/30)*100, 100)}%"></div></div>
+            </div>`;
+        }
+
+        // Radar & Gauge HTML
+        let radarHTML = "";
+        if (res.radar_score) {
+            radarHTML = `<div class="radar-container"><canvas id="radar-${chartId}"></canvas></div>`;
+        }
+        
+        let gaugeHTML = "";
+        if (res.technicals && res.technicals.gauge_score !== undefined) {
+            gaugeHTML = `
+            <div class="gauge-container">
+                <div class="gauge-canvas-wrap">
+                    <canvas id="gauge-${chartId}"></canvas>
+                    <div class="gauge-val" id="gauge-val-${chartId}">${res.technicals.gauge_score}</div>
+                </div>
+                <div class="gauge-label" id="gauge-lbl-${chartId}">Nötr</div>
+            </div>`;
+        }
+        
+        let relPerfHTML = "";
+        if (res.technicals && res.technicals.relative_performance) {
+            relPerfHTML = `<div class="relative-perf-container"><canvas id="relperf-${chartId}"></canvas></div>`;
+        }
 
         // Technical indicators
         let techHTML = renderTechnicals(res.technicals);
@@ -231,14 +272,20 @@ function renderResults(data) {
                 <div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${marketText}</span>${sectorBadge}${statusBadgeFinal}</div>
             </div>
             ${fundHTML}${errHTML}
+            ${compHTML}
+            ${(radarHTML || gaugeHTML) ? `<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:center;">${radarHTML}${gaugeHTML}</div>` : ""}
             ${metricsHTML ? `<div class="metrics-grid">${metricsHTML}</div>` : ""}
             ${techHTML}
+            ${relPerfHTML}
             ${chartHTML}
             ${returnTableHTML}
             ${aiHTML}
         `;
         grid.appendChild(card);
         if (fin.yg && Object.keys(fin.yg).length > 0) setTimeout(() => createReturnChart(chartId, fin), 50);
+        if (radarHTML) setTimeout(() => createRadarChart(`radar-${chartId}`, res), 50);
+        if (gaugeHTML) setTimeout(() => createGaugeChart(`gauge-${chartId}`, res.technicals.gauge_score, `gauge-lbl-${chartId}`, `gauge-val-${chartId}`), 50);
+        if (relPerfHTML) setTimeout(() => createRelativePerformanceChart(`relperf-${chartId}`, res.technicals.relative_performance), 50);
     });
 
     // Render portfolio-level extras with error guards
@@ -268,6 +315,13 @@ function renderResults(data) {
 
     // Load News async so it doesn't block rendering
     try { loadNews(results); } catch (e) { console.error("News load error:", e); }
+
+    // Floating AI Copilot Toggle
+    try {
+        if (document.getElementById("use-ai-toggle").checked && results.length > 0) {
+            document.getElementById("copilot-fab").classList.remove("hidden");
+        }
+    } catch (e) { console.error("Copilot UI update error:", e); }
 
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -437,6 +491,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("save-portfolio-btn").addEventListener("click", saveCurrentPortfolio);
     renderWatchlists();
 
+    // Heatmap Filter
+    const heatmapFilter = document.getElementById("heatmap-filter");
+    if (heatmapFilter) {
+        heatmapFilter.addEventListener("change", () => {
+            if (window.lastResults && window.lastResults.length > 0) {
+                renderHeatmap(window.lastResults);
+            }
+        });
+    }
+
     // Autocomplete
     setupAutocomplete();
 
@@ -463,4 +527,101 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (targetContent) targetContent.classList.remove("hidden");
         });
     });
+
+    initCopilot();
 });
+
+// ═══════════════════════════════════════
+// AI COPILOT CHAT
+// ═══════════════════════════════════════
+function initCopilot() {
+    const fab = document.getElementById("copilot-fab");
+    const widget = document.getElementById("copilot-widget");
+    const closeBtn = document.getElementById("copilot-close-btn");
+    const input = document.getElementById("copilot-input");
+    const sendBtn = document.getElementById("copilot-send-btn");
+    const body = document.getElementById("copilot-body");
+    
+    if(!fab || !widget) return;
+
+    let chatHistory = [];
+    
+    // Show FAB if AI is enabled
+    document.getElementById("use-ai-toggle").addEventListener("change", (e) => {
+        if (e.target.checked && lastResults && lastResults.length > 0) fab.classList.remove("hidden");
+        else { fab.classList.add("hidden"); widget.classList.add("hidden"); }
+    });
+    
+    fab.addEventListener("click", () => {
+        widget.classList.toggle("hidden");
+        if (!widget.classList.contains("hidden")) input.focus();
+    });
+    
+    closeBtn.addEventListener("click", () => widget.classList.add("hidden"));
+    
+    function appendMsg(text, isUser) {
+        const div = document.createElement("div");
+        div.className = `copilot-msg ${isUser ? 'user-msg' : 'ai-msg'}`;
+        div.innerHTML = isUser ? text : marked.parse(text); // markdown for AI
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+    }
+    
+    async function sendMessage() {
+        const text = input.value.trim();
+        if(!text) return;
+        
+        const apiKey = document.getElementById("api-key").value;
+        if(!apiKey) {
+            showToast("AI bağlantısı için API anahtarı gereklidir.", "warning");
+            return;
+        }
+        
+        appendMsg(text, true);
+        chatHistory.push({ role: "user", content: text });
+        input.value = "";
+        
+        // Show loading indicator
+        const loadDiv = document.createElement("div");
+        loadDiv.className = "copilot-msg ai-msg";
+        loadDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Düşünüyor...';
+        body.appendChild(loadDiv);
+        body.scrollTop = body.scrollHeight;
+        
+        try {
+            const contextMsg = {
+                results: (lastResults || []).map(r => ({ ticker: r.ticker, metrics: r.valuation, risk: r.financials?.risk, performance: r.financials?.s5 })),
+                extras: lastExtras || {}
+            };
+            
+            const payload = {
+                messages: chatHistory,
+                portfolio_context: contextMsg,
+                api_key: apiKey,
+                model: document.getElementById("model-select").value,
+                lang: getLang()
+            };
+            
+            const res = await fetch(`${API_BASE}/api/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            
+            loadDiv.remove();
+            
+            if(!res.ok) throw new Error("API Hatası");
+            const data = await res.json();
+            
+            const reply = data.reply;
+            appendMsg(reply, false);
+            chatHistory.push({ role: "assistant", content: reply });
+        } catch(err) {
+            loadDiv.remove();
+            appendMsg("Bağlantı hatası: " + err.message, false);
+        }
+    }
+    
+    sendBtn.addEventListener("click", sendMessage);
+    input.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+}

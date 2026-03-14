@@ -351,6 +351,13 @@ class NewsRequest(BaseModel):
     model: str = "gemini-2.5-flash"
     lang: str = "tr"
 
+class ChatRequest(BaseModel):
+    messages: List[dict]
+    portfolio_context: dict
+    api_key: str
+    model: str = "gemini-2.5-flash"
+    lang: str = "tr"
+
 @app.post("/api/wizard")
 async def wizard_api(request: WizardRequest):
     """Metinsel komuttan portföy üretir."""
@@ -371,6 +378,18 @@ async def news_api(request: NewsRequest):
         from src.data.news_fetcher import fetch_and_filter_news
         data = fetch_and_filter_news(request.tickers, request.api_key, request.model, request.lang)
         return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/chat")
+async def chat_api(request: ChatRequest):
+    """Floating Copilot Chatbot Endpoint."""
+    if not request.api_key:
+        raise HTTPException(status_code=400, detail="API key is required for AI Copilot")
+    try:
+        from src.core.ai_agent import generate_chat_response
+        reply = generate_chat_response(request.messages, request.portfolio_context, request.api_key, request.model, request.lang)
+        return {"reply": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

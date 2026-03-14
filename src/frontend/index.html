@@ -398,9 +398,15 @@
 
             <!-- Heatmap (Treemap) -->
             <div id="portfolio-heatmap-wrap" class="hidden" style="margin-bottom:2rem;">
-                <h3 data-i18n="results.heatmap"><i class="fas fa-th-large"></i> Portföy Isı Haritası (Günlük Değişim)
-                </h3>
-                <div id="portfolio-heatmap" class="heatmap-container"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 data-i18n="results.heatmap"><i class="fas fa-th-large"></i> Dinamik Isı Haritası</h3>
+                    <select id="heatmap-filter" style="padding:0.4rem; border-radius:4px; font-size:0.8rem; border:1px solid var(--glass-border); background:var(--card-bg); color:var(--text-main);">
+                        <option value="change" selected>Günlük Değişim</option>
+                        <option value="pe">F/K (P/E) Oranı</option>
+                        <option value="div">Temettü Verimi</option>
+                    </select>
+                </div>
+                <div id="portfolio-heatmap" class="heatmap-container" style="margin-top:0.5rem;"></div>
             </div>
 
             <!-- Scenarios & Dividend FI/RE Calculator -->
@@ -567,7 +573,7 @@
                                 <th data-i18n="th.market">Pazar</th>
                                 <th data-i18n="th.weight">Ağırlık</th>
                                 <th data-i18n="th.price">Son Fiyat</th>
-                                <th data-i18n="th.compliance">Uyg. Tarama Oranı</th>
+                                <th data-i18n="th.compliance">Uygunluk / Katılım</th>
                                 <th data-i18n="th.status">Durum</th>
                                 <th title="Fiyat/Kazanç Oranı. Hissenin ne kadar pahalı/ucuz olduğunu gösterir."
                                     data-i18n-title="tooltip.pe"
@@ -621,6 +627,27 @@
             <div class="results-grid" id="results-grid"></div>
         </section>
     </main>
+
+    <!-- Floating AI Copilot Widget -->
+    <div id="ai-copilot-widget" class="copilot-widget hidden">
+        <div class="copilot-header">
+            <span><i class="fas fa-robot"></i> Portföy Asistanı (Copilot)</span>
+            <button id="copilot-close-btn" class="modal-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="copilot-body" id="copilot-body">
+            <div class="copilot-msg ai-msg">
+                Merhaba! Ben analiz edilen portföyünüzün hakimi olan yapay zeka asistanınızım. Portföyünüzle ilgili en riskli hisseleri, getiri beklentilerini veya genel dağılımı bana sorabilirsiniz. Size nasıl yardımcı olabilirim? 
+            </div>
+            <!-- Dynamic Messages -->
+        </div>
+        <div class="copilot-footer">
+            <input type="text" id="copilot-input" placeholder="Portföyünüz hakkında bir şey sorun..." autocomplete="off">
+            <button id="copilot-send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <button id="copilot-fab" class="copilot-fab hidden" title="AI Asistanı Aç">
+        <i class="fas fa-comment-dots"></i>
+    </button>
 
     <!-- Modular Scripts Array -->
     <script src="js/i18n.js?v=4.1"></script>
