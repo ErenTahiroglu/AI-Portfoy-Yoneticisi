@@ -25,7 +25,13 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: Debug Environment
+        run: |
+          ls -la
+          ls -la tests/
+          cat .gitignore
+
       - name: Run tests
-        run: pytest tests/ -v
+        run: python -m pytest tests/ -v -s --trace-config
         env:
           PYTHONPATH: src
