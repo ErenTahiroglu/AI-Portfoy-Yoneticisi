@@ -448,7 +448,7 @@ class AnalysisEngine:
 # PORTFOLIO-LEVEL EXTRAS (korelasyon, Monte Carlo, sektör dağılımı)
 # ══════════════════════════════════════════════════════════════════════════
 
-def compute_portfolio_extras(results: List[dict]) -> dict:
+def compute_portfolio_extras(results: List[dict], initial_balance: float = 10000.0, monthly_contribution: float = 0.0, rebalancing_freq: str = "none") -> dict:
     """
     Portföy düzeyinde ekstra analizler:
       1. Sektör dağılımı (pasta grafik verisi)
@@ -524,35 +524,64 @@ def compute_portfolio_extras(results: List[dict]) -> dict:
     if sector_counts:
         extras["sector_distribution"] = sector_counts
     
-    # ── Korelasyon Matrisi ────────────────────────────────────────────
+    # ── PV Simülasyonu & Korelasyon Matrisi ────────────────────────────────────────────
     try:
         import yfinance as yf
         from src.data.market_detector import detect_market
+        from .portfolio_simulator import run_portfolio_simulation
         
         fetcher_tickers = []
         display_tickers = []
+        port_weights = {}
         for r in valid_tickers:
             _, ft, is_tefas = detect_market(r["ticker"])
             if not is_tefas:
                 fetcher_tickers.append(ft)
                 display_tickers.append(r["ticker"])
+                port_weights[r["ticker"]] = r.get("weight", 1.0)
         
-        if len(fetcher_tickers) >= 2:
+        if len(fetcher_tickers) >= 1:
             import pandas as pd
             price_data = {}
             for ft, dt in zip(fetcher_tickers, display_tickers):
                 try:
-                    hist = yf.Ticker(ft).history(period="1y")["Close"]
+                    hist = yf.Ticker(ft).history(period="5y")["Close"]
                     if hist is not None and len(hist) > 20:
-                        price_data[dt] = hist.pct_change().dropna()
+                        price_data[dt] = hist
                 except Exception:
                     pass
             
-            if len(price_data) >= 2:
-                df = pd.DataFrame(price_data)
-                df = df.dropna()
-                if len(df) > 10:
-                    corr = df.corr()
+            if len(price_data) >= 1:
+                df_prices = pd.DataFrame(price_data).dropna(how='all')
+                
+                # PV Simülasyonu
+                try:
+                    sim_result = run_portfolio_simulation(
+                        df_prices, port_weights, initial_balance, monthly_contribution, rebalancing_freq
+                    )
+                    if sim_result:
+                        extras["pv_simulation"] = sim_result
+                except Exception as sim_err:
+                    logger.debug(f"PV Simulation failed: {sim_err}")
+                
+                # Korelasyon için getiri hesapla
+                df_returns = df_prices.pct_change().dropna()
+                
+                # Factor Proxy (US Only)
+                try:
+                    from .portfolio_simulator import calculate_factor_regression
+                    total_w = sum(port_weights.values())
+                    if total_w > 0 and len(df_returns) > 10:
+                        norm_weights = np.array([port_weights.get(c, 0)/total_w for c in df_returns.columns])
+                        port_returns = df_returns.dot(norm_weights)
+                        factor_res = calculate_factor_regression(port_returns, valid_tickers)
+                        if factor_res:
+                            extras["factor_regression"] = factor_res
+                except Exception as f_err:
+                    logger.debug(f"Factor Regression failed: {f_err}")
+
+                if len(df_returns) > 10 and len(df_prices.columns) >= 2:
+                    corr = df_returns.corr()
                     extras["correlation"] = {
                         "tickers": list(corr.columns),
                         "matrix": [[round(v, 3) for v in row] for row in corr.values.tolist()]
@@ -561,12 +590,12 @@ def compute_portfolio_extras(results: List[dict]) -> dict:
                     # ── Portföy Optimizasyonu (Markowitz) ──
                     try:
                         from .optimization_engine import optimize_portfolio
-                        opt_weights = optimize_portfolio(df)
-                        extras["optimized_weights"] = opt_weights
+                        opt_weights_res = optimize_portfolio(df_returns)
+                        extras["optimized_weights"] = opt_weights_res
                     except Exception as opt_err:
                         logger.debug(f"Optimization failed: {opt_err}")
     except Exception as e:
-        logger.debug(f"Correlation computation failed: {e}")
+        logger.debug(f"PV Simulation / Correlation computation failed: {e}")
     
     # ── Portföy Ağırlıklı Getiri & Monte Carlo ─────────────────────
     try:

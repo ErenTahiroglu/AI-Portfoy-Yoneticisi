@@ -24,8 +24,9 @@ Finansal verileri hesaplar, opsiyonel olarak İslami uygunluk (AAOIFI) denetimi 
 |---------|----------|
 | 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
 | 🛡️ **TEFAS Entegrasyonu** | `curl_cffi` tabanlı scraper ile WAF engellerini aşan, 180 günlük akıllı chunk'larla hızlı veri çekimi |
+| 🌟 **Portfolio Visualizer (PV)** | Kompakt Profesyonel Mod, Dinamik Nakit Akışı & Yeniden Dengeleme Simülatörü ve Drawdown Sualtı Grafikleri |
 | 🤖 **AI Portföy Sihirbazı** | Metin girişiyle (örn: "Temettü veren 5 şirket") yapay zekaya anında özel portföy kurdurma |
-| 🔍 **İnteraktif Metrikler** | Finansal oranlara tıklayarak statik tanımlar ve **AI destekli özel içgörüler** |
+| 🔍 **Gelişmiş Metrikler** | Sortino, Calmar, Max Drawdown hesaplamaları ve ABD pazarı için Fama-French proxy Faktör Regresyonu |
 | 🛡️ **Stres Testleri** | Tech Crash, 2008 Krizi, Covid-19 simülasyonları ile modern **Market Shock Gauge** kadranı |
 | 📈 **Teknik Göstergeler** | RSI, MACD, EMA/SMA hareketli ortalamalar ve trend analizi |
 | 🧩 **Sektör Dağılımı** | Portföy genelinde sektör pasta grafiği ve interaktif ısı haritası (Treemap) |
@@ -74,8 +75,9 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 | 🌍 **Multi-Market** | Mix US, BIST and TEFAS tickers — market is **auto-detected** |
 | 🪄 **AI Wizard** | Create tailored portfolios instantly from natural language prompts |
 | 🔍 **Interactive Metrics** | AI-powered custom insights for financial ratios |
+| 🌟 **Portfolio Visualizer (PV)** | Compact Professional Mode, Cash Flow Simulation, Max Drawdown Charts and US Factor Regression |
 | 🧪 **Premium Stress Tests** | Realistic simulations with modern **Market Shock Gauge** |
-| 📈 **Monte Carlo** | 200 simulations × 1 year — risk/return fan graphs |
+| 📈 **Advanced Optimization** | Markowitz Max Sharpe, Min Volatility, and Max Return optimizer options |
 | 📥 **Export** | Download reports as Excel, PDF, or Word |
 | 🛡️ **Privacy** | 100% local — your data never leaves your machine |
 

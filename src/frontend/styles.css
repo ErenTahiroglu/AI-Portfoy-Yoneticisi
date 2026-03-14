@@ -2211,3 +2211,55 @@ body {
 .metric-box:active {
     transform: scale(0.97);
 }
+
+/* ═══════════════════════════════════════════
+   PREMIUM PV MODE & ADVANCED FEATURES
+═══════════════════════════════════════════ */
+.professional-mode .result-card {
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: none;
+    border: 1px solid var(--glass-border);
+}
+.professional-mode .ticker-header h3 {
+    font-size: 1.1rem;
+}
+.professional-mode .summary-table th,
+.professional-mode .summary-table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+}
+.professional-mode .metric-box {
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+.professional-mode .metric-box span:first-child {
+    font-size: 0.7rem;
+}
+.professional-mode .metric-box span:last-child {
+    font-size: 1rem;
+}
+.professional-mode .technicals-grid {
+    gap: 0.5rem;
+}
+
+#pv-factor-content .factor-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+}
+#pv-factor-content .factor-row:last-child {
+    border-bottom: none;
+}
+.pv-warning {
+    color: var(--warning);
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}

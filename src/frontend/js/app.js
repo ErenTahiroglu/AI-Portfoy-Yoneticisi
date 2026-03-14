@@ -291,7 +291,10 @@ window.retryAnalysis = async function (ticker) {
         model: model,
         check_islamic: checkIslamic,
         check_financials: checkFinancials,
-        lang: getLang()
+        lang: getLang(),
+        initial_balance: parseFloat(document.getElementById("sim-initial-balance").value) || 10000,
+        monthly_contribution: parseFloat(document.getElementById("sim-monthly-contribution").value) || 0,
+        rebalancing_freq: document.getElementById("sim-rebalance-freq").value || "none"
     };
 
     showToast(`${ticker} analiz ediliyor...`, "info");
@@ -360,6 +363,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("api-key").addEventListener("blur", saveApiKeys);
     document.getElementById("av-api-key").addEventListener("blur", saveApiKeys);
 
+    // Professional Mode
+    const profToggle = document.getElementById("prof-mode-toggle");
+    if(profToggle) {
+        profToggle.addEventListener("change", (e) => {
+            if(e.target.checked) document.body.classList.add("professional-mode");
+            else document.body.classList.remove("professional-mode");
+        });
+    }
+
     // Mobile menu
     const menuBtn = document.getElementById("mobile-menu-btn");
     const sidebar = document.getElementById("sidebar");
@@ -397,7 +409,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const text = document.getElementById("ticker-input").value.trim();
         if (!text) { showToast(t("toast.noTickers"), "warning"); return; }
         const tickers = text.split(/[\s,;]+/).filter(t => t.length > 0).map(t => t.toUpperCase());
-        runAnalysis({ tickers, use_ai: useAI, api_key: apiKey, av_api_key: avKey, model, check_islamic: checkIslamic, check_financials: checkFinancials, lang: getLang() }, "/api/analyze");
+        
+        const initBal = parseFloat(document.getElementById("sim-initial-balance").value) || 10000;
+        const moCont = parseFloat(document.getElementById("sim-monthly-contribution").value) || 0;
+        const rebFreq = document.getElementById("sim-rebalance-freq").value || "none";
+
+        runAnalysis({ tickers, use_ai: useAI, api_key: apiKey, av_api_key: avKey, model, check_islamic: checkIslamic, check_financials: checkFinancials, lang: getLang(), initial_balance: initBal, monthly_contribution: moCont, rebalancing_freq: rebFreq }, "/api/analyze");
     });
 
     // Enter key triggers analysis

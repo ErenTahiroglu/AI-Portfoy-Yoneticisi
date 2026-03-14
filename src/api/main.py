@@ -84,6 +84,9 @@ class AnalysisRequest(BaseModel):
     check_islamic: bool = False
     check_financials: bool = True
     lang: str = "tr"
+    initial_balance: float = 10000.0
+    monthly_contribution: float = 0.0
+    rebalancing_freq: str = "none"
 
 class TextAnalysisRequest(BaseModel):
     text: str
@@ -165,11 +168,11 @@ def process_tickers_with_weights(raw_tickers: List[str]):
         weights_map[ticker] = weight
     return parsed, weights_map
 
-def attach_weights_and_compute_extras(engine_result: dict, weights_map: dict):
+def attach_weights_and_compute_extras(engine_result: dict, weights_map: dict, initial_balance: float = 10000.0, monthly_contribution: float = 0.0, rebalancing_freq: str = "none"):
     results_list = engine_result.get("results", [])
     for r in results_list:
         r["weight"] = weights_map.get(r["ticker"], 1.0)
-    engine_result["extras"] = compute_portfolio_extras(results_list)
+    engine_result["extras"] = compute_portfolio_extras(results_list, initial_balance, monthly_contribution, rebalancing_freq)
     return engine_result
 
 @app.post("/api/analyze")
@@ -193,7 +196,13 @@ async def analyze_portfolio(request: AnalysisRequest):
         check_islamic=request.check_islamic,
         check_financials=request.check_financials,
     )
-    return attach_weights_and_compute_extras(result, weights_map)
+    return attach_weights_and_compute_extras(
+        result, 
+        weights_map, 
+        request.initial_balance, 
+        request.monthly_contribution, 
+        request.rebalancing_freq
+    )
 
 @app.post("/api/analyze/text")
 async def analyze_from_text(request: TextAnalysisRequest):
@@ -215,7 +224,13 @@ async def analyze_from_text(request: TextAnalysisRequest):
         check_islamic=request.check_islamic,
         check_financials=request.check_financials,
     )
-    return attach_weights_and_compute_extras(result, weights_map)
+    return attach_weights_and_compute_extras(
+        result, 
+        weights_map, 
+        request.initial_balance, 
+        request.monthly_contribution, 
+        request.rebalancing_freq
+    )
 
 @app.post("/api/analyze/file")
 async def analyze_from_file(
@@ -226,7 +241,10 @@ async def analyze_from_file(
     model: str = Form("gemini-2.5-flash"),
     check_islamic: bool = Form(False),
     check_financials: bool = Form(True),
-    lang: str = Form("tr")
+    lang: str = Form("tr"),
+    initial_balance: float = Form(10000.0),
+    monthly_contribution: float = Form(0.0),
+    rebalancing_freq: str = Form("none")
 ):
     """Dosyadan ticker çıkarıp analiz eder."""
     try:
@@ -262,7 +280,13 @@ async def analyze_from_file(
             check_financials=check_financials,
             lang=lang,
         )
-        return attach_weights_and_compute_extras(result, weights_map)
+        return attach_weights_and_compute_extras(
+            result, 
+            weights_map, 
+            initial_balance, 
+            monthly_contribution, 
+            rebalancing_freq
+        )
     except HTTPException:
         raise
     except Exception as e:

@@ -140,6 +140,77 @@ function renderExtras(extras) {
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "top", labels: { color: text, font: { size: 10, family: "Inter" }, boxWidth: 10 } } }, scales: { x: { grid: { display: false }, ticks: { color: text, font: { size: 10 } } }, y: { grid: { color: grid }, ticks: { color: text, font: { size: 10 }, callback: v => (v * 100 - 100).toFixed(0) + "%" } } } },
         });
     } else { mcCard.classList.add("hidden"); }
+
+    // PV Simulation
+    const pvWrap = document.getElementById("pv-simulation-wrap");
+    if (pvWrap && extras.pv_simulation && Object.keys(extras.pv_simulation).length > 0) {
+        pvWrap.classList.remove("hidden");
+        const sim = extras.pv_simulation;
+        const met = sim.metrics || {};
+        
+        document.getElementById("pv-cagr").textContent = met.cagr !== undefined ? `%${met.cagr}` : "-";
+        document.getElementById("pv-balance").textContent = sim.final_balance ? `${sim.final_balance.toLocaleString('tr-TR')} ₺` : "-";
+        document.getElementById("pv-maxdd").textContent = met.max_drawdown !== undefined ? `-%${Math.abs(met.max_drawdown)}` : "-";
+        document.getElementById("pv-sortino").textContent = met.sortino !== undefined ? met.sortino : "-";
+        document.getElementById("pv-calmar").textContent = met.calmar !== undefined ? met.calmar : "-";
+        document.getElementById("pv-sharpe").textContent = met.sharpe !== undefined ? met.sharpe : "-";
+        
+        if (met.drawdown_series && met.drawdown_series.length > 0) {
+            destroyChart("drawdown-chart");
+            const labels = Array.from({length: met.drawdown_series.length}, (_, i) => `${i+1}A`);
+            chartInstances["drawdown-chart"] = new Chart(document.getElementById("drawdown-chart"), {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Drawdown (%)",
+                        data: met.drawdown_series,
+                        borderColor: "rgba(239, 68, 68, 0.8)",
+                        backgroundColor: "rgba(239, 68, 68, 0.2)",
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            grid: { color: getChartColors().grid },
+                            ticks: { color: getChartColors().text, callback: v => v + "%" },
+                            max: 0
+                        }
+                    }
+                }
+            });
+        }
+    } else if (pvWrap) {
+        pvWrap.classList.add("hidden");
+    }
+
+    // Factor Regression
+    const factorCard = document.getElementById("pv-factor-card");
+    const factorContent = document.getElementById("pv-factor-content");
+    if (factorContent) {
+        if (extras.factor_regression) {
+            const f = extras.factor_regression;
+            if (f.error) {
+                factorContent.innerHTML = `<div class="pv-warning"><i class="fas fa-exclamation-triangle"></i> ${f.message}</div>`;
+            } else {
+                factorContent.innerHTML = `
+                    <div class="factor-row"><span>Yıllık Alpha</span><strong style="color:var(--success)">%${f.alpha_annual}</strong></div>
+                    <div class="factor-row"><span>Piyasa (Market) Beta</span><strong>${f.market_beta}</strong></div>
+                    <div class="factor-row"><span>Ölçek (Size) Beta</span><strong>${f.size_beta}</strong></div>
+                    <div class="factor-row"><span>Değer (Value) Beta</span><strong>${f.value_beta}</strong></div>
+                `;
+            }
+        } else {
+            factorContent.innerHTML = `<div style="color:var(--text-muted); font-size:0.8rem;">Bu portföy için faktör verisi oluşturulamadı.</div>`;
+        }
+    }
 }
 
 // ═══════════════════════════════════════
@@ -384,21 +455,52 @@ function renderScenarios(results) {
 // ═══════════════════════════════════════
 // OPTIMIZATION
 // ═══════════════════════════════════════
-function renderOptimization(optWeights, results) {
+function renderOptimization(optGroups, results) {
     const wrap = document.getElementById("optimization-wrap");
     const container = document.getElementById("opt-bars");
 
-    if (!optWeights || Object.keys(optWeights).length === 0) {
+    if (!optGroups || Object.keys(optGroups).length === 0 || !optGroups.max_sharpe) {
         wrap.classList.add("hidden");
         return;
     }
 
     wrap.classList.remove("hidden");
     container.innerHTML = "";
+    
+    let html = `<div class="opt-tabs" style="display:flex; gap:0.5rem; margin-bottom:1rem; border-bottom:1px solid var(--glass-border); padding-bottom:0.5rem;">
+        <button class="btn btn-outline active" onclick="switchOptTab('max_sharpe', this)" style="font-size:0.75rem; padding:0.3rem 0.6rem;">Maksimum Sharpe</button>
+        <button class="btn btn-outline" onclick="switchOptTab('min_volatility', this)" style="font-size:0.75rem; padding:0.3rem 0.6rem;">Minimum Risk</button>
+        <button class="btn btn-outline" onclick="switchOptTab('max_return', this)" style="font-size:0.75rem; padding:0.3rem 0.6rem;">Maksimum Getiri</button>
+    </div>`;
+    
+    window.currentOptGroups = optGroups;
+    window.currentOptResults = results;
+    
+    html += `<div id="opt-tab-content"></div>`;
+    container.innerHTML = html;
+    
+    // Initially render
+    switchOptTab('max_sharpe', container.querySelector('.opt-tabs button'));
+}
 
+window.switchOptTab = function(type, btnObj) {
+    if(btnObj) {
+        document.querySelectorAll('.opt-tabs button').forEach(b => {
+             b.classList.remove('active');
+             b.style.background = 'transparent';
+             b.style.color = 'var(--text-main)';
+        });
+        btnObj.classList.add('active');
+        btnObj.style.background = 'var(--primary-glow)';
+        btnObj.style.color = 'var(--primary)';
+    }
+    const optWeights = window.currentOptGroups[type];
+    const results = window.currentOptResults;
+    const content = document.getElementById("opt-tab-content");
+    if(!content || !optWeights) return;
+    
     let totalCurWeight = results.reduce((sum, r) => sum + ((!r.error && r.weight) ? r.weight : 1), 0);
-
-    let html = `<div style="display:grid; grid-template-columns: 80px 1fr 1fr; gap:1rem; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; border-bottom:1px solid var(--card-border); padding-bottom:0.5rem;"><div>Hisse</div><div>Mevcut Ağırlık</div><div>İdeal (Optimize) Ağırlık</div></div>`;
+    let html = `<div style="display:grid; grid-template-columns: 80px 1fr 1fr; gap:1rem; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; border-bottom:1px solid var(--card-border); padding-bottom:0.5rem;"><div>Hisse</div><div>Mevcut Ağırlık</div><div>İdeal (% Ağırlık)</div></div>`;
 
     for (const [ticker, idealPct] of Object.entries(optWeights)) {
         const r = results.find(x => x.ticker === ticker);
@@ -426,6 +528,5 @@ function renderOptimization(optWeights, results) {
             </div>
         </div>`;
     }
-
-    container.innerHTML = html;
+    content.innerHTML = html;
 }
