@@ -108,8 +108,8 @@ def create_pdf(report_text):
     # Unicode font yükle (Türkçe harfler korunacak)
     font_path = _get_unicode_font_path()
     if font_path:
-        pdf.add_font("UnicodeFont", "", font_path, uni=True)
-        pdf.add_font("UnicodeFont", "B", font_path, uni=True)
+        pdf.add_font("UnicodeFont", "", font_path)
+        pdf.add_font("UnicodeFont", "B", font_path)
         font_name = "UnicodeFont"
     else:
         # Fallback: Arial (Latin-1 only)
@@ -146,12 +146,15 @@ def create_pdf(report_text):
         elif clean_line.startswith('- '):
             pdf.set_font(font_name, '', 11)
             pdf.set_text_color(50, 50, 50)
-            pdf.multi_cell(0, 6, "  " + clean_line)
+            pdf.set_x(18)  # Set a defined left margin for bullets instead of using spaces
+            pdf.multi_cell(0, 6, clean_line)
+            pdf.set_x(15)  # Reset to default
             
         # NORMAL PARAGRAF METNİ
         else:
             pdf.set_font(font_name, '', 11)
             pdf.set_text_color(0, 0, 0)
+            pdf.set_x(15)
             pdf.multi_cell(0, 6, clean_line)
     
     out = pdf.output(dest="S")

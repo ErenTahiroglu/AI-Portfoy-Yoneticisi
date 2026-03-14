@@ -1,0 +1,184 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\erent\source\repos\Portfolio AI Assistant
+plugins: anyio-4.12.1, langsmith-0.7.12, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 25 items
+
+tests/test_analysis_engine.py::TestFriendlyError::test_rate_limit PASSED [  4%]
+tests/test_analysis_engine.py::TestFriendlyError::test_ssl_error PASSED  [  8%]
+tests/test_analysis_engine.py::TestFriendlyError::test_timeout PASSED    [ 12%]
+tests/test_analysis_engine.py::TestFriendlyError::test_unknown_error PASSED [ 16%]
+tests/test_analysis_engine.py::TestCache::test_cache_set_and_get PASSED  [ 20%]
+tests/test_analysis_engine.py::TestCache::test_cache_miss PASSED         [ 24%]
+tests/test_analysis_engine.py::TestCache::test_cache_key_format PASSED   [ 28%]
+tests/test_file_processor.py::TestExtractTickers::test_basic_comma_separated PASSED [ 32%]
+tests/test_file_processor.py::TestExtractTickers::test_mixed_separators PASSED [ 36%]
+tests/test_file_processor.py::TestExtractTickers::test_bist_tickers PASSED [ 40%]
+tests/test_file_processor.py::TestExtractTickers::test_with_dot_suffix PASSED [ 44%]
+tests/test_file_processor.py::TestExtractTickers::test_empty_input PASSED [ 48%]
+tests/test_file_processor.py::TestExtractTickers::test_numbers_only_excluded PASSED [ 52%]
+tests/test_file_processor.py::TestCreatePDF::test_creates_bytes FAILED   [ 56%]
+tests/test_file_processor.py::TestCreatePDF::test_handles_turkish_chars PASSED [ 60%]
+tests/test_file_processor.py::TestCreateDOCX::test_creates_bytes PASSED  [ 64%]
+tests/test_market_detector.py::TestDetectMarketKnownTickers::test_known_bist_tickers[THYAO-TR] PASSED [ 68%]
+tests/test_market_detector.py::TestDetectMarketKnownTickers::test_known_bist_tickers[ASELS-TR] PASSED [ 72%]
+tests/test_market_detector.py::TestDetectMarketKnownTickers::test_known_bist_tickers[GARAN-TR] PASSED [ 76%]
+tests/test_market_detector.py::TestDetectMarketKnownTickers::test_known_bist_tickers[AKBNK-TR] PASSED [ 80%]
+tests/test_market_detector.py::TestDetectMarketKnownTickers::test_explicit_is_suffix PASSED [ 84%]
+tests/test_market_detector.py::TestDetectMarketTEFAS::test_short_codes_are_tefas[TP2] PASSED [ 88%]
+tests/test_market_detector.py::TestDetectMarketTEFAS::test_short_codes_are_tefas[ZP8] PASSED [ 92%]
+tests/test_market_detector.py::TestDetectMarketTEFAS::test_short_codes_are_tefas[AKB] PASSED [ 96%]
+tests/test_market_detector.py::TestDetectMarketCaseInsensitive::test_lowercase_input PASSED [100%]
+
+================================== FAILURES ===================================
+______________________ TestCreatePDF.test_creates_bytes _______________________
+
+self = <test_file_processor.TestCreatePDF object at 0x0000029917C0B110>
+
+    def test_creates_bytes(self):
+>       result = create_pdf("# Test Raporu\n- Madde 1\n- Madde 2")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_file_processor.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\utils\file_processor.py:149: in create_pdf
+    pdf.multi_cell(0, 6, "  " + clean_line)
+..\..\..\AppData\Roaming\Python\Python314\site-packages\fpdf\fpdf.py:281: in wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Roaming\Python\Python314\site-packages\fpdf\deprecation.py:36: in wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Roaming\Python\Python314\site-packages\fpdf\fpdf.py:4916: in multi_cell
+    text_line = multi_line_break.get_line()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <fpdf.line_break.MultiLineBreak object at 0x0000029918995A90>
+
+    def get_line(self) -> Optional[TextLine]:
+        first_char = True  # "Tw" ignores the first character in a text object.
+        idx_last_forced_break = self.idx_last_forced_break
+        self.idx_last_forced_break = None
+    
+        if self.fragment_index == len(self.fragments):
+            return None
+    
+        current_font_height: float = 0
+    
+        max_width = self.get_width(current_font_height)
+        # The full max width will be passed on via TextLine to FPDF._render_styled_text_line().
+        current_line = CurrentLine(
+            max_width=max_width,
+            print_sh=self.print_sh,
+            indent=self.first_line_indent if self._is_first_line else 0,
+        )
+        # For line wrapping we need to use the reduced width.
+        for margin in self.margins:
+            max_width -= float(margin)
+        if self._is_first_line:
+            max_width -= self.first_line_indent
+    
+        if self.skip_leading_spaces:
+            # write_html() with TextColumns uses this, since it can't know in
+            # advance where the lines will be broken.
+            while self.fragment_index < len(self.fragments):
+                if self.character_index >= len(
+                    self.fragments[self.fragment_index].characters
+                ):
+                    self.character_index = 0
+                    self.fragment_index += 1
+                    continue
+                character = self.fragments[self.fragment_index].characters[
+                    self.character_index
+                ]
+                if character == SPACE:
+                    self.character_index += 1
+                else:
+                    break
+    
+        while self.fragment_index < len(self.fragments):
+            current_fragment = self.fragments[self.fragment_index]
+    
+            if FloatTolerance.greater_than(
+                current_fragment.font_size, current_font_height
+            ):
+                current_font_height = current_fragment.font_size  # document units
+                max_width = self.get_width(current_font_height)
+                current_line.max_width = max_width
+                for margin in self.margins:
+                    max_width -= float(margin)
+                if self._is_first_line:
+                    max_width -= self.first_line_indent
+    
+            if self.character_index >= len(current_fragment.characters):
+                self.character_index = 0
+                self.fragment_index += 1
+                continue
+    
+            character = current_fragment.characters[self.character_index]
+            character_width = current_fragment.get_character_width(
+                character, self.print_sh, initial_cs=not first_char
+            )
+            first_char = False
+    
+            if character in (NEWLINE, FORM_FEED):
+                self.character_index += 1
+                if not current_line.fragments:
+                    current_line.height = current_font_height * self.line_height
+                self._is_first_line = False
+                return current_line.manual_break(
+                    Align.L if self.align == Align.J else self.align,
+                    trailing_nl=character == NEWLINE,
+                    trailing_form_feed=character == FORM_FEED,
+                )
+            if FloatTolerance.greater_than(
+                current_line.width + character_width, max_width
+            ):
+                self._is_first_line = False
+                if (
+                    character in BREAKING_SPACE_SYMBOLS_STR
+                ):  # must come first, always drop a current space.
+                    self.character_index += 1
+                    return current_line.manual_break(self.align)
+                if self.wrapmode == WrapMode.CHAR:
+                    # If the line ends with one or more spaces, then we want to get
+                    # rid of them so it can be justified correctly.
+                    current_line.trim_trailing_spaces()
+                    return current_line.manual_break(self.align)
+                if current_line.automatic_break_possible():
+                    (
+                        self.fragment_index,
+                        self.character_index,
+                        line,
+                    ) = current_line.automatic_break(self.align)
+                    self.character_index += 1
+                    return line
+                if idx_last_forced_break == self.character_index:
+>                   raise FPDFException(
+                        "Not enough horizontal space to render a single character"
+                    )
+E                   fpdf.errors.FPDFException: Not enough horizontal space to render a single character
+
+..\..\..\AppData\Roaming\Python\Python314\site-packages\fpdf\line_break.py:851: FPDFException
+============================== warnings summary ===============================
+tests/test_file_processor.py::TestCreatePDF::test_creates_bytes
+tests/test_file_processor.py::TestCreatePDF::test_handles_turkish_chars
+  C:\Users\erent\source\repos\Portfolio AI Assistant\tests\..\src\utils\file_processor.py:111: DeprecationWarning: "uni" parameter is deprecated since v2.5.1 and will be removed in a future release
+    pdf.add_font("UnicodeFont", "", font_path, uni=True)
+
+tests/test_file_processor.py::TestCreatePDF::test_creates_bytes
+tests/test_file_processor.py::TestCreatePDF::test_handles_turkish_chars
+  C:\Users\erent\source\repos\Portfolio AI Assistant\tests\..\src\utils\file_processor.py:112: DeprecationWarning: "uni" parameter is deprecated since v2.5.1 and will be removed in a future release
+    pdf.add_font("UnicodeFont", "B", font_path, uni=True)
+
+tests/test_file_processor.py::TestCreatePDF::test_handles_turkish_chars
+  C:\Users\erent\source\repos\Portfolio AI Assistant\tests\..\src\utils\file_processor.py:157: DeprecationWarning: "dest" parameter is deprecated since v2.2.0 and will be removed in a future release
+    out = pdf.output(dest="S")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_file_processor.py::TestCreatePDF::test_creates_bytes - fpdf...
+================== 1 failed, 24 passed, 5 warnings in 8.72s ===================
