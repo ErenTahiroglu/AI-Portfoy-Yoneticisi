@@ -57,10 +57,10 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 
 ### 🧩 Modüler Mimari (Puzzle Modeli)
 
-*   `src/api/`: FastAPI endpointleri ve API mantığı.
-*   `src/core/`: Analiz orkestratörü, Monte Carlo ve AI motoru.
-*   `src/analyzers/`: BIST, US ve İslami analiz araçları (tamamen izole parçalar).
-*   `src/data/`: Data sağlayıcılar ve Market Detector.
+*   `src/api/`: FastAPI endpointleri ve yönlendirmeler (Routing).
+*   `src/core/`: Analiz orkestratörü (`analysis_engine.py`), Monte Carlo ve AI motoru.
+*   `src/analyzers/`: Temel Değerleme (`valuation_analyzer`), Teknik Analiz (`technical_analyzer`), BIST, US ve İslami izole modüller.
+*   `src/data/`: Data sağlayıcılar, `constants.py` (hisse listeleri) ve Market Detector.
 *   `src/frontend/`: Glassmorphism tasarımlı modern arayüz.
 *   `src/utils/`: Dosya işleme ve rapor dışa aktarma araçları.
 

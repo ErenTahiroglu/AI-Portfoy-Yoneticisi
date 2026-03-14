@@ -89,3 +89,5 @@ xxhash==3.6.0
 yahooquery==2.4.1
 yfinance==1.2.0
 zstandard==0.25.0
+pytest==8.1.1
+pytest-asyncio==0.23.6
