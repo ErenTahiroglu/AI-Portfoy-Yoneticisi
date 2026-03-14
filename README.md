@@ -14,9 +14,9 @@
 
 ## Türkçe (Turkish)
 
-**Portföy Analiz Platformu (v4.2)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir web uygulamasıdır. 
+**Portföy Analiz Platformu (v4.3)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir web uygulamasıdır. 
 
-Finansal verileri hesaplar, opsiyonel olarak İslami uygunluk (AAOIFI) denetimi yapar ve sonuçları Google Gemini AI modeli ile yorumlar.
+Finansal verileri hesaplar, opsiyonel olarak İslami uygunluk (AAOIFI) denetimi yapar, sonuçları Google Gemini AI modeli ile yorumlar ve modern, mobil uyumlu, logolu bir arayüz sunar.
 
 ### ✨ Temel Özellikler
 
@@ -68,7 +68,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 
 ## English
 
-**Portfolio Analysis Platform (v4.2)** is a locally-hosted, AI-powered web application for analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds simultaneously.
+**Portfolio Analysis Platform (v4.3)** is a locally-hosted, AI-powered web application for analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds simultaneously. It features a modern, mobile-responsive interface with professional branding.
 
 ### ✨ Key Features
 
