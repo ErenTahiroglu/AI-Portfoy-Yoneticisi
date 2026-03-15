@@ -135,14 +135,6 @@ def process_tickers_with_weights(raw_tickers: List[str]):
         weights_map[ticker] = weight
     return parsed, weights_map
 
-def attach_weights_and_compute_extras(engine_result: dict, weights_map: dict, initial_balance: float = 10000.0, monthly_contribution: float = 0.0, rebalancing_freq: str = "none"):
-    results_list = engine_result.get("results", [])
-    for r in results_list:
-        r["weight"] = weights_map.get(r["ticker"], 1.0)
-    # RAM Optimizasyonu: Extras hesaplamaları Frontend'e taşındı.
-    engine_result["extras"] = {}
-    return engine_result
-
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import gc

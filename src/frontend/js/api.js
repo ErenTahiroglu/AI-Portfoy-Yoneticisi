@@ -351,9 +351,11 @@ async function runAnalysis(payload, endpoint) {
         progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
         setTimeout(() => progressContainer.classList.add("hidden"), 500);
 
-        // Calculate and Save Extras reactively
-        const extras = calculateClientSideExtras(AppState.results, payload);
-        AppState.extras = extras; // Save to State
+        // Calculate and Save Extras non-blockingly (Asynchronous)
+        setTimeout(async () => {
+            const extras = await calculateClientSideExtras(AppState.results, payload);
+            AppState.extras = extras; // Save to State
+        }, 50);
         
         showToast(`${AppState.results.length} ${t("toast.analysisComplete")}`, "success");
 
@@ -455,7 +457,7 @@ function extractTickersFromCsv(text) {
 // ═══════════════════════════════════════
 // CLIENT-SIDE EXTRAS CALCULATION
 // ═══════════════════════════════════════
-function calculateClientSideExtras(results, payload) {
+async function calculateClientSideExtras(results, payload) {
     const validResults = results.filter(r => !r.error && r.technicals && r.technicals.relative_performance);
     
     const extras = {
@@ -474,6 +476,8 @@ function calculateClientSideExtras(results, payload) {
         extras.sector_distribution[sector] = (extras.sector_distribution[sector] || 0) + 1;
     });
 
+    await new Promise(resolve => setTimeout(resolve, 0)); // Yield
+
     // 2. Korelasyon Matrisi
     const tickers = validResults.map(r => r.ticker);
     extras.correlation.tickers = tickers;
@@ -487,6 +491,7 @@ function calculateClientSideExtras(results, payload) {
             row.push(calculateCorrelation(historyI, historyJ));
         }
         extras.correlation.matrix.push(row);
+        if (i % 5 === 0) await new Promise(resolve => setTimeout(resolve, 0)); // Yield periodically to avoid main thread lock
     }
 
     // 3. Monte Carlo Simülasyonu
