@@ -9,7 +9,7 @@ Kullanım:
 """
 
 import logging
-import yfinance as yf
+from yahooquery import Ticker
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -46,14 +46,18 @@ def detect_market(ticker: str) -> tuple:
     
     # 3. Yahoo'da ABD hissesi olarak ara
     try:
-        if yf.Ticker(ticker).fast_info.get('lastPrice', 0) > 0:
+        t = Ticker(ticker)
+        p = t.price
+        if isinstance(p, dict) and ticker in p and isinstance(p[ticker], dict) and 'regularMarketPrice' in p[ticker]:
             return "US", ticker, False
     except Exception:
         pass
     
     # 4. Yahoo'da BIST hissesi olarak ara (.IS ekleyerek)
     try:
-        if yf.Ticker(f"{ticker}.IS").fast_info.get('lastPrice', 0) > 0:
+        t = Ticker(f"{ticker}.IS")
+        p = t.price
+        if isinstance(p, dict) and f"{ticker}.IS" in p and isinstance(p[f"{ticker}.IS"], dict) and 'regularMarketPrice' in p[f"{ticker}.IS"]:
             return "TR", f"{ticker}.IS", False
     except Exception:
         pass
@@ -86,13 +90,14 @@ def classify_fund(ticker: str) -> dict:
         }
     """
     # ── Ticker objesini BİR KEZ oluştur ───────────────────────────────
-    yf_ticker = yf.Ticker(ticker + ".IS")
+    t = Ticker(ticker + ".IS")
     
     # ── Fon adını çek ─────────────────────────────────────────────────
     fund_name = ""
     try:
-        fund_info = yf_ticker.info
-        fund_name = fund_info.get('longName', '') or fund_info.get('shortName', '') or ''
+        p = t.price
+        fund_info = p.get(ticker + ".IS", {}) if isinstance(p, dict) else {}
+        fund_name = fund_info.get('longName') or fund_info.get('shortName') or ''
     except Exception:
         pass
     
@@ -111,17 +116,24 @@ def classify_fund(ticker: str) -> dict:
     fund_start_date = None
     fund_age_text = ""
     try:
-        hist = yf_ticker.history(period="max")
-        if hist is not None and not hist.empty:
-            first_date = hist.index[0]
-            fund_start_date = first_date.strftime("%d.%m.%Y")
-            days_active = (datetime.now() - first_date.to_pydatetime().replace(tzinfo=None)).days
-            years = days_active // 365
-            months = (days_active % 365) // 30
-            if years > 0:
-                fund_age_text = f"{years} yıl {months} aydır aktif"
-            else:
-                fund_age_text = f"{months} aydır aktif"
+        hist = t.history(period="max")
+        if not isinstance(hist, dict):
+            hist = hist.reset_index()
+            if not hist.empty and 'date' in hist.columns:
+                first_date = hist['date'].iloc[0]
+                # Datetime conversion
+                if hasattr(first_date, 'to_pydatetime'):
+                    first_date = first_date.to_pydatetime()
+                first_date = first_date.replace(tzinfo=None)
+                
+                fund_start_date = first_date.strftime("%d.%m.%Y")
+                days_active = (datetime.now() - first_date).days
+                years = days_active // 365
+                months = (days_active % 365) // 30
+                if years > 0:
+                    fund_age_text = f"{years} yıl {months} aydır aktif"
+                else:
+                    fund_age_text = f"{months} aydır aktif"
     except Exception:
         pass
     
