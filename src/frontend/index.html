@@ -151,30 +151,30 @@
                 <label class="toggle-row" style="margin-bottom:1rem;">
                     <div class="toggle-info">
                         <span class="toggle-label" data-i18n="sidebar.profMode">Profesyonel Mod</span>
-                        <span class="toggle-desc" style="font-size:0.65rem;">Kompakt veri görünümü</span>
+                        <span class="toggle-desc" data-i18n="sidebar.profModeDesc" style="font-size:0.65rem;">Kompakt veri görünümü</span>
                     </div>
                     <input type="checkbox" id="prof-mode-toggle" class="toggle-input">
                     <span class="toggle-slider"></span>
                 </label>
                 
                 <div class="input-group">
-                    <label style="font-size:0.75rem;"><i class="fas fa-wallet"></i> Başlangıç Bakiyesi (₺/$)</label>
-                    <input type="number" id="sim-initial-balance" value="10000" style="padding:0.4rem; font-size:0.8rem; width:100%; border:1px solid var(--glass-border); border-radius:4px; background:var(--card-bg); color:var(--text-main);">
+                    <label><i class="fas fa-wallet"></i> <span data-i18n="sidebar.initBalance">Başlangıç Bakiyesi (₺/$)</span></label>
+                    <input type="number" id="sim-initial-balance" value="10000">
                 </div>
-                <div class="input-group" style="margin-top:0.5rem;">
-                    <label style="font-size:0.75rem;"><i class="fas fa-hand-holding-usd"></i> Aylık Katkı Payı</label>
-                    <input type="number" id="sim-monthly-contribution" value="0" style="padding:0.4rem; font-size:0.8rem; width:100%; border:1px solid var(--glass-border); border-radius:4px; background:var(--card-bg); color:var(--text-main);">
+                <div class="input-group">
+                    <label><i class="fas fa-hand-holding-usd"></i> <span data-i18n="sidebar.monthlyCont">Aylık Katkı Payı</span></label>
+                    <input type="number" id="sim-monthly-contribution" value="0">
                 </div>
-                <div class="input-group" style="margin-top:0.5rem;">
-                    <label style="font-size:0.75rem;"><i class="fas fa-sync-alt"></i> Yeniden Dengeleme</label>
-                    <select id="sim-rebalance-freq" style="padding:0.4rem; font-size:0.8rem; width:100%; border:1px solid var(--glass-border); border-radius:4px; background:var(--card-bg); color:var(--text-main);">
-                        <option value="none" selected>Yok (Buy & Hold)</option>
-                        <option value="monthly">Aylık</option>
-                        <option value="quarterly">Çeyreklik</option>
-                        <option value="yearly">Yıllık</option>
+                <div class="input-group">
+                    <label><i class="fas fa-sync-alt"></i> <span data-i18n="sidebar.rebalance">Yeniden Dengeleme</span></label>
+                    <select id="sim-rebalance-freq">
+                        <option value="none" selected data-i18n="sidebar.rebalance.none">Yok (Buy & Hold)</option>
+                        <option value="monthly" data-i18n="sidebar.rebalance.monthly">Aylık</option>
+                        <option value="quarterly" data-i18n="sidebar.rebalance.quarterly">Çeyreklik</option>
+                        <option value="yearly" data-i18n="sidebar.rebalance.yearly">Yıllık</option>
                     </select>
                 </div>
-                <p style="font-size:0.65rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.3; background:rgba(255,255,255,0.05); padding:6px; border-radius:4px;"><i class="fas fa-info-circle"></i> PV simülasyonları geçmiş 5 yıla dayalıdır. Rakamlar nominaldir.</p>
+                <p style="font-size:0.65rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.3; background:rgba(255,255,255,0.05); padding:6px; border-radius:4px;"><i class="fas fa-info-circle"></i> <span data-i18n="sidebar.pvNote">PV simülasyonları geçmiş 5 yıla dayalıdır. Rakamlar nominaldir.</span></p>
             </div>
         </div>
 
