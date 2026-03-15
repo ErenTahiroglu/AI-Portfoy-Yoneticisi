@@ -116,7 +116,9 @@ class HisseAnaliz(BaseAnalyzer):
             auto_adjust=True, progress=False, timeout=30,
         )
         if HAS_CURL:
-            indir_kwargs["session"] = CURL_SESSION
+            from curl_cffi import requests as curl_req
+            isolated_session = curl_req.Session(verify=False, impersonate="chrome")
+            indir_kwargs["session"] = isolated_session
         ham = yf.download(sembol, **indir_kwargs)
         if ham is None or ham.empty:
             return None
@@ -239,7 +241,10 @@ class HisseAnaliz(BaseAnalyzer):
         temettular = pd.Series(dtype=float)
         ticker = None
         try:
-            ticker_kwargs = {"session": CURL_SESSION} if HAS_CURL else {}
+            ticker_kwargs = {}
+            if HAS_CURL:
+                from curl_cffi import requests as curl_req
+                ticker_kwargs["session"] = curl_req.Session(verify=False, impersonate="chrome")
             ticker = yf.Ticker(sembol, **ticker_kwargs)
             tem    = ticker.dividends
             if tem is not None and not tem.empty:

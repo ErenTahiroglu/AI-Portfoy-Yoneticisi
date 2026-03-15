@@ -2519,4 +2519,38 @@ body {
 .professional-mode .result-card {
     display: grid;
     grid-template-columns: 1fr; /* Will be styled from JS/Grid */
-}
+}
+
+/* ── Server Status Dot ── */
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: 8px;
+    vertical-align: middle;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dot-gray { 
+    background-color: #6b7280; 
+    box-shadow: 0 0 6px #6b7280;
+}
+
+.dot-green { 
+    background-color: #10b981; 
+    box-shadow: 0 0 10px #10b981;
+}
+
+.dot-yellow { 
+    background-color: #f59e0b; 
+    box-shadow: 0 0 10px #f59e0b;
+    animation: status-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes status-pulse {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.7; }
+}

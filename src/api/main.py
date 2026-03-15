@@ -26,7 +26,7 @@ import os
 # ── Modül importları ──────────────────────────────────────────────────────
 # ── Modül importları ──────────────────────────────────────────────────────
 from src.utils.file_processor import extract_tickers_from_text, process_uploaded_file
-from src.core.analysis_engine import AnalysisEngine, compute_portfolio_extras
+from src.core.analysis_engine import AnalysisEngine
 
 # ── FastAPI uygulaması ────────────────────────────────────────────────────
 app = FastAPI(title="Portföy Analiz Platformu", version="3.0")
@@ -139,7 +139,8 @@ def attach_weights_and_compute_extras(engine_result: dict, weights_map: dict, in
     results_list = engine_result.get("results", [])
     for r in results_list:
         r["weight"] = weights_map.get(r["ticker"], 1.0)
-    engine_result["extras"] = compute_portfolio_extras(results_list, initial_balance, monthly_contribution, rebalancing_freq)
+    # RAM Optimizasyonu: Extras hesaplamaları Frontend'e taşındı.
+    engine_result["extras"] = {}
     return engine_result
 
 @app.post("/api/analyze")

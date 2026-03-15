@@ -191,42 +191,92 @@ async function runAnalysis(payload, endpoint) {
     const progressText = document.getElementById("progress-text");
     const results = document.getElementById("results");
 
-    btn.disabled = true; results.classList.add("hidden");
+    btn.disabled = true; 
+    results.classList.add("hidden");
     document.getElementById("loader").classList.add("hidden");
     progressContainer.classList.remove("hidden");
 
     let progress = 0;
     const pInt = setInterval(() => {
-        progress += Math.random() * 5;
-        if (progress > 95) progress = 95;
+        progress += Math.random() * 3;
+        if (progress > 90) progress = 90;
         progressFill.style.width = `${progress}%`;
-        if (progress < 30) progressText.textContent = getLang() === "en" ? "Scanning markets..." : "Piyasalar taranıyor...";
-        else if (progress < 60) progressText.textContent = getLang() === "en" ? "Analyzing financials..." : "Finansal veriler analiz ediliyor...";
-        else if (progress < 90) progressText.textContent = payload.use_ai ? (getLang() === "en" ? "AI is generating report..." : "Yapay Zeka rapor hazırlıyor...") : (getLang() === "en" ? "Processing data..." : "Veriler işleniyor...");
-        else progressText.textContent = getLang() === "en" ? "Finalizing results..." : "Sonuçlar derleniyor...";
-    }, 400);
+        progressText.textContent = getLang() === "en" ? "Processing portfolio components..." : "Portföy bileşenleri işleniyor...";
+    }, 500);
 
     await saveApiKeys();
+    
     try {
-        const res = await fetch(`${API_BASE}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        clearInterval(pInt); progressFill.style.width = "100%"; progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
+        const tickers = payload.tickers || [];
+        const aggregatedResults = [];
+        let completedCount = 0;
+
+        for (const ticker of tickers) {
+            const cleanTicker = ticker.trim().toUpperCase();
+            if (!cleanTicker) continue;
+
+            // 1. Önbellek (Cache) Kontrolü
+            const cacheKey = `analysis_${cleanTicker}_ai${payload.use_ai}_isl${payload.check_islamic}`;
+            const cachedData = localStorage.getItem(cacheKey);
+            const cacheTime = localStorage.getItem(`${cacheKey}_time`);
+            
+            const isCacheValid = cachedData && cacheTime && (Date.now() - parseInt(cacheTime) < 3600000);
+
+            if (isCacheValid) {
+                aggregatedResults.push(JSON.parse(cachedData));
+                completedCount++;
+                progress = (completedCount / tickers.length) * 90;
+                progressFill.style.width = `${progress}%`;
+                continue;
+            }
+
+            // 2. API İsteği (Tekil)
+            progressText.textContent = `${cleanTicker} ${getLang() === "en" ? "analyzing..." : "analiz ediliyor..."}`;
+            
+            const singlePayload = { ...payload, tickers: [cleanTicker] };
+            const res = await fetch(`${API_BASE}${endpoint}`, { 
+                method: "POST", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(singlePayload) 
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.warn(`Failed for ${cleanTicker}:`, errData.detail || res.status);
+                aggregatedResults.push({ ticker: cleanTicker, error: true, message: errData.detail || `Hata (${res.status})` });
+            } else {
+                const data = await res.json();
+                if (data.results && data.results[0]) {
+                    const r = data.results[0];
+                    aggregatedResults.push(r);
+                    localStorage.setItem(cacheKey, JSON.stringify(r));
+                    localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+                }
+            }
+            
+            completedCount++;
+            progress = (completedCount / tickers.length) * 90;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        clearInterval(pInt); 
+        progressFill.style.width = "100%"; 
+        progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
         setTimeout(() => progressContainer.classList.add("hidden"), 500);
 
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.detail || `Sunucu hatası (${res.status})`);
-        }
-        const data = await res.json();
-        renderResults(data);
-        showToast(`${(data.results || []).length} ${t("toast.analysisComplete")}`, "success");
+        const finalData = { results: aggregatedResults, extras: calculateClientSideExtras(aggregatedResults) };
+        renderResults(finalData);
+        showToast(`${aggregatedResults.length} ${t("toast.analysisComplete")}`, "success");
+
     } catch (err) {
-        clearInterval(pInt); progressContainer.classList.add("hidden");
+        clearInterval(pInt); 
+        progressContainer.classList.add("hidden");
         console.error("Analysis Error:", err);
 
         if (err.message.indexOf("fetch") !== -1 || err.message.indexOf("Failed to fetch") !== -1) {
             const health = await checkServerHealth();
             if (health.online) {
-                showToast("Sunucu aktif ancak istek zaman aşımına uğradı. Birkaç saniye sonra tekrar deneyin.", "warning");
+                showToast("Sunucu aktif ancak istek zaman aşımına uğradı. Tekrar deneyin.", "warning");
             } else {
                 showToast(`Bağlantı Sorunu: ${health.message}`, "error");
             }
@@ -283,7 +333,8 @@ async function runFileAnalysis(file) {
             throw new Error(errData.detail || `Sunucu hatası (${res.status})`);
         }
         const data = await res.json();
-        renderResults(data);
+        const finalData = { results: data.results || [], extras: calculateClientSideExtras(data.results || []) };
+        renderResults(finalData);
         showToast(`${(data.results || []).length} ${t("toast.analysisComplete")}`, "success");
     } catch (err) {
         clearInterval(pInt); progressContainer.classList.add("hidden");
@@ -302,4 +353,132 @@ async function runFileAnalysis(file) {
     } finally {
         btn.disabled = false;
     }
+}
+
+// ═══════════════════════════════════════
+// CLIENT-SIDE EXTRAS CALCULATION
+// ═══════════════════════════════════════
+function calculateClientSideExtras(results) {
+    const validResults = results.filter(r => !r.error && r.technicals && r.technicals.relative_performance);
+    
+    const extras = {
+        sector_distribution: {},
+        correlation: { tickers: [], matrix: [] },
+        monte_carlo: null,
+        weighted_return_5y: 0
+    };
+
+    if (validResults.length === 0) return extras;
+
+    // 1. Sektör Dağılımı
+    validResults.forEach(r => {
+        const sector = r.sector_localized ? r.sector_localized[getLang() === 'en' ? 'en' : 'tr'] : r.sector || (getLang() === 'en' ? "Unknown" : "Bilinmiyor");
+        extras.sector_distribution[sector] = (extras.sector_distribution[sector] || 0) + 1;
+    });
+
+    // 2. Korelasyon Matrisi
+    const tickers = validResults.map(r => r.ticker);
+    extras.correlation.tickers = tickers;
+
+    for (let i = 0; i < tickers.length; i++) {
+        const row = [];
+        const historyI = validResults[i].technicals.relative_performance.stock_history;
+        for (let j = 0; j < tickers.length; j++) {
+            if (i === j) { row.push(1.0); continue; }
+            const historyJ = validResults[j].technicals.relative_performance.stock_history;
+            row.push(calculateCorrelation(historyI, historyJ));
+        }
+        extras.correlation.matrix.push(row);
+    }
+
+    // 3. Monte Carlo Simülasyonu
+    extras.monte_carlo = runMonteCarloJS(validResults);
+
+    // 4. Ağırlıklı Getiri
+    let totalWeight = 0;
+    let weigthedSum = 0;
+    validResults.forEach(r => {
+        const w = r.weight || 1.0;
+        const ret = r.financials?.s5 || 0;
+        weigthedSum += ret * w;
+        totalWeight += w;
+    });
+    if (totalWeight > 0) extras.weighted_return_5y = parseFloat((weigthedSum / totalWeight).toFixed(1));
+
+    return extras;
+}
+
+function calculateCorrelation(seriesA, seriesB) {
+    const n = Math.min(seriesA.length, seriesB.length);
+    if (n < 2) return 0;
+    
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    for (let i = 0; i < n; i++) {
+        sumX += seriesA[i];
+        sumY += seriesB[i];
+        sumXY += seriesA[i] * seriesB[i];
+        sumX2 += seriesA[i] * seriesA[i];
+        sumY2 += seriesB[i] * seriesB[i];
+    }
+    const num = (n * sumXY) - (sumX * sumY);
+    const den = Math.sqrt(((n * sumX2) - (sumX * sumX)) * ((n * sumY2) - (sumY * sumY)));
+    return den === 0 ? 0 : parseFloat((num / den).toFixed(2));
+}
+
+function runMonteCarloJS(results) {
+    if (results.length === 0) return null;
+    const minLength = Math.min(...results.map(r => r.technicals.relative_performance.stock_history.length));
+    if (minLength < 4) return null;
+
+    const portfolioReturns = [];
+    const totalWeight = results.reduce((sum, r) => sum + (r.weight || 1.0), 0);
+
+    for (let i = 1; i < minLength; i++) {
+        let periodRet = 0;
+        results.forEach(r => {
+            const hist = r.technicals.relative_performance.stock_history;
+            const w = r.weight || 1.0;
+            const singleRet = (hist[i] / hist[i-1]) - 1;
+            periodRet += (singleRet * (w / totalWeight));
+        });
+        portfolioReturns.push(periodRet);
+    }
+
+    const mean = portfolioReturns.reduce((a, b) => a + b, 0) / portfolioReturns.length;
+    const sqDiff = portfolioReturns.map(v => Math.pow(v - mean, 2));
+    const variance = sqDiff.reduce((a, b) => a + b, 0) / (portfolioReturns.length);
+    const stdDev = Math.sqrt(variance);
+
+    const simulations = [];
+    const numSims = 200;
+    const steps = 12;
+
+    for (let s = 0; s < numSims; s++) {
+        const simPath = [1.0];
+        let current = 1.0;
+        for (let t = 0; t < steps; t++) {
+            const u1 = Math.random();
+            const u2 = Math.random();
+            const randStdNorm = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2);
+            const walk = mean + stdDev * randStdNorm;
+            current *= (1 + walk);
+            simPath.push(current);
+        }
+        simulations.push(simPath);
+    }
+
+    const percentiles = { p5: [], p25: [], p50: [], p75: [], p95: [] };
+    for (let t = 0; t <= steps; t++) {
+        const stepValues = simulations.map(sim => sim[t]).sort((a, b) => a - b);
+        percentiles.p5.push(parseFloat(stepValues[Math.floor(numSims * 0.05)].toFixed(3)));
+        percentiles.p25.push(parseFloat(stepValues[Math.floor(numSims * 0.25)].toFixed(3)));
+        percentiles.p50.push(parseFloat(stepValues[Math.floor(numSims * 0.5)].toFixed(3)));
+        percentiles.p75.push(parseFloat(stepValues[Math.floor(numSims * 0.75)].toFixed(3)));
+        percentiles.p95.push(parseFloat(stepValues[Math.floor(numSims * 0.95)].toFixed(3)));
+    }
+
+    return {
+        percentiles,
+        months: Array.from({length: steps + 1}, (_, i) => i)
+    };
 }

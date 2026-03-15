@@ -365,7 +365,7 @@ window.retryAnalysis = async function (ticker) {
             lastResults.push(newResult);
         }
 
-        renderResults({ results: lastResults, extras: lastExtras });
+        renderResults({ results: lastResults, extras: calculateClientSideExtras(lastResults) });
         showToast(`${ticker} analizi yenilendi!`, "success");
     } catch (err) {
         showToast(`${ticker} hatası: ${err.message}`, "error");
@@ -379,6 +379,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     initTheme();
     setLanguage(currentLang);
     await loadApiKeys();
+
+    // ── Server Status & Proactive Cold Start Check ──
+    const statusDot = document.getElementById("server-status-dot");
+    if (statusDot) {
+        statusDot.className = "status-dot dot-yellow"; 
+        checkServerHealth().then(h => {
+            if (h.online) {
+                statusDot.className = "status-dot dot-green";
+                statusDot.title = "Online";
+            } else {
+                statusDot.className = "status-dot dot-yellow"; 
+                statusDot.title = "Waking up...";
+                showToast(getLang() === "en" ? "Server waking up (Free Tier)..." : "Sunucu uyandırılıyor (Free Tier)...", "info");
+                
+                let pollInt = setInterval(async () => {
+                    const h2 = await checkServerHealth();
+                    if (h2.online) {
+                        statusDot.className = "status-dot dot-green";
+                        statusDot.title = "Online";
+                        clearInterval(pollInt);
+                        showToast(getLang() === "en" ? "Server is ready!" : "Sunucu hazır!", "success");
+                    }
+                }, 8000);
+            }
+        });
+    }
 
     // Theme toggle
     document.getElementById("theme-toggle-btn").addEventListener("click", toggleTheme);

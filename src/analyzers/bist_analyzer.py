@@ -178,7 +178,10 @@ class HisseAnaliz(BaseAnalyzer):
     def _yahoo_cek(self, sembol: str, baslangic: datetime, bitis: datetime
                    ) -> Optional[pd.DataFrame]:
         yf_sembol = self._bist_sembol(sembol)
-        session = CURL_SESSION if (HAS_CURL and CURL_SESSION is not None) else None
+        session = None
+        if HAS_CURL:
+            from curl_cffi import requests as curl_req
+            session = curl_req.Session(verify=False, impersonate="chrome")
         ham = yf.download(
             yf_sembol,
             start=baslangic, end=bitis,
@@ -335,7 +338,10 @@ class HisseAnaliz(BaseAnalyzer):
         ticker = None
         try:
             yf_sembol = self._bist_sembol(sembol)
-            ticker_kwargs = {"session": CURL_SESSION} if HAS_CURL else {}
+            ticker_kwargs = {}
+            if HAS_CURL:
+                from curl_cffi import requests as curl_req
+                ticker_kwargs["session"] = curl_req.Session(verify=False, impersonate="chrome")
             ticker = yf.Ticker(yf_sembol, **ticker_kwargs)
             tem    = ticker.dividends
             if tem is not None and not tem.empty:
