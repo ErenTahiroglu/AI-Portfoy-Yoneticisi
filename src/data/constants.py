@@ -38,4 +38,7 @@ POPULAR_TICKERS = {
     "YAY": "Yapı Kredi Yabancı Teknoloji Hisse Senedi Fonu", "TI2": "TEB Portföy İş İştirakleri Fonu",
     "MAC": "Marmara Capital Hisse Senedi Fonu", "AFA": "Ak Portföy Amerika Yabancı Hisse Fonu",
     "TDF": "TEB Portföy Amerika Yabancı Hisse Fonu", "KTM": "Kuveyt Türk Portföy Katılım Serbest Fon",
+    "GBG": "Garanti Portföy Birinci Değişken Fon", "TMM": "Tacirler Portföy Değişken Fon",
+    "NRC": "Neo Portföy Birinci Değişken Fon", "YAS": "Yapı Kredi Koç Holding İştirak",
+    "NVDI": "GraniteShares 1.5x Long NVDA ETF", "IUV": "İş Portföy BIST Teknoloji Fonu",
 }

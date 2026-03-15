@@ -176,14 +176,14 @@ def calculate_factor_regression(port_returns: pd.Series, valid_tickers: list) ->
         # Download proxies
         factors_data = yf.download(tickers="SPY IJR VTV VUG", start=start_date, end=end_date, progress=False)["Close"]
         if factors_data.empty or "SPY" not in factors_data:
-            return {}
+            return {"error": "FAILED", "message": "Faktör verileri (SPY, IJR, VTV, VUG) indirilemedi."}
             
         f_rets = factors_data.pct_change().dropna()
         
         # Align dates
         aligned = pd.concat([port_returns, f_rets], axis=1, join="inner").dropna()
         if len(aligned) < 30:
-            return {}
+            return {"error": "FAILED", "message": f"Faktör analizi için yeterli veri örtüşmesi yok ({len(aligned)} gün)."}
             
         y = aligned.iloc[:, 0].astype(float) # portfolio returns
         

@@ -241,8 +241,9 @@ function updateHeroCards(results, extras) {
     let maxRet = -Infinity;
     results.forEach(r => {
         if (!r.error && r.financials && r.financials.s5 !== undefined && r.financials.s5 !== null) {
-            if (r.financials.s5 > maxRet) {
-                maxRet = r.financials.s5;
+            let currentRet = parseFloat(r.financials.s5);
+            if (!isNaN(currentRet) && currentRet > maxRet) {
+                maxRet = currentRet;
                 bestStock = r.ticker;
             }
         }
@@ -373,11 +374,14 @@ function renderHeatmap(results) {
         cell.style.backgroundColor = getHeatmapColor(val);
         cell.style.color = getTextColorCustom(val);
 
-        if (percentArea < 3 && validResults.length > 10) {
+        if (percentArea < 5 && validResults.length > 5) {
             cell.title = `${r.ticker}: ${getFormattedValue(val)}`;
+            cell.innerHTML = `
+                <span class="hm-ticker" style="font-size: 0.70rem;">${r.ticker}</span>
+            `;
         } else {
             cell.innerHTML = `
-                <span class="hm-ticker">${r.ticker}</span>
+                <span class="hm-ticker" style="font-weight: 700; margin-bottom: 2px;">${r.ticker}</span>
                 <span class="hm-val">${getFormattedValue(val)}</span>
             `;
             cell.title = `${r.ticker} (Ağırlık: ${weight})`;
