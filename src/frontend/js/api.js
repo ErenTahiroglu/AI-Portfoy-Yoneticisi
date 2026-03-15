@@ -224,10 +224,10 @@ async function runAnalysis(payload, endpoint) {
     const progressContainer = document.getElementById("progress-container");
     const progressFill = document.getElementById("progress-fill");
     const progressText = document.getElementById("progress-text");
-    const results = document.getElementById("results");
+    const resultsSection = document.getElementById("results");
 
     btn.disabled = true; 
-    results.classList.add("hidden");
+    resultsSection.classList.add("hidden");
     document.getElementById("loader").classList.add("hidden");
     progressContainer.classList.remove("hidden");
 
@@ -237,9 +237,12 @@ async function runAnalysis(payload, endpoint) {
 
     await saveApiKeys();
     
+    // Reset AppState results for a new analysis
+    AppState.results = [];
+    AppState.extras = null;
+
     try {
         const tickers = payload.tickers || [];
-        const aggregatedResults = [];
         const tickersToFetch = [];
 
         // 1. Önbellek (IndexedDB) Kontrolü
@@ -247,12 +250,12 @@ async function runAnalysis(payload, endpoint) {
             const cleanTicker = ticker.trim().toUpperCase();
             if (!cleanTicker) continue;
 
-            const cacheKey = `analysis_${cleanTicker}_ai${payload.use_ai}_isl${payload.check_islamic}`;
-            // Use IndexedDB getCache instead of localStorage
+            const cacheKey = `analysis_${cleanTicker}_ai${payload.use_ai}_isl${payload.check_islamic}_fin${payload.check_financials}_mod${payload.use_ai ? payload.model : 'none'}`;
             const cachedData = await getCache(cacheKey);
 
             if (cachedData) {
-                aggregatedResults.push(cachedData);
+                // Reactive Append
+                AppState.results = [...AppState.results, cachedData];
             } else {
                 tickersToFetch.push(cleanTicker);
             }
@@ -260,18 +263,18 @@ async function runAnalysis(payload, endpoint) {
 
         // Update progress for cached items
         if (tickers.length > 0) {
-            progress = (aggregatedResults.length / tickers.length) * 50; // Max 50% for cache
+            progress = (AppState.results.length / tickers.length) * 50; // Max 50% for cache
             progressFill.style.width = `${progress}%`;
         }
 
         // 1.5. Render Skeleton Cards for ALL tickers to provide visual feedback
         const grid = document.getElementById("results-grid");
-        const resultsSection = document.getElementById("results");
         resultsSection.classList.remove("hidden");
         grid.innerHTML = ""; 
         document.getElementById("summary-table-body").innerHTML = "";
 
         tickers.forEach(t => {
+            if (AppState.results.some(r => r.ticker === t)) return; // Skip cached ones
             const card = document.createElement("div");
             card.className = "result-card glass-panel skeleton-card";
             card.id = `skeleton-${t}`;
@@ -310,8 +313,7 @@ async function runAnalysis(payload, endpoint) {
 
                 buffer += decoder.decode(value);
                 const lines = buffer.split("\n\n");
-                // Last one might be incomplete
-                buffer = lines.pop(); 
+                buffer = lines.pop(); // Last might be incomplete
 
                 for (const line of lines) {
                     if (line.startsWith("data: ")) {
@@ -320,15 +322,21 @@ async function runAnalysis(payload, endpoint) {
                             const item = JSON.parse(dataString);
                             
                             if (item.ticker) {
-                                aggregatedResults.push(item);
+                                // Live Rendering Trigger
+                                if (typeof renderSingleCard === "function") {
+                                    renderSingleCard(item);
+                                }
+
+                                // State Management
+                                AppState.results = [...AppState.results, item];
                                 
                                 // Cache save
-                                const cacheKey = `analysis_${item.ticker}_ai${payload.use_ai}_isl${payload.check_islamic}`;
+                                const cacheKey = `analysis_${item.ticker}_ai${payload.use_ai}_isl${payload.check_islamic}_fin${payload.check_financials}_mod${payload.use_ai ? payload.model : 'none'}`;
                                 await setCache(cacheKey, item);
 
                                 // Update UI per item
                                 progressText.textContent = `${item.ticker} ${getLang() === "en" ? "analyzed." : "analiz edildi."}`;
-                                progress = (aggregatedResults.length / tickers.length) * 100;
+                                progress = (AppState.results.length / tickers.length) * 100;
                                 progressFill.style.width = `${Math.min(progress, 100)}%`;
                             }
                         } catch (e) {
@@ -343,9 +351,11 @@ async function runAnalysis(payload, endpoint) {
         progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
         setTimeout(() => progressContainer.classList.add("hidden"), 500);
 
-        const finalData = { results: aggregatedResults, extras: calculateClientSideExtras(aggregatedResults) };
-        renderResults(finalData);
-        showToast(`${aggregatedResults.length} ${t("toast.analysisComplete")}`, "success");
+        // Calculate and Save Extras reactively
+        const extras = calculateClientSideExtras(AppState.results, payload);
+        AppState.extras = extras; // Save to State
+        
+        showToast(`${AppState.results.length} ${t("toast.analysisComplete")}`, "success");
 
     } catch (err) {
         progressContainer.classList.add("hidden");
@@ -355,6 +365,7 @@ async function runAnalysis(payload, endpoint) {
         btn.disabled = false;
     }
 }
+
 
 // ═══════════════════════════════════════
 // FILE ANALYSIS (Client-Side Parsing)
@@ -444,14 +455,15 @@ function extractTickersFromCsv(text) {
 // ═══════════════════════════════════════
 // CLIENT-SIDE EXTRAS CALCULATION
 // ═══════════════════════════════════════
-function calculateClientSideExtras(results) {
+function calculateClientSideExtras(results, payload) {
     const validResults = results.filter(r => !r.error && r.technicals && r.technicals.relative_performance);
     
     const extras = {
         sector_distribution: {},
         correlation: { tickers: [], matrix: [] },
         monte_carlo: null,
-        weighted_return_5y: 0
+        weighted_return_5y: 0,
+        pv_simulation: null
     };
 
     if (validResults.length === 0) return extras;
@@ -491,7 +503,79 @@ function calculateClientSideExtras(results) {
     });
     if (totalWeight > 0) extras.weighted_return_5y = parseFloat((weigthedSum / totalWeight).toFixed(1));
 
+    // 5. PV Simulation
+    if (payload) {
+        extras.pv_simulation = runPVSimulationJS(validResults, payload);
+    }
+
     return extras;
+}
+
+function runPVSimulationJS(results, payload) {
+    if (results.length === 0) return null;
+
+    const initialBalance = payload.initial_balance || 10000;
+    const monthlyContribution = payload.monthly_contribution || 0;
+    const rebalanceFreq = payload.rebalancing_freq || "none";
+
+    const minLength = Math.min(...results.map(r => r.technicals.relative_performance.stock_history.length));
+    if (minLength < 2) return null;
+
+    const totalWeight = results.reduce((sum, r) => sum + (r.weight || 1.0), 0);
+    const initialWeights = results.map(r => (r.weight || 1.0) / totalWeight);
+
+    let currentBalance = initialBalance;
+    const balanceHistory = [currentBalance];
+    const drawdownSeries = [0];
+    let maxBalance = currentBalance;
+    let maxDrawdown = 0;
+
+    for (let t = 1; t < minLength; t++) {
+        let periodReturn = 0;
+        results.forEach((r, idx) => {
+            const hist = r.technicals.relative_performance.stock_history;
+            const singleRet = (hist[t] / hist[t-1]) - 1;
+            periodReturn += singleRet * initialWeights[idx];
+        });
+
+        currentBalance = currentBalance * (1 + periodReturn) + monthlyContribution;
+        balanceHistory.push(currentBalance);
+
+        if (currentBalance > maxBalance) maxBalance = currentBalance;
+        const dd = maxBalance > 0 ? ((maxBalance - currentBalance) / maxBalance) * 100 : 0;
+        drawdownSeries.push(-dd);
+        if (dd > maxDrawdown) maxDrawdown = dd;
+    }
+
+    const finalBalance = currentBalance;
+    const totalReturn = (finalBalance - (initialBalance + monthlyContribution * (minLength - 1))) / (initialBalance + monthlyContribution * (minLength - 1));
+    const years = (minLength - 1) / 12; // Assuming monthly increments
+    const cagr = years > 0 ? (Math.pow(1 + totalReturn, 1 / years) - 1) * 100 : 0;
+
+    const periodReturns = [];
+    for (let t = 1; t < balanceHistory.length; t++) {
+        periodReturns.push((balanceHistory[t] / balanceHistory[t-1]) - 1);
+    }
+    const meanRet = periodReturns.reduce((a, b) => a + b, 0) / periodReturns.length;
+    const downsideDiff = periodReturns.map(v => v < 0 ? Math.pow(v, 2) : 0);
+    const downsideDev = Math.sqrt(downsideDiff.reduce((a, b) => a + b, 0) / periodReturns.length);
+    const stdDev = Math.sqrt(periodReturns.map(v => Math.pow(v - meanRet, 2)).reduce((a, b) => a + b, 0) / periodReturns.length);
+
+    const sharpe = stdDev > 0 ? (meanRet / stdDev) * Math.sqrt(12) : 0;
+    const sortino = downsideDev > 0 ? (meanRet / downsideDev) * Math.sqrt(12) : 0;
+    const calmar = maxDrawdown > 0 ? (cagr / maxDrawdown) : 0;
+
+    return {
+        metrics: {
+            cagr: parseFloat(cagr.toFixed(1)),
+            max_drawdown: parseFloat(maxDrawdown.toFixed(1)),
+            sharpe: parseFloat(sharpe.toFixed(2)),
+            sortino: parseFloat(sortino.toFixed(2)),
+            calmar: parseFloat(calmar.toFixed(2)),
+            drawdown_series: drawdownSeries
+        },
+        final_balance: Math.round(finalBalance)
+    };
 }
 
 function calculateCorrelation(seriesA, seriesB) {
