@@ -69,3 +69,7 @@ find_api.py
 fintables.html
 Full_File_List.txt
 test_output.txt
+
+# Debug & Scratch files
+debug_*.py
+*debug*.py

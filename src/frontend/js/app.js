@@ -1,4 +1,36 @@
 // ═══════════════════════════════════════
+// GLOBAL STATE MANAGEMENT
+// ═══════════════════════════════════════
+const AppState = createStore({
+    viewMode: localStorage.getItem("viewMode") || "beginner",
+    isHalalOnly: false,
+    results: []
+});
+
+AppState.subscribe((prop, val) => {
+    if (prop === "viewMode") {
+        if (val === "pro") {
+            document.body.classList.add("professional-mode");
+        } else {
+            document.body.classList.remove("professional-mode");
+        }
+        localStorage.setItem("viewMode", val);
+        const profToggle = document.getElementById("prof-mode-toggle");
+        if (profToggle) profToggle.checked = (val === "pro");
+    }
+    
+    if (prop === "isHalalOnly") {
+        if (val) {
+            document.body.classList.add("halal-only");
+        } else {
+            document.body.classList.remove("halal-only");
+        }
+        const halalToggle = document.getElementById("check-islamic-toggle");
+        if (halalToggle) halalToggle.checked = val;
+    }
+});
+
+// ═══════════════════════════════════════
 // COMPARISON MODE
 // ═══════════════════════════════════════
 function showComparison() {
@@ -133,6 +165,7 @@ function renderResults(data) {
         const tickerDisplay = summaryFullName ? `<div style="font-weight:700">${res.ticker}</div><div style="font-size:0.7rem; color:var(--text-muted)">${summaryFullName}</div>` : `<span style="font-weight:700">${res.ticker}</span>`;
 
         const tr = document.createElement("tr");
+        if (statusClass) tr.className = statusClass; // CSS Filter
         let marketText = res.market || "?";
         if (getLang() === "tr" && marketText === "US") marketText = "ABD";
 
@@ -141,7 +174,7 @@ function renderResults(data) {
 
         // Card
         const card = document.createElement("div");
-        card.className = "result-card glass-panel stagger-enter stagger-" + ((idx % 5) + 1);
+        card.className = `result-card glass-panel ${statusClass} stagger-enter stagger-` + ((idx % 5) + 1);
         const chartId = `chart-${idx}`;
 
         if (res.error) {
@@ -445,10 +478,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Professional Mode
     const profToggle = document.getElementById("prof-mode-toggle");
-    if(profToggle) {
+    if (profToggle) {
+        profToggle.checked = (AppState.viewMode === "pro");
         profToggle.addEventListener("change", (e) => {
-            if(e.target.checked) document.body.classList.add("professional-mode");
-            else document.body.classList.remove("professional-mode");
+            AppState.viewMode = e.target.checked ? "pro" : "beginner";
+        });
+    }
+
+    // Halal Filter Toggle
+    const halalToggle = document.getElementById("check-islamic-toggle");
+    if (halalToggle) {
+        AppState.isHalalOnly = halalToggle.checked; // Init from DOM if checked
+        halalToggle.addEventListener("change", (e) => {
+            AppState.isHalalOnly = e.target.checked;
         });
     }
 

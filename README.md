@@ -93,7 +93,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 #### 1. Backend (Render.com)
 *   **Build Command:** `pip install -r requirements.txt`
 *   **Start Command:** `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
-*   **💡 Free Tier Optimizasyonu [v4.5]:** Monte Carlo, Korelasyon ve Tablo birleştirmeleri Render'ın 512MB RAM sınırına takılmamak için **İstemci Tarafına (Client-Side)** taşınmıştır. Backend artık sadece ham rasyonel veri sağlar.
+*   **💡 Free Tier Optimizasyonu [v4.5]:** SSE (Streaming), IndexedDB Önbellekleme, Dosya Ayrıştırma ve İleri Analiz Hesaplamaları (Monte Carlo vb.) Render'ın 512MB RAM sınırına takılmamak için **İstemci Tarafına (Client-Side)** taşınmıştır. Backend artık bellek yormayan akış (stream) mimarisiyle çalışmaktadır.
 
 #### 2. Frontend (Vercel)
 *   `src/frontend/js/utils.js` dosyasındaki `API_BASE` değişkenini Render URL'iniz ile güncelleyin.

@@ -798,6 +798,39 @@ body {
     animation: spin 0.8s linear infinite;
 }
 
+/* ── Skeleton UI ────────────────────── */
+.skeleton-card {
+    min-height: 200px;
+    background: rgba(14, 165, 233, 0.02) !important;
+    position: relative;
+    overflow: hidden;
+    border-color: rgba(14, 165, 233, 0.05) !important;
+}
+
+.skeleton-card::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+.skeleton-line {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    width: 80%;
+}
+
+.skeleton-line.short { width: 40%; }
+.skeleton-line.medium { width: 60%; }
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
@@ -1056,6 +1089,14 @@ body {
     color: var(--danger);
     font-weight: 700;
     font-size: 0.75rem;
+}
+
+/* ── İslami Filtre (Halal Only) ── */
+body.halal-only .result-card.status-rejected {
+    display: none !important;
+}
+body.halal-only .summary-table tr.status-rejected {
+    display: none !important;
 }
 
 /* ── Metrics & Technicals ── */

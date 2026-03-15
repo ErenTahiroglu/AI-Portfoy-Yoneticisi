@@ -143,9 +143,14 @@ def attach_weights_and_compute_extras(engine_result: dict, weights_map: dict, in
     engine_result["extras"] = {}
     return engine_result
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+import gc
+from fastapi.responses import StreamingResponse
+
 @app.post("/api/analyze")
 async def analyze_portfolio(request: AnalysisRequest):
-    """Ticker listesiyle portföy analizi."""
+    """Ticker listesiyle portföy analizi (SSE / Streaming)."""
     if not request.tickers:
         raise HTTPException(status_code=400, detail="No tickers provided")
     if request.use_ai and not request.api_key:
@@ -154,111 +159,38 @@ async def analyze_portfolio(request: AnalysisRequest):
     parsed_tickers, weights_map = process_tickers_with_weights(request.tickers)
     if not parsed_tickers:
         raise HTTPException(status_code=400, detail="No valid tickers provided")
-        
-    result = engine.analyze(
-        tickers=parsed_tickers,
-        use_ai=request.use_ai,
-        api_key=request.api_key,
-        av_api_key=request.av_api_key,
-        model=request.model,
-        check_islamic=request.check_islamic,
-        check_financials=request.check_financials,
-    )
-    return attach_weights_and_compute_extras(
-        result, 
-        weights_map, 
-        request.initial_balance, 
-        request.monthly_contribution, 
-        request.rebalancing_freq
-    )
 
-@app.post("/api/analyze/text")
-async def analyze_from_text(request: TextAnalysisRequest):
-    """Metin kutusundan ticker çıkarıp analiz eder."""
-    tickers = extract_tickers_from_text(request.text)
-    if not tickers:
-        raise HTTPException(status_code=400, detail="No stock symbols found in the provided text")
-    
-    parsed_tickers, weights_map = process_tickers_with_weights(tickers)
-    if not parsed_tickers:
-        raise HTTPException(status_code=400, detail="No stock symbols found in the provided text")
-    
-    result = engine.analyze(
-        tickers=parsed_tickers,
-        use_ai=request.use_ai,
-        api_key=request.api_key,
-        av_api_key=request.av_api_key,
-        model=request.model,
-        check_islamic=request.check_islamic,
-        check_financials=request.check_financials,
-    )
-    return attach_weights_and_compute_extras(
-        result, 
-        weights_map, 
-        request.initial_balance, 
-        request.monthly_contribution, 
-        request.rebalancing_freq
-    )
+    def event_generator():
+        # Render 512MB limit: max_workers=2
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            future_map = {}
+            for ticker in parsed_tickers:
+                future = pool.submit(
+                    engine._analyze_single,
+                    ticker,
+                    check_islamic=request.check_islamic,
+                    check_financials=request.check_financials,
+                    use_ai=request.use_ai,
+                    api_key=request.api_key,
+                    model=request.model,
+                    lang=request.lang
+                )
+                future_map[future] = ticker
+            
+            for future in as_completed(future_map):
+                ticker = future_map[future]
+                try:
+                    res = future.result()
+                    res["weight"] = weights_map.get(ticker, 1.0)
+                    yield f"data: {json.dumps(res)}\n\n"
+                except Exception as e:
+                    yield f"data: {json.dumps({'ticker': ticker, 'error': str(e)})}\n\n"
+        
+        # Stream bitince bellek temizliği
+        gc.collect()
 
-@app.post("/api/analyze/file")
-async def analyze_from_file(
-    file: UploadFile = File(...),
-    use_ai: bool = Form(False),
-    api_key: Optional[str] = Form(None),
-    av_api_key: Optional[str] = Form(None),
-    model: str = Form("gemini-2.5-flash"),
-    check_islamic: bool = Form(False),
-    check_financials: bool = Form(True),
-    lang: str = Form("tr"),
-    initial_balance: float = Form(10000.0),
-    monthly_contribution: float = Form(0.0),
-    rebalancing_freq: str = Form("none")
-):
-    """Dosyadan ticker çıkarıp analiz eder."""
-    try:
-        contents = await file.read()
-        
-        class MockFile:
-            def __init__(self, name, data):
-                self.name = name
-                self.data = data
-            def read(self):
-                return self.data
-        
-        buffer = BytesIO(contents)
-        buffer.name = file.filename
-        mock_file = MockFile(file.filename, contents)
-        
-        if file.filename.endswith(('.csv', '.xlsx', '.xls')):
-            tickers = process_uploaded_file(buffer)
-        else:
-            tickers = process_uploaded_file(mock_file)
-        
-        parsed_tickers, weights_map = process_tickers_with_weights(tickers)
-        if not parsed_tickers:
-            raise HTTPException(status_code=400, detail="No stock symbols found in the uploaded file")
-        
-        result = engine.analyze(
-            tickers=parsed_tickers,
-            use_ai=use_ai,
-            api_key=api_key,
-            av_api_key=av_api_key,
-            model=model,
-            check_islamic=check_islamic,
-            check_financials=check_financials,
-            lang=lang,
-        )
-        return attach_weights_and_compute_extras(
-            result, 
-            weights_map, 
-            initial_balance, 
-            monthly_contribution, 
-            rebalancing_freq
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 
 
 # ══════════════════════════════════════════════════════════════════════════

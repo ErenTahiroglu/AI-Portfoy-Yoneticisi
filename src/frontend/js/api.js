@@ -141,6 +141,38 @@ async function loadNews(results) {
 async function exportResults(format) {
     if (!lastResults) { showToast(t("toast.noTickers"), "warning"); return; }
     showToast(`${format.toUpperCase()} ${t("toast.exporting")}`, "info");
+
+    // Client-side Excel Export using SheetJS (XLSX)
+    if (format === 'excel' && typeof XLSX !== 'undefined') {
+        try {
+            const rows = lastResults.map(res => {
+                const fin = res.financials || {};
+                const val = res.valuation || {};
+                return {
+                    "Hisse/Fon": res.ticker || "",
+                    "Pazar": res.market || "",
+                    "Durum": res.status || "-",
+                    "Arındırma Oranı (%)": res.purification_ratio !== undefined ? res.purification_ratio : "-",
+                    "Borçluluk Oranı (%)": res.debt_ratio !== undefined ? res.debt_ratio : "-",
+                    "5Y Reel Getiri (%)": fin.s5 !== undefined ? fin.s5 : "-",
+                    "3Y Reel Getiri (%)": fin.s3 !== undefined ? fin.s3 : "-",
+                    "P/E": val.pe !== undefined ? val.pe : "-",
+                    "P/B": val.pb !== undefined ? val.pb : "-",
+                    "Beta": val.beta !== undefined ? val.beta : "-"
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Portföy Analizi");
+            XLSX.writeFile(wb, "portfoy_analizi.xlsx");
+            showToast(t("toast.exported"), "success");
+            return;
+        } catch (err) {
+            console.error("XLSX Export Error:", err);
+        }
+    }
+
     try {
         const res = await fetch(`${API_BASE}/api/export/${format}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ results: lastResults, format }) });
         if (!res.ok) throw new Error("Export failed");
@@ -148,7 +180,7 @@ async function exportResults(format) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `portfolio_analysis.${format === "excel" ? "xlsx" : format}`;
+        a.download = `portfoy_analizi.${format === "excel" ? "xlsx" : format}`;
         document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
         showToast(t("toast.exported"), "success");
@@ -184,6 +216,9 @@ async function exportPortfolioImage() {
 // ═══════════════════════════════════════
 // MAIN ANALYSIS
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// MAIN ANALYSIS (Streaming & Caching)
+// ═══════════════════════════════════════
 async function runAnalysis(payload, endpoint) {
     const btn = document.getElementById("analyze-btn");
     const progressContainer = document.getElementById("progress-container");
@@ -197,69 +232,113 @@ async function runAnalysis(payload, endpoint) {
     progressContainer.classList.remove("hidden");
 
     let progress = 0;
-    const pInt = setInterval(() => {
-        progress += Math.random() * 3;
-        if (progress > 90) progress = 90;
-        progressFill.style.width = `${progress}%`;
-        progressText.textContent = getLang() === "en" ? "Processing portfolio components..." : "Portföy bileşenleri işleniyor...";
-    }, 500);
+    progressFill.style.width = "0%";
+    progressText.textContent = getLang() === "en" ? "Checking cache..." : "Önbellek kontrol ediliyor...";
 
     await saveApiKeys();
     
     try {
         const tickers = payload.tickers || [];
         const aggregatedResults = [];
-        let completedCount = 0;
+        const tickersToFetch = [];
 
+        // 1. Önbellek (IndexedDB) Kontrolü
         for (const ticker of tickers) {
             const cleanTicker = ticker.trim().toUpperCase();
             if (!cleanTicker) continue;
 
-            // 1. Önbellek (Cache) Kontrolü
             const cacheKey = `analysis_${cleanTicker}_ai${payload.use_ai}_isl${payload.check_islamic}`;
-            const cachedData = localStorage.getItem(cacheKey);
-            const cacheTime = localStorage.getItem(`${cacheKey}_time`);
-            
-            const isCacheValid = cachedData && cacheTime && (Date.now() - parseInt(cacheTime) < 3600000);
+            // Use IndexedDB getCache instead of localStorage
+            const cachedData = await getCache(cacheKey);
 
-            if (isCacheValid) {
-                aggregatedResults.push(JSON.parse(cachedData));
-                completedCount++;
-                progress = (completedCount / tickers.length) * 90;
-                progressFill.style.width = `${progress}%`;
-                continue;
-            }
-
-            // 2. API İsteği (Tekil)
-            progressText.textContent = `${cleanTicker} ${getLang() === "en" ? "analyzing..." : "analiz ediliyor..."}`;
-            
-            const singlePayload = { ...payload, tickers: [cleanTicker] };
-            const res = await fetch(`${API_BASE}${endpoint}`, { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify(singlePayload) 
-            });
-
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                console.warn(`Failed for ${cleanTicker}:`, errData.detail || res.status);
-                aggregatedResults.push({ ticker: cleanTicker, error: true, message: errData.detail || `Hata (${res.status})` });
+            if (cachedData) {
+                aggregatedResults.push(cachedData);
             } else {
-                const data = await res.json();
-                if (data.results && data.results[0]) {
-                    const r = data.results[0];
-                    aggregatedResults.push(r);
-                    localStorage.setItem(cacheKey, JSON.stringify(r));
-                    localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
-                }
+                tickersToFetch.push(cleanTicker);
             }
-            
-            completedCount++;
-            progress = (completedCount / tickers.length) * 90;
+        }
+
+        // Update progress for cached items
+        if (tickers.length > 0) {
+            progress = (aggregatedResults.length / tickers.length) * 50; // Max 50% for cache
             progressFill.style.width = `${progress}%`;
         }
 
-        clearInterval(pInt); 
+        // 1.5. Render Skeleton Cards for ALL tickers to provide visual feedback
+        const grid = document.getElementById("results-grid");
+        const resultsSection = document.getElementById("results");
+        resultsSection.classList.remove("hidden");
+        grid.innerHTML = ""; 
+        document.getElementById("summary-table-body").innerHTML = "";
+
+        tickers.forEach(t => {
+            const card = document.createElement("div");
+            card.className = "result-card glass-panel skeleton-card";
+            card.id = `skeleton-${t}`;
+            card.innerHTML = `
+                <div class="card-header"><span class="ticker-name">${t}</span></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line short"></div>
+            `;
+            grid.appendChild(card);
+        });
+
+        // 2. Stream İsteği (Sadece bulunmayanlar için)
+        if (tickersToFetch.length > 0) {
+            progressText.textContent = getLang() === "en" ? "Streaming analysis from server..." : "Sunucudan analiz akışı bekleniyor...";
+            
+            const fetchPayload = { ...payload, tickers: tickersToFetch };
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(fetchPayload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || `Sunucu hatası (${response.status})`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value);
+                const lines = buffer.split("\n\n");
+                // Last one might be incomplete
+                buffer = lines.pop(); 
+
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        try {
+                            const dataString = line.substring(6);
+                            const item = JSON.parse(dataString);
+                            
+                            if (item.ticker) {
+                                aggregatedResults.push(item);
+                                
+                                // Cache save
+                                const cacheKey = `analysis_${item.ticker}_ai${payload.use_ai}_isl${payload.check_islamic}`;
+                                await setCache(cacheKey, item);
+
+                                // Update UI per item
+                                progressText.textContent = `${item.ticker} ${getLang() === "en" ? "analyzed." : "analiz edildi."}`;
+                                progress = (aggregatedResults.length / tickers.length) * 100;
+                                progressFill.style.width = `${Math.min(progress, 100)}%`;
+                            }
+                        } catch (e) {
+                            console.error("Stream parse error:", e, line);
+                        }
+                    }
+                }
+            }
+        }
+
         progressFill.style.width = "100%"; 
         progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
         setTimeout(() => progressContainer.classList.add("hidden"), 500);
@@ -269,90 +348,97 @@ async function runAnalysis(payload, endpoint) {
         showToast(`${aggregatedResults.length} ${t("toast.analysisComplete")}`, "success");
 
     } catch (err) {
-        clearInterval(pInt); 
         progressContainer.classList.add("hidden");
         console.error("Analysis Error:", err);
-
-        if (err.message.indexOf("fetch") !== -1 || err.message.indexOf("Failed to fetch") !== -1) {
-            const health = await checkServerHealth();
-            if (health.online) {
-                showToast("Sunucu aktif ancak istek zaman aşımına uğradı. Tekrar deneyin.", "warning");
-            } else {
-                showToast(`Bağlantı Sorunu: ${health.message}`, "error");
-            }
-        } else {
-            showToast(err.message, "error");
-        }
+        showToast(err.message || "Bağlantı hatası", "error");
     } finally {
         btn.disabled = false;
     }
 }
 
+// ═══════════════════════════════════════
+// FILE ANALYSIS (Client-Side Parsing)
+// ═══════════════════════════════════════
 async function runFileAnalysis(file) {
-    const btn = document.getElementById("analyze-btn");
-    const progressContainer = document.getElementById("progress-container");
-    const progressFill = document.getElementById("progress-fill");
-    const progressText = document.getElementById("progress-text");
-    const results = document.getElementById("results");
+    if (!file) return;
+    showToast(getLang() === "en" ? "Parsing file..." : "Dosya okunuyor...", "info");
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("use_ai", document.getElementById("use-ai-toggle").checked);
-    formData.append("check_islamic", document.getElementById("check-islamic-toggle").checked);
-    formData.append("check_financials", document.getElementById("check-financials-toggle").checked);
-    formData.append("model", document.getElementById("model-select").value);
-    formData.append("lang", getLang());
-    const apiKey = document.getElementById("api-key").value;
-    if (apiKey) formData.append("api_key", apiKey);
-    const avKey = document.getElementById("av-api-key").value;
-    if (avKey) formData.append("av_api_key", avKey);
+    const reader = new FileReader();
+    const extension = file.name.split('.').pop().toLowerCase();
 
-    btn.disabled = true; results.classList.add("hidden");
-    document.getElementById("loader").classList.add("hidden");
-    progressContainer.classList.remove("hidden");
-
-    let progress = 0;
-    const pInt = setInterval(() => {
-        progress += Math.random() * 5;
-        if (progress > 95) progress = 95;
-        progressFill.style.width = `${progress}%`;
-        if (progress < 30) progressText.textContent = getLang() === "en" ? "Scanning file..." : "Dosya taranıyor...";
-        else if (progress < 60) progressText.textContent = getLang() === "en" ? "Analyzing financials..." : "Finansal veriler analiz ediliyor...";
-        else if (progress < 90) progressText.textContent = formData.get("use_ai") === "true" ? (getLang() === "en" ? "AI is generating report..." : "Yapay Zeka rapor hazırlıyor...") : (getLang() === "en" ? "Processing data..." : "Veriler işleniyor...");
-        else progressText.textContent = getLang() === "en" ? "Finalizing results..." : "Sonuçlar derleniyor...";
-    }, 400);
-
-    await saveApiKeys();
-    try {
-        const res = await fetch(`${API_BASE}/api/analyze/file`, { method: "POST", body: formData });
-        clearInterval(pInt); progressFill.style.width = "100%"; progressText.textContent = getLang() === "en" ? "Done!" : "Tamamlandı!";
-        setTimeout(() => progressContainer.classList.add("hidden"), 500);
-
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.detail || `Sunucu hatası (${res.status})`);
-        }
-        const data = await res.json();
-        const finalData = { results: data.results || [], extras: calculateClientSideExtras(data.results || []) };
-        renderResults(finalData);
-        showToast(`${(data.results || []).length} ${t("toast.analysisComplete")}`, "success");
-    } catch (err) {
-        clearInterval(pInt); progressContainer.classList.add("hidden");
-        console.error("Analysis Error:", err);
-
-        if (err.message.indexOf("fetch") !== -1 || err.message.indexOf("Failed to fetch") !== -1) {
-            const health = await checkServerHealth();
-            if (health.online) {
-                showToast("Sunucu aktif ancak istek zaman aşımına uğradı. Birkaç saniye sonra tekrar deneyin.", "warning");
+    reader.onload = function(e) {
+        let tickers = [];
+        try {
+            if (extension === 'xlsx' || extension === 'xls') {
+                // xlsx-js
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                // Get all text
+                const csv = XLSX.utils.sheet_to_csv(worksheet);
+                tickers = extractTickersFromCsv(csv);
+            } else if (extension === 'csv' || extension === 'txt') {
+                // PapaParse or text fallback
+                const text = e.target.result;
+                tickers = extractTickersFromCsv(text);
             } else {
-                showToast(`Bağlantı Sorunu: ${health.message}`, "error");
+                showToast("Desteklenmeyen dosya formatı", "error");
+                return;
             }
-        } else {
-            showToast(err.message, "error");
+
+            if (tickers.length === 0) {
+                showToast("Dosyada geçerli sembol bulunamadı.", "warning");
+                return;
+            }
+
+            // Update UI input to show extracted
+            document.getElementById("ticker-input").value = tickers.join(", ");
+            showToast(`${tickers.length} sembol çıkarıldı. Analiz başlıyor...`, "success");
+
+            // Trigger Analysis
+            const payload = {
+                tickers: tickers,
+                use_ai: document.getElementById("use-ai-toggle").checked,
+                check_islamic: document.getElementById("check-islamic-toggle").checked,
+                check_financials: document.getElementById("check-financials-toggle").checked,
+                model: document.getElementById("model-select").value,
+                lang: getLang(),
+                initial_balance: parseFloat(document.getElementById("sim-initial-balance").value) || 10000,
+                monthly_contribution: parseFloat(document.getElementById("sim-monthly-contribution").value) || 0,
+                rebalancing_freq: document.getElementById("sim-rebalance-freq").value || "none"
+            };
+            runAnalysis(payload, "/api/analyze");
+
+        } catch (err) {
+            console.error("File Parse Error:", err);
+            showToast(`Dosya okunurken hata: ${err.message}`, "error");
         }
-    } finally {
-        btn.disabled = false;
+    };
+
+    if (extension === 'xlsx' || extension === 'xls') {
+        reader.readAsArrayBuffer(file);
+    } else {
+        reader.readAsText(file);
     }
+}
+
+function extractTickersFromCsv(text) {
+    // Highly resilient ticker extractor
+    // Use regex to find uppercase words or parts with weight ':'
+    const tickers = [];
+    const rows = text.split(/\r?\n/);
+    for (const row of rows) {
+        // Find things like 'AAPL', 'THYAO:0.5', etc.
+        // Match words that are all caps or have .IS / .HE or weights
+        const matches = row.match(/[A-Z]+(\.[A-Z]+)?(:[0-9.]+)?/g);
+        if (matches) {
+            matches.forEach(m => {
+                if (m.length >= 2 && !tickers.includes(m)) tickers.push(m);
+            });
+        }
+    }
+    return tickers;
 }
 
 // ═══════════════════════════════════════
