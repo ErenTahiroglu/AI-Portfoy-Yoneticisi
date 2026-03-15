@@ -168,15 +168,25 @@ def calculate_factor_regression(port_returns: pd.Series, valid_tickers: list) ->
         return {"error": "US_ONLY", "message": "Faktör analizi sadece ABD hisseleri içeren portföyler için çalışır."}
         
     try:
-        import yfinance as yf
+        from yahooquery import Ticker
         
         start_date = port_returns.index[0]
         end_date = port_returns.index[-1]
         
         # Download proxies
-        factors_data = yf.download(tickers="SPY IJR VTV VUG", start=start_date, end=end_date, progress=False)["Close"]
-        if factors_data.empty or "SPY" not in factors_data:
-            return {"error": "FAILED", "message": "Faktör verileri (SPY, IJR, VTV, VUG) indirilemedi."}
+        t = Ticker(["SPY", "IJR", "VTV", "VUG"])
+        factors_data_raw = t.history(start=start_date, end=end_date, adj_ohlc=True)
+        
+        if factors_data_raw is None or not isinstance(factors_data_raw, pd.DataFrame) or factors_data_raw.empty:
+             return {"error": "FAILED", "message": f"Faktör verileri (SPY, IJR, VTV, VUG) indirilemedi."}
+             
+        # Unstack to get Index=Date, Columns=Symbol
+        factors_data = factors_data_raw['close'].unstack(level=0)
+        factors_data.columns = [c.upper() for c in factors_data.columns]
+        factors_data.index = pd.to_datetime(factors_data.index)
+        
+        if "SPY" not in factors_data.columns:
+            return {"error": "FAILED", "message": "Faktör verileri (SPY) ekli değil."}
             
         f_rets = factors_data.pct_change().dropna()
         

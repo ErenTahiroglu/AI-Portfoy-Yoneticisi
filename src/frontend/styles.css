@@ -2595,3 +2595,26 @@ body.halal-only .summary-table tr.status-rejected {
     50% { transform: scale(1.1); opacity: 1; }
     100% { transform: scale(0.95); opacity: 0.7; }
 }
+
+/* ── Live Price Flash Effects ────────── */
+@keyframes flash-up {
+    0% { background-color: rgba(34, 197, 94, 0.3); }
+    100% { background-color: transparent; }
+}
+
+@keyframes flash-down {
+    0% { background-color: rgba(239, 68, 68, 0.3); }
+    100% { background-color: transparent; }
+}
+
+.fx-flash-up {
+    animation: flash-up 1.5s ease-out;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.fx-flash-down {
+    animation: flash-down 1.5s ease-out;
+    border-radius: 4px;
+    padding: 2px 4px;
+}

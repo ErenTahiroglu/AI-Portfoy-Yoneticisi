@@ -34,8 +34,8 @@
                 request.onsuccess = () => {
                     const res = request.result;
                     if (res && res.data) {
-                        // 1 hour TTL (3600000 ms)
-                        if (Date.now() - res.timestamp < 3600000) {
+                        // 12 hours TTL (43200000 ms)
+                        if (Date.now() - res.timestamp < 43200000) {
                             resolve(res.data);
                         } else {
                             // Expired

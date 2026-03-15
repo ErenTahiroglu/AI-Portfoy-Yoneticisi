@@ -13,6 +13,102 @@ function getChartColors() {
     };
 }
 
+// ═══════════════════════════════════════
+// TRADINGVIEW LIGHTWEIGHT CHARTS
+// ═══════════════════════════════════════
+function createTVChart(containerId, res) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Önceki içeriği temizle
+    container.innerHTML = "";
+
+    const isDark = document.documentElement.getAttribute("data-theme") !== "light" || (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    const chartOptions = {
+        layout: {
+            background: { type: 'solid', color: 'transparent' },
+            textColor: isDark ? '#94a3b8' : '#64748b',
+        },
+        grid: {
+            vertLines: { color: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(0,0,0,0.04)' },
+            horzLines: { color: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(0,0,0,0.04)' },
+        },
+        crosshair: {
+            mode: 1, // Normal
+        },
+        rightPriceScale: {
+            borderVisible: false,
+        },
+        timeScale: {
+            borderVisible: false,
+            timeVisible: true,
+        },
+        handleScroll: true,
+        handleScale: true,
+    };
+
+    const chart = LightweightCharts.createChart(container, chartOptions);
+    
+    // Resize Observer
+    const resizeObserver = new ResizeObserver(entries => {
+        if (entries[0].contentRect.width > 0) {
+            chart.applyOptions({ width: entries[0].contentRect.width, height: container.clientHeight || 250 });
+        }
+    });
+    resizeObserver.observe(container);
+
+    // 1. Mum Grafiği (Kripto veya Zengin Veri)
+    if (res.klines && res.klines.length > 0) {
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#22c55e', downColor: '#ef4444', borderVisible: false,
+            wickUpColor: '#22c55e', wickDownColor: '#ef4444',
+        });
+        candleSeries.setData(res.klines);
+
+        // Hacim Barı (Volume)
+        const volumeSeries = chart.addHistogramSeries({
+            color: '#38bdf8',
+            priceFormat: { type: 'volume' },
+            priceScaleId: '', // Ayrı skala
+        });
+        volumeSeries.priceScale().applyOptions({
+            scaleMargins: { top: 0.8, bottom: 0 }, // Alt %20 kısmında göster
+        });
+        
+        const volumeData = res.klines.map(k => ({
+            time: k.time,
+            value: k.volume,
+            color: k.close >= k.open ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'
+        }));
+        volumeSeries.setData(volumeData);
+    } 
+    // 2. Alan Grafiği (Area Series) - Klasik Veriler
+    else if (res.financials && res.financials.yg) {
+        const areaSeries = chart.addAreaSeries({
+            lineColor: '#0ea5e9',
+            topColor: 'rgba(14, 165, 233, 0.4)',
+            bottomColor: 'rgba(14, 165, 233, 0.0)',
+            lineWidth: 2,
+        });
+
+        // Veriyi Zaman Serisine Dönüştür
+        const data = Object.entries(res.financials.yg)
+            .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+            .map(([dateStr, val]) => {
+                const cur_t = Math.floor(new Date(dateStr).getTime() / 1000);
+                return { time: cur_t, value: parseFloat(val) };
+            })
+            .filter(d => !isNaN(d.time) && !isNaN(d.value));
+
+        if (data.length > 0) {
+            areaSeries.setData(data);
+        }
+    }
+
+    chart.timeScale().fitContent();
+}
+
 function createReturnChart(canvasId, fin) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !fin) return;

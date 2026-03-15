@@ -125,24 +125,45 @@ def get_financials(ticker):
             valid_holdings = []
             total_valid_weight = 0.0
             
-            # Fonun içindeki en büyük ağırlığa sahip şirketleri tek tek tarar
-            for _, row in df.iterrows():
-                sub_ticker = row.get('symbol')
-                if not isinstance(sub_ticker, str): 
-                    continue
-                
-                weight = float(row.get('holdingPercent', 0))
-                if weight <= 0: 
-                    continue
-                
-                sub_data = _get_single_stock_data(sub_ticker)
-                if sub_data:
-                    valid_holdings.append({
-                        "symbol": sub_ticker, "weight": weight,
-                        "pur_ratio": sub_data['pur_ratio'] if 'pur_ratio' in sub_data else sub_data.get('purification_ratio', 0),
-                        "debt_ratio": sub_data['debt_ratio']
-                    })
-                    total_valid_weight += weight
+            import asyncio
+            
+            async def fetch_holding(sub_ticker, weight, sem):
+                async with sem:
+                    try:
+                        # _get_single_stock_data is blocking, run in thread
+                        sub_data = await asyncio.to_thread(_get_single_stock_data, sub_ticker)
+                        if sub_data:
+                            pur = sub_data.get('pur_ratio', sub_data.get('purification_ratio', 0))
+                            debt = sub_data.get('debt_ratio', 0)
+                            return {
+                                "symbol": sub_ticker, "weight": weight,
+                                "pur_ratio": pur,
+                                "debt_ratio": debt
+                            }
+                    except Exception:
+                        pass
+                    return None
+
+            async def run_fetch():
+                sem = asyncio.Semaphore(5)
+                tasks = []
+                for _, row in df.iterrows():
+                    sub_ticker = row.get('symbol')
+                    if not isinstance(sub_ticker, str): continue
+                    
+                    weight = float(row.get('holdingPercent', 0))
+                    if weight <= 0: continue
+                    
+                    tasks.append(fetch_holding(sub_ticker, weight, sem))
+                return await asyncio.gather(*tasks)
+
+            # Run parallel fetch in worker thread
+            results = asyncio.run(run_fetch())
+            
+            for r in results:
+                if r:
+                    valid_holdings.append(r)
+                    total_valid_weight += r['weight']
                     
             if not valid_holdings:
                 return None, f"ETF ({ticker}) içindeki şirketlerin bilançolarına ulaşılamadı."

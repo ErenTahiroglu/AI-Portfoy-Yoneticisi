@@ -1,76 +1,46 @@
 import time
 import asyncio
-import random
-from functools import wraps
 import logging
-from .config import settings
+from fastapi import Request, HTTPException
 
 logger = logging.getLogger(__name__)
 
-class RateLimitException(Exception):
-    pass
+class RateLimiter:
+    """
+    Bellek dostu asenkron Rate Limiter (Sliding Window Algorithm).
+    Redis olmadan Render.com free tier gibi ortamlarda calismak icin tasarlanmistir.
+    """
+    def __init__(self, requests_limit: int = 3, period: int = 60):
+        self.limit = requests_limit
+        self.period = period
+        self.history = {} # {ip: [timestamp, ...]}
+        self.lock = asyncio.Lock()
 
-def with_retry(max_retries=None, base_delay=1.0, backoff_factor=None):
-    """
-    Exponential backoff with jitter retry decorator.
-    Supports both sync and async functions.
-    """
-    if max_retries is None:
-        max_retries = settings.MAX_RETRIES
-    if backoff_factor is None:
-        backoff_factor = settings.RETRY_BACKOFF_FACTOR
+    async def check(self, request: Request):
+        # Reverse proxy (Render/Vercel) arkasindaki IP'yi yakala
+        forwarded = request.headers.get("X-Forwarded-For")
+        client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
         
-    def decorator(func):
-        if asyncio.iscoroutinefunction(func):
-            @wraps(func)
-            async def async_wrapper(*args, **kwargs):
-                retries = 0
-                delay = base_delay
-                while True:
-                    try:
-                        return await func(*args, **kwargs)
-                    except Exception as e:
-                        error_msg = str(e).lower()
-                        is_rate_limit = any(x in error_msg for x in ["429", "rate limit", "too many requests", "quota", "timeout"])
-                        
-                        if not is_rate_limit and retries >= 1:
-                            raise e
-                            
-                        if retries >= max_retries:
-                            logger.error(f"Max retries ({max_retries}) reached for {func.__name__}")
-                            raise RateLimitException(f"API Rate limit exceeded after {max_retries} retries: {str(e)}")
-                        
-                        jitter = random.uniform(0, 0.2 * delay)
-                        sleep_time = delay + jitter
-                        logger.warning(f"Rate limit/error in {func.__name__}: {e}. Retrying in {sleep_time:.2f}s (Attempt {retries+1}/{max_retries})")
-                        await asyncio.sleep(sleep_time)
-                        retries += 1
-                        delay *= backoff_factor
-            return async_wrapper
-        else:
-            @wraps(func)
-            def sync_wrapper(*args, **kwargs):
-                retries = 0
-                delay = base_delay
-                while True:
-                    try:
-                        return func(*args, **kwargs)
-                    except Exception as e:
-                        error_msg = str(e).lower()
-                        is_rate_limit = any(x in error_msg for x in ["429", "rate limit", "too many requests", "quota", "timeout"])
-                        
-                        if not is_rate_limit and retries >= 1:
-                            raise e
-                            
-                        if retries >= max_retries:
-                            logger.error(f"Max retries ({max_retries}) reached for {func.__name__}")
-                            raise RateLimitException(f"API Rate limit exceeded after {max_retries} retries: {str(e)}")
-                        
-                        jitter = random.uniform(0, 0.2 * delay)
-                        sleep_time = delay + jitter
-                        logger.warning(f"Rate limit/error in {func.__name__}: {e}. Retrying in {sleep_time:.2f}s (Attempt {retries+1}/{max_retries})")
-                        time.sleep(sleep_time)
-                        retries += 1
-                        delay *= backoff_factor
-            return sync_wrapper
-    return decorator
+        if client_ip == "unknown":
+            return # IP tespit edilemezse limiti atla (guvenlik acigi olmamasi icin logla)
+            
+        now = time.time()
+        
+        async with self.lock:
+            if client_ip not in self.history:
+                self.history[client_ip] = []
+                
+            # Süresi dolmuş (eski) zaman damgalarını temizle
+            self.history[client_ip] = [t for t in self.history[client_ip] if now - t < self.period]
+            
+            if len(self.history[client_ip]) >= self.limit:
+                logger.warning(f"Rate Limit exceeded for IP: {client_ip}")
+                raise HTTPException(
+                    status_code=429, 
+                    detail="API Kotasını aştınız, lütfen 1 dakika bekleyin"
+                )
+                
+            self.history[client_ip].append(now)
+
+# Varsayılan limit: 1 dakikada 3 analiz isteği
+limiter = RateLimiter(requests_limit=3, period=60)

@@ -1,4 +1,4 @@
-import yfinance as yf
+# yfinance kaldırıldı, yahooquery kullanılacak
 from langchain_google_genai import ChatGoogleGenerativeAI
 import json
 import logging
@@ -78,13 +78,14 @@ def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini
     
     def get_news(ticker):
         try:
-            # yfinance'ta news objesi dict listesi döner
-            tkr = yf.Ticker(ticker)
-            n = tkr.news
-            # Ticker bilgisini de habere ekleyelim ki karışmasın
-            for item in n:
-                item['source_ticker'] = ticker
-            return n
+            from yahooquery import Ticker
+            tkr = Ticker(ticker)
+            n = tkr.news()
+            if isinstance(n, list):
+                for item in n:
+                    item['source_ticker'] = ticker
+                return n
+            return []
         except:
             return []
             

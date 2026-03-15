@@ -188,3 +188,49 @@ def generate_chat_response(messages: list, context: dict, api_key: str, model_na
         if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
             return "Kota sınırı aşıldı. Lütfen birkaç dakika bekleyin."
         return f"Üzgünüm, şu an bağlantı kuramıyorum (Hata: {error_msg})"
+
+def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr"):
+    """
+    Tüm portföyün makro analizini (Riskler, Korelasyon, Dengeleme) streaming (generator) olarak döndürür.
+    """
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
+    
+    # Portföy özetini sıkıştır
+    summary_str = json.dumps(portfolio_data, indent=2, ensure_ascii=False)
+    
+    prompt = f"""
+    Sen, büyük bir varlık yönetimi şirketinde çalışan Baş Yatırım Stratejistisin (CIO).
+    Görev: Aşağıda verilen portföy özetini (hisseler, ağırlıklar, rasyolar, korelasyonlar ve sektörler) inceleyip makro seviyede stratejik öneriler sunmak.
+    
+    === PORTFÖY ÖZETİ (JSON) ===
+    {summary_str}
+    ============================
+    
+    Lütfen yanıtını KESİNLİKLE aşağıdaki 3 ana başlık altında topla. Saygılı, teknik jargon içeren ama anlaşılır konuş. Giriş veya doldurma cümleleri YASAKTIR.
+    
+    ### 1. 🔍 Portföydeki Makro Riskler ve Yığılmalar
+    - Sektörel yığılma var mı? (Örn: Aşırı teknoloji veya sanayi ağırlığı)
+    - Ortalama Beta durumu ve piyasa hassasiyeti.
+    - Varsa yüksek faizli borç veya pahalı değerleme uyarıları.
+    
+    ### 2. ⚡ Korelasyon ve Çeşitlendirme (Diversification) Analizi
+    - Portföydeki varlıklar birbirini hedge ediyor mu, yoksa aynı yöne mi hareket ediyorlar?
+    - Riskleri optimize etmek için eksik kalan pazar veya varlık sınıfı önerisi (Örn: Altın, tahvil vb.).
+    
+    ### 3. ⚖️ Yeniden Dengeleme (Rebalancing) Önerileri
+    - Hangi varlığın ağırlığı aşırı yüksek/riskli, hangisi makul?
+    - Kısa ve net aksiyon maddeleri (Action Items) sunun.
+    
+    Dil talimatı: { "Respond entirely in English using beautiful Markdown formatting." if lang == "en" else "Sonuçları her zaman Türkçe üret ve Markdown formatını güzel kullan." }
+    """
+    
+    try:
+        for chunk in llm.stream(prompt):
+            if chunk.content:
+                yield chunk.content
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            yield "Kota sınırı aşıldı. Lütfen birkaç dakika bekleyin."
+        else:
+            yield f"Makro analiz akış hatası: {error_msg}"

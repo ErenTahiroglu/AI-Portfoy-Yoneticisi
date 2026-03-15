@@ -18,12 +18,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 
-import yfinance as yf
 # Render.com/Vercel gibi ortamlarda yazma izni sorunu olmaması için cache'i /tmp/ altına alıyoruz
-try:
-    yf.set_tz_cache_location("/tmp/py-yfinance")
-except Exception:
-    pass
+# yfinance kaldırıldı, yahooquery kullanılacak
 import pandas as pd
 from io import StringIO
 from datetime import datetime
@@ -111,20 +107,22 @@ class HisseAnaliz(BaseAnalyzer):
 
     def _yahoo_cek(self, sembol: str, baslangic: datetime, bitis: datetime
                    ) -> Optional[pd.DataFrame]:
-        indir_kwargs = dict(
-            start=baslangic, end=bitis,
-            auto_adjust=True, progress=False, timeout=30,
-        )
-        if HAS_CURL:
-            from curl_cffi import requests as curl_req
-            isolated_session = curl_req.Session(verify=False, impersonate="chrome")
-            indir_kwargs["session"] = isolated_session
-        ham = yf.download(sembol, **indir_kwargs)
-        if ham is None or ham.empty:
+        try:
+            from yahooquery import Ticker
+            t = Ticker(sembol)
+            ham = t.history(start=baslangic, end=bitis, adj_ohlc=True)
+            if ham is None or not isinstance(ham, pd.DataFrame) or ham.empty:
+                return None
+            try:
+                ham = ham.loc[sembol]
+            except KeyError:
+                return None
+            if ham.empty:
+                return None
+            ham.columns = [c.title() for c in ham.columns]
+            return self._utc(ham)
+        except Exception:
             return None
-        if isinstance(ham.columns, pd.MultiIndex):
-            ham.columns = ham.columns.get_level_values(0)
-        return self._utc(ham)
 
     def _stooq_cek(self, sembol: str, baslangic: datetime, bitis: datetime
                    ) -> Optional[pd.DataFrame]:
@@ -239,26 +237,25 @@ class HisseAnaliz(BaseAnalyzer):
 
         # Temettü (Yahoo'dan)
         temettular = pd.Series(dtype=float)
-        ticker = None
+        ad = sembol
+        
         try:
-            ticker_kwargs = {}
-            if HAS_CURL:
-                from curl_cffi import requests as curl_req
-                ticker_kwargs["session"] = curl_req.Session(verify=False, impersonate="chrome")
-            ticker = yf.Ticker(sembol, **ticker_kwargs)
-            tem    = ticker.dividends
-            if tem is not None and not tem.empty:
-                temettular = self._utc(tem.to_frame()).iloc[:, 0]
+            from yahooquery import Ticker
+            t = Ticker(sembol)
+            
+            # Şirket adı
+            price_info = t.price
+            if isinstance(price_info, dict) and sembol in price_info:
+                ad = price_info[sembol].get('shortName') or price_info[sembol].get('longName') or sembol
+                
+            # Temettü (Eğer Yahoo verisi varsa)
+            if kaynaklar["Yahoo"] is not None and "Dividends" in kaynaklar["Yahoo"].columns:
+                tem = kaynaklar["Yahoo"]["Dividends"]
+                tem = tem[tem > 0]
+                if not tem.empty:
+                    temettular = tem
         except Exception:
             pass
-
-        # Şirket adı
-        ad = sembol
-        if ticker is not None:
-            try:
-                ad = ticker.fast_info.company_name or sembol
-            except Exception:
-                pass
 
         return {"fiyatlar": fiyatlar, "temettular": temettular, "ad": ad}
 

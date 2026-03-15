@@ -94,7 +94,7 @@ def run_valuation_check(fetcher_ticker: str, result_entry: dict):
                 financial_health['debt'] = 50
                 
                 result_entry["valuation"] = valuation
-                result_entry["financial_health"] = financial_health
+                result_entry["radar_score"] = financial_health
 
     except Exception as e:
         logger.debug(f"Valuation check failed for {fetcher_ticker}: {e}")

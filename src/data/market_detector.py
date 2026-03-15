@@ -36,6 +36,10 @@ def detect_market(ticker: str) -> tuple:
     """
     ticker = ticker.upper().strip()
     
+    # 0. Kripto Para Kontrolü (USDT veya -USD ile bitenler)
+    if ticker.endswith("USDT") or ticker.endswith("-USD"):
+        return "CRYPTO", ticker, False
+    
     # 1. Açıkça BIST formatıysa (.IS soneki)
     if ticker.endswith(".IS"):
         return "TR", ticker, False

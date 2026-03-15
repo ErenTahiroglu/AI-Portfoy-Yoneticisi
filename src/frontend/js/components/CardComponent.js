@@ -1,0 +1,164 @@
+/**
+ * 🧩 CardComponent.js — ES Module
+ * =====================================
+ * Sonuç kartlarının ve özet satırlarının HTML inşasını yönetir.
+ * app.js içindeki appendResultItem mantığının izole edilmiş halidir.
+ */
+
+export function createSummaryRow(res) {
+    const fin = res.financials || {};
+    const val = res.valuation || {};
+    const sonFiyat = fin.son_fiyat ? `${fin.son_fiyat.fiyat?.toFixed(2) || "-"}` : "-";
+    const purRatio = res.purification_ratio !== undefined ? `%${res.purification_ratio}` : "-";
+
+    let statusText = res.status || "-";
+    if (getLang() === "en") {
+        if (statusText === "Uygun") statusText = "Compliant";
+        else if (statusText === "Uygun Değil") statusText = "Non-Compliant";
+        else if (statusText === "Katılım Fonu Değil") statusText = "Non-Participation";
+    }
+    const statusClass = res.status === "Uygun" ? "status-approved" : (res.status === "Uygun Değil" || res.status === "Katılım Fonu Değil" ? "status-rejected" : "");
+
+    const summaryFullName = res.full_name || fin.ad || "";
+    const tickerDisplay = summaryFullName ? `<div style="font-weight:700">${res.ticker}</div><div style="font-size:0.7rem; color:var(--text-muted)">${summaryFullName}</div>` : `<span style="font-weight:700">${res.ticker}</span>`;
+
+    const tr = document.createElement("tr");
+    if (statusClass) tr.className = statusClass; 
+    let marketText = res.market || "?";
+    if (getLang() === "tr" && marketText === "US") marketText = "ABD";
+
+    tr.innerHTML = `<td>${tickerDisplay}</td><td><span class="market-badge">${marketText}</span></td><td>${res.weight || 1}</td><td>${sonFiyat}</td><td>${purRatio}</td><td>${statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "-"}</td><td>${fmtNum(val.pe)}</td><td>${fmtNum(val.pb)}</td><td>${fmtNum(val.beta)}</td>`;
+    return tr;
+}
+
+export function createCard(res, idx) {
+    const fin = res.financials || {};
+    const val = res.valuation || {};
+    let statusText = res.status || "-";
+    if (getLang() === "en") {
+        if (statusText === "Uygun") statusText = "Compliant";
+        else if (statusText === "Uygun Değil") statusText = "Non-Compliant";
+        else if (statusText === "Katılım Fonu Değil") statusText = "Non-Participation";
+    }
+    const statusClass = res.status === "Uygun" ? "status-approved" : (res.status === "Uygun Değil" || res.status === "Katılım Fonu Değil" ? "status-rejected" : "");
+
+    const card = document.createElement("div");
+    card.className = `result-card glass-panel ${statusClass} stagger-enter stagger-` + ((idx % 5) + 1);
+    const chartId = `chart-${idx}`;
+
+    if (res.error) {
+        card.innerHTML = `<div class="card-header"><span class="ticker-name">${res.ticker}</span><span class="market-badge">${res.market || "?"}</span></div>
+        <p style="color:var(--danger);font-size:0.85rem;margin-bottom:0.75rem;">${res.error}</p>
+        <button class="btn btn-outline" style="font-size:0.75rem; padding:0.3rem 0.6rem;" onclick="retryAnalysis('${res.ticker}')"><i class="fas fa-redo"></i> Yeniden Dene</button>`;
+        return { card, chartId };
+    }
+
+    // Metrics
+    let metricsHTML = "";
+    const ticker = res.ticker;
+    const aiRaw = res.ai_comment || "";
+
+    function createMetricBox(label, value, key, classes = "") {
+        return `<div class="metric-box ${classes}" onclick='openMetricModal("${ticker}", "${key}", "${label}", ${JSON.stringify(aiRaw)})'>
+            <div class="metric-label">${label} <i class="fas fa-info-circle" style="font-size:0.65rem;opacity:0.6"></i></div>
+            <div class="metric-value">${value}</div>
+        </div>`;
+    }
+
+    if (val.pe) metricsHTML += createMetricBox("P/E", fmtNum(val.pe), "pe");
+    if (val.pb) metricsHTML += createMetricBox("P/B", fmtNum(val.pb), "pb");
+    if (val.beta) metricsHTML += createMetricBox("Beta", fmtNum(val.beta), "beta");
+    if (val.market_cap) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Piyasa Değeri</div><div class="metric-value">${formatMarketCap(val.market_cap)}</div></div>`;
+    if (val.div_yield) metricsHTML += createMetricBox("Temettü", fmtNum(val.div_yield, "%"), "div");
+    if (val.eps) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">EPS</div><div class="metric-value">${fmtNum(val.eps)}</div></div>`;
+    if (val.roe) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">ROE</div><div class="metric-value">${fmtNum(val.roe, "%")}</div></div>`;
+    if (val.high_52w) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">52H Yüksek</div><div class="metric-value">${fmtNum(val.high_52w)}</div></div>`;
+    if (val.low_52w) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">52H Düşük</div><div class="metric-value">${fmtNum(val.low_52w)}</div></div>`;
+    if (fin.risk) {
+        if (fin.risk.sharpe_ratio !== null) metricsHTML += createMetricBox("Sharpe", fmtNum(fin.risk.sharpe_ratio), "sharpe", colorClass(fin.risk.sharpe_ratio));
+        if (fin.risk.max_drawdown !== null) metricsHTML += createMetricBox("Max DD", fmtNum(fin.risk.max_drawdown, "%"), "max_dd", "negative");
+    }
+    if (fin.son_fiyat) {
+        const priceChange = fin.son_fiyat.degisim || 0;
+        const flashClass = priceChange > 0 ? "fx-flash-up" : (priceChange < 0 ? "fx-flash-down" : "");
+        metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Son Fiyat</div><div class="metric-value ${flashClass}">${fmtNum(fin.son_fiyat.fiyat)}</div></div>`;
+        if (fin.son_fiyat.degisim !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">Değişim</div><div class="metric-value ${colorClass(fin.son_fiyat.degisim)}">${fmtNum(fin.son_fiyat.degisim, "%")}</div></div>`;
+    }
+    if (fin.s5 !== null && fin.s5 !== undefined) metricsHTML += createMetricBox("5Y Getiri", fmtNum(fin.s5, "%"), "s5", colorClass(fin.s5));
+    if (fin.s3 !== null && fin.s3 !== undefined) metricsHTML += `<div class="metric-box no-modal"><div class="metric-label">3Y Getiri</div><div class="metric-value ${colorClass(fin.s3)}">${fmtNum(fin.s3, "%")}</div></div>`;
+    
+    let marketText = res.market || "?";
+    if (getLang() === "tr" && marketText === "US") marketText = "ABD";
+    
+    let sectorLabel = res.sector_localized ? res.sector_localized[getLang()] : (res.sector || "Bilinmiyor");
+    let sectorBadge = `<span class="market-badge" style="font-size:0.65rem">${sectorLabel}</span>`;
+
+    let compHTML = "";
+    if (res.purification_ratio !== undefined && res.debt_ratio !== undefined) {
+        const pr = res.purification_ratio;
+        const dr = res.debt_ratio;
+        const prClass = pr <= 5 ? "comp-pass" : "comp-fail";
+        const drClass = dr <= 30 ? "comp-pass" : "comp-fail";
+        
+        compHTML = `
+        <div class="compliance-bars">
+            <div class="comp-bar-row"><span>Haram Gelir (%${pr.toFixed(2)})</span><span>Sınır: %5</span></div>
+            <div class="comp-bar-bg"><div class="comp-bar-fill ${prClass}" style="width:${Math.min(pr, 100)}%"></div></div>
+            
+            <div class="comp-bar-row" style="margin-top:0.4rem"><span>Faizli Borç (%${dr.toFixed(2)})</span><span>Sınır: %30</span></div>
+            <div class="comp-bar-bg"><div class="comp-bar-fill ${drClass}" style="width:${Math.min((dr/30)*100, 100)}%"></div></div>
+        </div>`;
+    }
+
+    let radarHTML = "";
+    if (res.radar_score) radarHTML = `<div class="radar-container"><canvas id="radar-${chartId}"></canvas></div>`;
+    
+    let gaugeHTML = "";
+    if (res.technicals && res.technicals.gauge_score !== undefined) {
+        gaugeHTML = `<div class="gauge-container"><div class="gauge-canvas-wrap"><canvas id="gauge-${chartId}"></canvas><div class="gauge-val" id="gauge-val-${chartId}">${res.technicals.gauge_score}</div></div><div class="gauge-label" id="gauge-lbl-${chartId}">Nötr</div></div>`;
+    }
+    
+    let relPerfHTML = "";
+    if (res.technicals && res.technicals.relative_performance) relPerfHTML = `<div class="relative-perf-container"><canvas id="relperf-${chartId}"></canvas></div>`;
+
+    // renderTechnicals is global
+    let techHTML = typeof renderTechnicals === "function" ? renderTechnicals(res.technicals) : ""; 
+
+    let returnTableHTML = "";
+    if (fin.ay && Object.keys(fin.ay).length > 0) {
+        let rows = "";
+        for (const [ay, d] of Object.entries(fin.ay)) {
+            rows += `<tr><td>Son ${ay} ay</td><td class="${colorClass(d.g)}">${fmtNum(d.g, "%")}</td><td class="${colorClass(d.r)}">${fmtNum(d.r, "%")}</td><td>${fmtNum(d.enf, "%")}</td></tr>`;
+        }
+        returnTableHTML = `<div class="collapsible-header" onclick="toggleCollapsible(this)"><h4><i class="fas fa-chart-bar"></i> ${t("card.returns")}</h4><i class="fas fa-chevron-down collapse-icon"></i></div><div class="collapsible-body"><table class="return-table"><thead><tr><th>Dönem</th><th>Getiri</th><th>Reel</th><th>Enflasyon</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+
+    let chartHTML = "";
+    if ((fin.yg && Object.keys(fin.yg).length > 0) || res.klines) {
+        chartHTML = `<div class="collapsible-header open" onclick="toggleCollapsible(this)"><h4><i class="fas fa-chart-line"></i> ${t("card.chart")}</h4><i class="fas fa-chevron-down collapse-icon"></i></div><div class="collapsible-body open"><div class="chart-container" id="${chartId}" style="height: 250px; margin-top: 0.5rem;"></div></div>`;
+    }
+
+    let aiHTML = "";
+    if (res.ai_comment) {
+        // marked is global
+        const parsedAI = typeof marked !== "undefined" ? marked.parse(res.ai_comment) : res.ai_comment;
+        aiHTML = `<div class="collapsible-header" onclick="toggleCollapsible(this)"><h4><i class="fas fa-robot"></i> ${t("card.ai")}</h4><i class="fas fa-chevron-down collapse-icon"></i></div><div class="collapsible-body"><div class="ai-content markdown-body">${parsedAI}</div></div>`;
+    }
+
+    let fundHTML = res.fund_note ? `<p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem">${res.fund_note}</p>` : "";
+    let errHTML = res.islamic_error ? `<p style="font-size:0.78rem; color:var(--warning); margin:0.5rem 0"><i class="fas fa-exclamation-triangle"></i> ${res.islamic_error}</p>` : "";
+    errHTML += res.fin_error ? `<p style="font-size:0.78rem; color:var(--warning); margin:0.5rem 0"><i class="fas fa-exclamation-triangle"></i> ${res.fin_error}</p>` : "";
+
+    let statusBadgeFinal = statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "";
+    const nameBadge = (res.full_name && res.full_name !== res.ticker) ? `<span style="font-size:0.85rem; color:var(--text-muted); margin-left:0.5rem; font-weight:normal">${res.full_name}</span>` : "";
+
+    card.innerHTML = `
+        <div class="card-header"><div><span class="ticker-name">${res.ticker}</span>${nameBadge}</div><div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${marketText}</span>${sectorBadge}${statusBadgeFinal}</div></div>
+        ${fundHTML}${errHTML}${compHTML}
+        ${(radarHTML || gaugeHTML) ? `<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:center;">${radarHTML}${gaugeHTML}</div>` : ""}
+        ${metricsHTML ? `<div class="metrics-grid">${metricsHTML}</div>` : ""}
+        ${techHTML}${relPerfHTML}${chartHTML}${returnTableHTML}${aiHTML}
+    `;
+    
+    return { card, chartId };
+}

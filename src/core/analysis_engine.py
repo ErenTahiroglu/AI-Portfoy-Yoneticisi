@@ -35,6 +35,25 @@ _ERROR_MESSAGES = {
     "Timeout": "⏳ Sunucu yanıt vermedi. Lütfen tekrar deneyin.",
 }
 
+
+def safe_api_call(func, *args, **kwargs):
+    """
+    Harici API çağrılarını saran, 3 kez hata durumunda fallback üreten Circuit Breaker.
+    """
+    for attempt in range(3):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            err_str = str(e)
+            # 429 Rate Limit veya Timeout tespiti
+            if "429" in err_str or "Rate Limit" in err_str or "Too Many Requests" in err_str:
+                if attempt == 2: # Son deneme
+                    return {"error": "API Limiti Aşıldı (429)", "is_fallback": True}
+                time.sleep(1) # 1 saniye bekle ve tekrar dene
+            elif attempt == 2:
+                return {"error": f"API Hatası: {err_str}", "is_fallback": True}
+    return {"error": "Bilinmeyen API Hatası", "is_fallback": True}
+
 def _friendly_error(raw_error: str) -> str:
     """Teknik hata mesajını kullanıcı dostu Türkçe metne çevirir."""
     for key, msg in _ERROR_MESSAGES.items():
@@ -46,6 +65,7 @@ def _friendly_error(raw_error: str) -> str:
 # ── Result Cache ─────────────────────────────────────────────────────────
 _CACHE: Dict[str, dict] = {}
 _CACHE_TTL = 300  # 5 dakika
+_MAX_CACHE_SIZE = 100  # RAM sızıntısını önlemek için limit
 
 def _cache_key(ticker: str, check_islamic: bool, check_financials: bool) -> str:
     return f"{ticker}:{check_islamic}:{check_financials}"
@@ -60,7 +80,233 @@ def _get_cached(key: str) -> Optional[dict]:
     return None
 
 def _set_cache(key: str, data: dict):
+    # LRU-like simple FIFO cleanup to prevent RAM bloat
+    if len(_CACHE) >= _MAX_CACHE_SIZE:
+        try:
+            oldest_key = next(iter(_CACHE))
+            del _CACHE[oldest_key]
+        except StopIteration:
+            pass
     _CACHE[key] = {"ts": time.time(), "data": data}
+
+
+# ── Strategy Pattern & Registry ───────────────────────────────────────────
+from abc import ABC, abstractmethod
+
+class BaseAnalyzerStrategy(ABC):
+    """Analiz adımları için temel strateji sınıfı."""
+    @property
+    @abstractmethod
+    def name(self) -> str: pass
+
+    @abstractmethod
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None: pass
+
+class AnalyzerRegistry:
+    """Tüm analiz stratejilerini yöneten registry."""
+    def __init__(self):
+        self._strategies: List[BaseAnalyzerStrategy] = []
+
+    def register(self, strategy: BaseAnalyzerStrategy):
+        self._strategies.append(strategy)
+
+    def get_strategies(self) -> List[BaseAnalyzerStrategy]:
+        return self._strategies
+
+# Registry Instance
+analyzer_registry = AnalyzerRegistry()
+
+class IslamicAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "islamic"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        if not context.get("check_islamic"): return
+        fetcher_ticker = context.get("fetcher_ticker")
+        is_tefas = context.get("is_tefas")
+        data = None
+        
+        if is_tefas:
+            from src.data.market_detector import classify_fund
+            data = classify_fund(fetcher_ticker)
+        else:
+            try:
+                from src.analyzers.islamic_analyzer import get_financials
+                data, error = get_financials(fetcher_ticker)
+                if error or data is None:
+                    result_entry["islamic_error"] = error or "Uygunluk verisi bulunamadı"
+                    data = None
+            except Exception as e:
+                result_entry["islamic_error"] = _friendly_error(str(e))
+                data = None
+        
+        context["islamic_data"] = data
+        if data is not None:
+            if is_tefas:
+                result_entry["status"] = data.get('status', 'Bilinmiyor')
+                result_entry["is_etf"] = True
+                result_entry["is_tefas"] = True
+                result_entry["fund_note"] = data.get('fund_note', '')
+                result_entry["fund_start_date"] = data.get('fund_start_date')
+                result_entry["fund_age"] = data.get('fund_age', '')
+            else:
+                p_ratio = round(data.get('purification_ratio', 0), 2)
+                d_ratio = round(data.get('debt_ratio', 0), 2)
+                i_ratio = round(data.get('interest', 0), 2)
+                status = data.get('status', 'Bilinmiyor')
+                
+                result_entry["purification_ratio"] = p_ratio
+                result_entry["debt_ratio"] = d_ratio
+                result_entry["interest"] = i_ratio
+                result_entry["status"] = status
+                result_entry["is_etf"] = data.get("is_etf", False)
+                
+                result_entry["compliance_details"] = {
+                    "debt": {"value": d_ratio, "limit": 33.33, "pass": d_ratio < 33.33},
+                    "interest": {"value": i_ratio, "limit": 33.33, "pass": i_ratio < 33.33},
+                    "haram_income": {"value": p_ratio, "limit": 5.0, "pass": p_ratio < 5.0}
+                }
+
+class FinancialAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "financial"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        if not context.get("check_financials"): return
+        market = context.get("market")
+        is_tefas = context.get("is_tefas")
+        engine = context.get("engine")
+        analyzer = engine._tr_analyzer if market == "TR" else engine._us_analyzer
+        fin_data = None
+        
+        if analyzer:
+            try:
+                def _call():
+                    if is_tefas and hasattr(analyzer, 'analiz_et'):
+                        return analyzer.analiz_et(ticker, is_tefas=True)
+                    return analyzer.analiz_et(ticker)
+                
+                fin_data = safe_api_call(_call)
+                
+                if fin_data:
+                    if isinstance(fin_data, dict) and "error" in fin_data:
+                        result_entry["fin_error"] = fin_data["error"]
+                        # Veri tipini bozmamak için boş financials ekle
+                        result_entry["financials"] = {} 
+                    else:
+                        result_entry["financials"] = fin_data
+                else:
+                    msg = "Tarihsel getiri verisi çekilemedi. (Sadece anlık değerleme metrikleri gösteriliyor)" if not is_tefas else "Fon verisi alınamadı (WAF engeli veya bağlantı sorunu)."
+                    result_entry["fin_error"] = msg
+            except Exception as e:
+                result_entry["fin_error"] = _friendly_error(str(e))
+        elif engine._init_errors:
+            result_entry["fin_error"] = " | ".join(engine._init_errors)
+        
+        context["fin_data"] = fin_data
+
+class ValuationAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "valuation"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        if context.get("is_tefas"): return
+        from src.analyzers.valuation_analyzer import run_valuation_check
+        run_valuation_check(context.get("fetcher_ticker"), result_entry)
+
+class TechnicalAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "technical"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        if not context.get("check_financials") or context.get("is_tefas"): return
+        from src.analyzers.technical_analyzer import run_technical_indicators
+        run_technical_indicators(context.get("fetcher_ticker"), result_entry)
+
+class SectorAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "sector"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        if context.get("is_tefas"): return
+        fetcher_ticker = context.get("fetcher_ticker")
+        try:
+            from yahooquery import Ticker
+            
+            def _call():
+                stock = Ticker(fetcher_ticker)
+                return {
+                    "asset_profile": stock.asset_profile,
+                    "price": stock.price
+                }
+                
+            res = safe_api_call(_call)
+            
+            if isinstance(res, dict) and "error" in res:
+                result_entry["sector_error"] = res["error"]
+                return
+
+            profile = res.get("asset_profile")
+            prices = res.get("price")
+            
+            if isinstance(prices, dict) and fetcher_ticker in prices:
+                p_price = prices[fetcher_ticker]
+                if isinstance(p_price, dict):
+                    full_name = p_price.get("longName") or p_price.get("shortName")
+                    if full_name:
+                        result_entry["full_name"] = full_name
+
+            if isinstance(profile, dict) and fetcher_ticker in profile:
+                p = profile[fetcher_ticker]
+                if isinstance(p, dict):
+                    sector = p.get("sector")
+                    industry = p.get("industry")
+                    if sector:
+                        result_entry["sector"] = sector
+                    if industry:
+                        result_entry["industry"] = industry
+        except Exception as e:
+            logger.debug(f"Sector check failed for {fetcher_ticker}: {e}")
+
+class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "ai_comment"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        if not context.get("use_ai"): return
+        try:
+            from .ai_agent import generate_report
+            islamic_dict = context.get("islamic_data") if context.get("islamic_data") is not None else {}
+            ai_comment = generate_report(
+                ticker=ticker,
+                data=islamic_dict,
+                api_key=context.get("api_key"),
+                model_name=context.get("model"),
+                check_islamic=context.get("check_islamic"),
+                check_financials=context.get("check_financials"),
+                fin_data=context.get("fin_data"),
+                market=context.get("market"),
+                lang=context.get("lang")
+            )
+            result_entry["ai_comment"] = ai_comment
+        except Exception as e:
+            err_msg = str(e)
+            lang = context.get("lang")
+            if "API_KEY_INVALID" in err_msg or "API key not valid" in err_msg:
+                result_entry["ai_comment"] = "❌ <b>Gemini API Hatası:</b> API Anahtarınız geçersiz. Lütfen ayarlar panelinden doğru bir anahtar girdiğinizden emin olun." if lang == "tr" else "❌ <b>Gemini API Error:</b> Your API Key is invalid. Please ensure you entered the correct key in the settings panel."
+            else:
+                result_entry["ai_comment"] = _friendly_error(err_msg)
+
+from src.analyzers.crypto_analyzer import CryptoAnalyzerStrategy
+
+# Register Default Strategies
+analyzer_registry.register(CryptoAnalyzerStrategy())
+analyzer_registry.register(IslamicAnalyzerStrategy())
+analyzer_registry.register(FinancialAnalyzerStrategy())
+analyzer_registry.register(ValuationAnalyzerStrategy())
+analyzer_registry.register(TechnicalAnalyzerStrategy())
+analyzer_registry.register(SectorAnalyzerStrategy())
+analyzer_registry.register(AICommentAnalyzerStrategy())
 
 
 class AnalysisEngine:
@@ -181,175 +427,28 @@ class AnalysisEngine:
         market, fetcher_ticker, is_tefas = detect_market(ticker)
         result_entry = {"ticker": ticker, "market": market}
         
-        # ── ADIM 1: İslami Uygunluk ──────────────────────────────────────
-        data = None
-        if check_islamic:
-            data = self._run_islamic_check(fetcher_ticker, is_tefas, result_entry)
+        # Strateji Bağlamı (Context)
+        context = {
+            "engine": self,
+            "check_islamic": check_islamic,
+            "check_financials": check_financials,
+            "use_ai": use_ai,
+            "api_key": api_key,
+            "model": model,
+            "lang": lang,
+            "market": market,
+            "fetcher_ticker": fetcher_ticker,
+            "is_tefas": is_tefas
+        }
         
-        # ── ADIM 2: Finansal Getiri Analizi ───────────────────────────────
-        fin_data = None
-        if check_financials:
-            fin_data = self._run_financial_check(ticker, market, is_tefas, result_entry, check_financials)
-        
-        # ── ADIM 3: Temel Değerleme Metrikleri ────────────────────────────
-        if not is_tefas:
-            self._run_valuation_check(fetcher_ticker, result_entry)
-        
-        # ── ADIM 4: Teknik Göstergeler ────────────────────────────────────
-        if check_financials and not is_tefas:
-            self._run_technical_indicators(fetcher_ticker, result_entry)
-        
-        # ── ADIM 5: Sektör Bilgisi ────────────────────────────────────────
-        if not is_tefas:
-            self._run_sector_check(fetcher_ticker, result_entry)
-        
-        # ── ADIM 6: AI Yorum ─────────────────────────────────────────────
-        if use_ai:
-            self._run_ai_comment(
-                ticker, data, fin_data, market,
-                api_key, model,
-                check_islamic, check_financials,
-                result_entry, lang
-            )
+        # Stratejileri Sırayla Çalıştır
+        for strategy in analyzer_registry.get_strategies():
+            strategy.run(ticker, result_entry, context)
         
         # Cache'e kaydet
         _set_cache(ckey, result_entry)
         
         return result_entry
-    
-    def _run_islamic_check(self, fetcher_ticker: str, is_tefas: bool, result_entry: dict) -> dict:
-        """İslami uygunluk kontrolü."""
-        data = None
-        
-        if is_tefas:
-            from src.data.market_detector import classify_fund
-            data = classify_fund(fetcher_ticker)
-        else:
-            try:
-                from src.analyzers.islamic_analyzer import get_financials
-                data, error = get_financials(fetcher_ticker)
-                if error or data is None:
-                    result_entry["islamic_error"] = error or "Uygunluk verisi bulunamadı"
-                    data = None
-            except Exception as e:
-                result_entry["islamic_error"] = _friendly_error(str(e))
-                data = None
-        
-        if data is not None:
-            if is_tefas:
-                result_entry["status"] = data.get('status', 'Bilinmiyor')
-                result_entry["is_etf"] = True
-                result_entry["is_tefas"] = True
-                result_entry["fund_note"] = data.get('fund_note', '')
-                result_entry["fund_start_date"] = data.get('fund_start_date')
-                result_entry["fund_age"] = data.get('fund_age', '')
-            else:
-                p_ratio = round(data.get('purification_ratio', 0), 2)
-                d_ratio = round(data.get('debt_ratio', 0), 2)
-                i_ratio = round(data.get('interest', 0), 2)
-                status = data.get('status', 'Bilinmiyor')
-                
-                result_entry["purification_ratio"] = p_ratio
-                result_entry["debt_ratio"] = d_ratio
-                result_entry["interest"] = i_ratio
-                result_entry["status"] = status
-                result_entry["is_etf"] = data.get("is_etf", False)
-                
-                # Zoya-style compliance details (Limits: Debt < 33%, Interest < 5%, Haram < 5%)
-                result_entry["compliance_details"] = {
-                    "debt": {"value": d_ratio, "limit": 33.33, "pass": d_ratio < 33.33},
-                    "interest": {"value": i_ratio, "limit": 33.33, "pass": i_ratio < 33.33},
-                    "haram_income": {"value": p_ratio, "limit": 5.0, "pass": p_ratio < 5.0}
-                }
-        
-        return data
-    
-    def _run_financial_check(self, ticker: str, market: str, is_tefas: bool, result_entry: dict, check_financials: bool) -> dict:
-        """Finansal getiri analizi."""
-        analyzer = self._tr_analyzer if market == "TR" else self._us_analyzer
-        fin_data = None
-        
-        if analyzer:
-            try:
-                if is_tefas and hasattr(analyzer, 'analiz_et'):
-                    fin_data = analyzer.analiz_et(ticker, is_tefas=True)
-                else:
-                    fin_data = analyzer.analiz_et(ticker)
-                    
-                if fin_data:
-                    result_entry["financials"] = fin_data
-                else:
-                    msg = "Tarihsel getiri verisi çekilemedi. (Sadece anlık değerleme metrikleri gösteriliyor)" if check_financials and not is_tefas else "Fon verisi alınamadı (WAF engeli veya bağlantı sorunu)."
-                    result_entry["fin_error"] = msg
-            except Exception as e:
-                result_entry["fin_error"] = _friendly_error(str(e))
-        elif self._init_errors:
-            result_entry["fin_error"] = " | ".join(self._init_errors)
-        
-        return fin_data
-    
-    def _run_valuation_check(self, fetcher_ticker: str, result_entry: dict):
-        """Temel değerleme metriklerini çeker (P/E, P/B, Beta, Market Cap)."""
-        from src.analyzers.valuation_analyzer import run_valuation_check
-        run_valuation_check(fetcher_ticker, result_entry)
-    
-    def _run_technical_indicators(self, fetcher_ticker: str, result_entry: dict):
-        """Teknik göstergeleri hesaplar: RSI 14, MACD 12/26/9, EMA & SMA (20/50/100/200)."""
-        from src.analyzers.technical_analyzer import run_technical_indicators
-        run_technical_indicators(fetcher_ticker, result_entry)
-    
-    def _run_sector_check(self, fetcher_ticker: str, result_entry: dict):
-        """Sektör ve endüstri bilgisini çeker."""
-        try:
-            from yahooquery import Ticker
-            stock = Ticker(fetcher_ticker)
-            profile = stock.asset_profile
-            prices = stock.price
-            
-            # Add Full Name using price dictionary
-            if isinstance(prices, dict) and fetcher_ticker in prices:
-                p_price = prices[fetcher_ticker]
-                if isinstance(p_price, dict):
-                    full_name = p_price.get("longName") or p_price.get("shortName")
-                    if full_name:
-                        result_entry["full_name"] = full_name
-
-            if isinstance(profile, dict) and fetcher_ticker in profile:
-                p = profile[fetcher_ticker]
-                if isinstance(p, dict):
-                    sector = p.get("sector")
-                    industry = p.get("industry")
-                    if sector:
-                        result_entry["sector"] = sector
-                    if industry:
-                        result_entry["industry"] = industry
-        except Exception as e:
-            logger.debug(f"Sector check failed for {fetcher_ticker}: {e}")
-    
-    def _run_ai_comment(self, ticker, data, fin_data, market, 
-                        api_key, model, check_islamic, check_financials, result_entry, lang):
-        """AI yorum üretimi."""
-        try:
-            from .ai_agent import generate_report
-            islamic_dict = data if data is not None else {}
-            ai_comment = generate_report(
-                ticker=ticker,
-                data=islamic_dict,
-                api_key=api_key,
-                model_name=model,
-                check_islamic=check_islamic,
-                check_financials=check_financials,
-                fin_data=fin_data,
-                market=market,
-                lang=lang
-            )
-            result_entry["ai_comment"] = ai_comment
-        except Exception as e:
-            err_msg = str(e)
-            if "API_KEY_INVALID" in err_msg or "API key not valid" in err_msg:
-                result_entry["ai_comment"] = "❌ <b>Gemini API Hatası:</b> API Anahtarınız geçersiz. Lütfen ayarlar panelinden doğru bir anahtar girdiğinizden emin olun." if lang == "tr" else "❌ <b>Gemini API Error:</b> Your API Key is invalid. Please ensure you entered the correct key in the settings panel."
-            else:
-                result_entry["ai_comment"] = _friendly_error(err_msg)
 
 
 # ══════════════════════════════════════════════════════════════════════════

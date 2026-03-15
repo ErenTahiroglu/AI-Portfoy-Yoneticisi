@@ -1,11 +1,18 @@
-const CACHE_NAME = 'portfolio-v3';
+const CACHE_NAME = 'portfolio-v4';
 const STATIC_ASSETS = [
-    '/ui/',
-    '/ui/index.html',
-    '/ui/styles.css',
-    '/ui/app.js',
-    '/ui/i18n.js',
-    '/ui/manifest.json',
+    './',
+    './index.html',
+    './styles.css?v=4.1',
+    './manifest.json',
+    './logo.png',
+    './js/i18n.js?v=4.1',
+    './js/utils.js?v=4.1',
+    './js/db.js?v=4.1',
+    './js/state.js?v=4.1',
+    './js/api.js?v=4.1',
+    './js/charts.js?v=4.1',
+    './js/app.js?v=4.1',
+    './js/components/CardComponent.js'
 ];
 
 self.addEventListener('install', (event) => {

@@ -14,18 +14,21 @@ Kullanım:
 
 import logging
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from src.api.rate_limiter import limiter
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import RedirectResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
-from io import BytesIO
 import os
+import asyncio
+import json
+import gc
 
 # ── Modül importları ──────────────────────────────────────────────────────
 # ── Modül importları ──────────────────────────────────────────────────────
-from src.utils.file_processor import extract_tickers_from_text, process_uploaded_file
 from src.core.analysis_engine import AnalysisEngine
 
 # ── FastAPI uygulaması ────────────────────────────────────────────────────
@@ -57,9 +60,12 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 app.add_middleware(NoCacheMiddleware)
 
 # ── CORS middleware ───────────────────────────────────────────────────────
+origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+origins = [o.strip() for o in origins_str.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -88,15 +94,7 @@ class AnalysisRequest(BaseModel):
     monthly_contribution: float = 0.0
     rebalancing_freq: str = "none"
 
-class TextAnalysisRequest(BaseModel):
-    text: str
-    use_ai: bool = False
-    api_key: Optional[str] = None
-    av_api_key: Optional[str] = None
-    model: str = "gemini-2.5-flash"
-    check_islamic: bool = False
-    check_financials: bool = True
-    lang: str = "tr"
+# TextAnalysisRequest kaldırıldı (Kullanılmıyor)
 
 # ══════════════════════════════════════════════════════════════════════════
 # TICKER SUGGESTION DATA
@@ -130,13 +128,8 @@ def process_tickers_with_weights(raw_tickers: List[str]):
         weights_map[ticker] = weight
     return parsed, weights_map
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import json
-import gc
-from fastapi.responses import StreamingResponse
-
-@app.post("/api/analyze")
-async def analyze_portfolio(request: AnalysisRequest):
+@app.post("/api/analyze", dependencies=[Depends(limiter.check)])
+async def analyze_portfolio(request: AnalysisRequest, req: Request):
     """Ticker listesiyle portföy analizi (SSE / Streaming)."""
     if not request.tickers:
         raise HTTPException(status_code=400, detail="No tickers provided")
@@ -147,34 +140,51 @@ async def analyze_portfolio(request: AnalysisRequest):
     if not parsed_tickers:
         raise HTTPException(status_code=400, detail="No valid tickers provided")
 
-    def event_generator():
-        # Render 512MB limit: max_workers=2
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            future_map = {}
-            for ticker in parsed_tickers:
-                future = pool.submit(
-                    engine._analyze_single,
-                    ticker,
-                    check_islamic=request.check_islamic,
-                    check_financials=request.check_financials,
-                    use_ai=request.use_ai,
-                    api_key=request.api_key,
-                    model=request.model,
-                    lang=request.lang
-                )
-                future_map[future] = ticker
-            
-            for future in as_completed(future_map):
-                ticker = future_map[future]
+    async def event_generator():
+        semaphore = asyncio.Semaphore(2)  # Render 512MB limit için eşzamanlılık limiti
+
+        async def analyze_with_semaphore(ticker):
+            async with semaphore:
                 try:
-                    res = future.result()
+                    res = await asyncio.to_thread(
+                        engine._analyze_single,
+                        ticker,
+                        check_islamic=request.check_islamic,
+                        check_financials=request.check_financials,
+                        use_ai=request.use_ai,
+                        api_key=request.api_key,
+                        model=request.model,
+                        lang=request.lang
+                    )
+                    return ticker, res, None
+                except Exception as e:
+                    return ticker, None, e
+
+        # Görevleri oluştur
+        tasks = [asyncio.create_task(analyze_with_semaphore(t)) for t in parsed_tickers]
+
+        try:
+            for coro in asyncio.as_completed(tasks):
+                # Her adımda bağlantı kesilmesi kontrol edilir
+                if await req.is_disconnected():
+                    logger.warning("🚫 SSE istemci bağlantısı koptu. Çalışan analizler iptal ediliyor.")
+                    for t in tasks:
+                        if not t.done():
+                            t.cancel()
+                    break
+
+                ticker, res, err = await coro
+                if err:
+                    yield f"data: {json.dumps({'ticker': ticker, 'error': str(err)})}\n\n"
+                else:
                     res["weight"] = weights_map.get(ticker, 1.0)
                     yield f"data: {json.dumps(res)}\n\n"
-                except Exception as e:
-                    yield f"data: {json.dumps({'ticker': ticker, 'error': str(e)})}\n\n"
-        
-        # Stream bitince bellek temizliği
-        gc.collect()
+
+        except Exception as e:
+            logger.error(f"SSE Hatası: {e}")
+        finally:
+            # Stream bitince bellek temizliği
+            gc.collect()
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -244,6 +254,34 @@ class ChatRequest(BaseModel):
     api_key: str
     model: str = "gemini-2.5-flash"
     lang: str = "tr"
+
+class MacroRequest(BaseModel):
+    portfolio: dict
+    api_key: Optional[str] = None
+    model: str = "gemini-2.5-flash"
+    lang: str = "tr"
+
+@app.post("/api/analyze-macro", dependencies=[Depends(limiter.check)])
+async def analyze_macro_endpoint(request: MacroRequest):
+    """
+    Tüm portföyün makro AI analizi için StreamingResponse (SSE) akışı sağlar.
+    """
+    api_key = request.api_key
+    if not api_key:
+        raise HTTPException(status_code=400, detail="Gemini API Key is required for Macro Analysis")
+
+    from src.core.ai_agent import generate_macro_advice
+
+    def event_generator():
+        try:
+            for chunk in generate_macro_advice(request.portfolio, api_key, request.model, request.lang):
+                yield f"data: {json.dumps({'chunk': chunk}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.post("/api/wizard")
 async def wizard_api(request: WizardRequest):

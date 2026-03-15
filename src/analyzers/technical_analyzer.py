@@ -14,10 +14,24 @@ logger = logging.getLogger(__name__)
 def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
     """Teknik göstergeleri hesaplar: RSI 14, MACD 12/26/9, EMA & SMA (20/50/100/200)."""
     try:
-        import yfinance as yf
-        hist = yf.Ticker(fetcher_ticker).history(period="1y")
-        if hist is None or hist.empty or len(hist) < 30:
+        from yahooquery import Ticker
+        t = Ticker(fetcher_ticker)
+        hist = t.history(period="1y", adj_ohlc=True)
+        if hist is None or not isinstance(hist, pd.DataFrame) or hist.empty or len(hist) < 30:
             return
+        
+        # Yahooquery returns MultiIndex (symbol, date)
+        try:
+            hist = hist.loc[fetcher_ticker]
+        except KeyError:
+            return
+            
+        if hist.empty or len(hist) < 30:
+            return
+            
+        # Rename columns to match capitalized expectation (Close, Open, High, Low)
+        hist.columns = [c.title() for c in hist.columns]
+        hist.index = pd.to_datetime(hist.index) # Ensure DatetimeIndex
         
         close = hist["Close"]
         technicals = {}
@@ -83,10 +97,16 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
         # Koyfin-style Relative Performance (Stock vs SPY or XU100)
         benchmark_ticker = "XU100.IS" if fetcher_ticker.endswith(".IS") else "SPY"
         try:
-            bm_hist = yf.Ticker(benchmark_ticker).history(period="1y")["Close"]
-            if not bm_hist.empty and len(bm_hist) > 30:
+            bm_t = Ticker(benchmark_ticker)
+            bm_hist = bm_t.history(period="1y", adj_ohlc=True)
+            if isinstance(bm_hist, pd.DataFrame) and not bm_hist.empty:
+                bm_hist = bm_hist.loc[benchmark_ticker]
+                bm_hist.columns = [c.title() for c in bm_hist.columns]
+                bm_hist.index = pd.to_datetime(bm_hist.index)
+                bm_close = bm_hist["Close"]
+                
                 # Align dates
-                df = pd.DataFrame({"stock": close, "bm": bm_hist}).dropna()
+                df = pd.DataFrame({"stock": close, "bm": bm_close}).dropna()
                 if len(df) > 30:
                     # Rebase to 100
                     stock_perf = (df["stock"] / df["stock"].iloc[0]) * 100
