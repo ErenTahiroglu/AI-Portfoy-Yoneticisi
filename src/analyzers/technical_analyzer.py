@@ -93,6 +93,27 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
             gauge_score = int((bullish_signals / total_signals) * 100)
         
         technicals["gauge_score"] = gauge_score
+
+        # ── Signals (Phase 4) ──
+        signals = []
+        if "rsi_14" in technicals:
+            if technicals["rsi_14"] < 30:
+                signals.append({"signal": "BULLISH", "reason": "RSI Aşırı Satım Bölgesinde (< 30)"})
+            elif technicals["rsi_14"] > 70:
+                signals.append({"signal": "BEARISH", "reason": "RSI Aşırı Alım Bölgesinde (> 70)"})
+
+        if 'macd_line' in locals() and 'signal_line' in locals() and len(macd_line) >= 2:
+            prev_macd = macd_line.iloc[-2]
+            prev_sig = signal_line.iloc[-2]
+            curr_macd = macd_line.iloc[-1]
+            curr_sig = signal_line.iloc[-1]
+            
+            if prev_macd <= prev_sig and curr_macd > curr_sig:
+                signals.append({"signal": "BULLISH", "reason": "MACD Alım Sinyali (Kesişim)"})
+            elif prev_macd >= prev_sig and curr_macd < curr_sig:
+                signals.append({"signal": "BEARISH", "reason": "MACD Satım Sinyali (Kesişim)"})
+
+        technicals["signals"] = signals
         
         # Koyfin-style Relative Performance (Stock vs SPY or XU100)
         benchmark_ticker = "XU100.IS" if fetcher_ticker.endswith(".IS") else "SPY"

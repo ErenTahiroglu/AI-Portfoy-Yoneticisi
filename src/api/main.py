@@ -190,6 +190,40 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
 
 
 
+@app.get("/api/portfolio-signals")
+async def get_portfolio_signals(tickers: str = ""):
+    """Kullanıcı portföyündeki hisseler için teknik sinyalleri tarar."""
+    tickers = tickers.strip()
+    if not tickers:
+        return []
+    
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return []
+
+    from src.analyzers.technical_analyzer import run_technical_indicators
+    import asyncio
+
+    async def fetch_signal(ticker):
+        res_entry = {"ticker": ticker}
+        try:
+            await asyncio.to_thread(run_technical_indicators, ticker, res_entry)
+            tech = res_entry.get("technicals", {})
+            return {
+                "ticker": ticker,
+                "signals": tech.get("signals", []),
+                "gauge_score": tech.get("gauge_score", 50)
+            }
+        except Exception as e:
+            return {"ticker": ticker, "signals": [], "error": str(e)}
+
+    tasks = [asyncio.create_task(fetch_signal(t)) for t in ticker_list]
+    results = await asyncio.gather(*tasks)
+    
+    # Sadece sinyal üreten hisseleri filtrele
+    triggered = [r for r in results if r.get("signals") and len(r["signals"]) > 0]
+    return triggered
+
 # ══════════════════════════════════════════════════════════════════════════
 # TICKER SUGGESTION ENDPOINT
 # ══════════════════════════════════════════════════════════════════════════

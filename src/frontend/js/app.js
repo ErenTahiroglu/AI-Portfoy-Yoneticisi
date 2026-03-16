@@ -684,6 +684,64 @@ function setupBacktestBindings() {
 // Start setup
 setTimeout(setupBacktestBindings, 500);
 
+// ── Radar & Signals Ticker (Phase 4) ──
+async function fetchAndRenderSignals(tickers) {
+    const container = document.getElementById("signal-items-container");
+    const widget = document.getElementById("radar-signal-widget");
+    if (!container || !widget || !tickers) return;
+
+    try {
+        const response = await fetch(`/api/portfolio-signals?tickers=${encodeURIComponent(tickers)}`);
+        const data = await response.json();
+        
+        if (data.length === 0) {
+            widget.classList.add("hidden");
+            return;
+        }
+
+        widget.classList.remove("hidden");
+        container.innerHTML = ""; // Clear
+
+        data.forEach(item => {
+            if (item.signals && item.signals.length > 0) {
+                item.signals.forEach(s => {
+                    const isBull = s.signal === "BULLISH";
+                    const color = isBull ? "var(--success)" : "var(--danger)";
+                    const icon = isBull ? "fa-arrow-circle-up" : "fa-arrow-circle-down";
+                    
+                    const el = document.createElement("div");
+                    el.style.display = "inline-flex";
+                    el.style.alignItems = "center";
+                    el.style.gap = "5px";
+                    el.style.padding = "0.35rem 0.65rem";
+                    el.style.background = isBull ? "rgba(34, 197, 94, 0.08)" : "rgba(239, 68, 68, 0.08)";
+                    el.style.border = `1px solid ${isBull ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}`;
+                    el.style.borderRadius = "6px";
+                    el.style.color = color;
+                    el.style.fontWeight = "600";
+                    el.style.fontSize = "0.82rem";
+                    el.style.cursor = "pointer";
+                    
+                    el.innerHTML = `<i class="fas ${icon}"></i> <span>${item.ticker}: ${s.reason}</span>`;
+                    
+                    el.addEventListener("click", () => {
+                        const input = document.getElementById("ticker-input");
+                        if (input) {
+                            input.value = item.ticker;
+                            const btn = document.getElementById("btn-run") || document.querySelector(".btn-run");
+                            if (btn) btn.click();
+                        }
+                    });
+
+                    container.appendChild(el);
+                });
+            }
+        });
+    } catch (e) {
+        console.warn("Signal fetch failed:", e);
+    }
+}
+
 // ═══════════════════════════════════════
 // SUPABASE AUTH & DB BINDINGS (Phase 2)
 // ═══════════════════════════════════════
@@ -711,6 +769,7 @@ async function setupSupabaseAuth() {
                 if (textarea && !textarea.value.trim()) {
                      textarea.value = savedTickers.join(", ") + ", ";
                      showToast("Kayıtlı portföyünüz Supabase'den yüklendi.", "success");
+                     fetchAndRenderSignals(savedTickers.join(","));
                 }
             }
         } catch (e) {
