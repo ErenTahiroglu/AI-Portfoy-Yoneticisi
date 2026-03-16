@@ -94,7 +94,7 @@ AppState.subscribe((prop, val, oldValue) => {
 // ═══════════════════════════════════════
 // COMPARISON MODE
 // ═══════════════════════════════════════
-function showComparison() {
+async function showComparison() {
     if (!lastResults || lastResults.length < 2) { showToast(t("toast.compareMin"), "warning"); return; }
     const view = document.getElementById("comparison-view");
     const content = document.getElementById("comparison-content");
@@ -114,18 +114,8 @@ function showComparison() {
         ["Sektör", r => r.sector || "-"],
     ];
     const tickers = lastResults.filter(r => !r.error);
-    let html = `<table class="comparison-table"><thead><tr><th>Metrik</th>`;
-    tickers.forEach(r => { html += `<th>${r.ticker}</th>`; });
-    html += `</tr></thead><tbody>`;
-    metrics.forEach(([label, fn]) => {
-        const vals = tickers.map(fn);
-        if (vals.every(v => v === "-")) return;
-        html += `<tr><td>${label}</td>`;
-        vals.forEach(v => { html += `<td>${v}</td>`; });
-        html += `</tr>`;
-    });
-    html += `</tbody></table>`;
-    content.innerHTML = html;
+    const { createComparisonTable } = await import('./components/CardComponent.js');
+    content.innerHTML = createComparisonTable(tickers, metrics);
     view.scrollIntoView({ behavior: "smooth" });
 }
 

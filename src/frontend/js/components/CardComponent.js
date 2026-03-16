@@ -162,3 +162,50 @@ export function createCard(res, idx) {
     
     return { card, chartId };
 }
+
+export function createNewsCard(item) {
+    const title = item.title || "İsimsiz Haber";
+    const link = item.link || "#";
+    const sentiment = item.sentiment || "Neutral";
+    const reason = item.reason || "";
+
+    let color = "var(--text-muted)";
+    let icon = "minus";
+    if (sentiment.toLowerCase().includes("bull")) { color = "var(--success)"; icon = "arrow-trend-up"; }
+    else if (sentiment.toLowerCase().includes("bear")) { color = "var(--danger)"; icon = "arrow-trend-down"; }
+
+    const div = document.createElement("div");
+    div.innerHTML = `
+    <a href="${link}" target="_blank" style="text-decoration:none; color:inherit; outline:none;">
+        <div class="card" style="padding:1.2rem; background:var(--card-bg); border:1px solid var(--card-border); border-radius:var(--radius); transition:transform 0.2s, box-shadow 0.2s; cursor:pointer;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)'; this.style.borderColor='rgba(255,255,255,0.1)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'; this.style.borderColor='var(--card-border)'">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                <h4 style="margin:0; font-size:1.05rem; line-height:1.4; color:var(--text-main); flex:1;">${title}</h4>
+                <span style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.3rem 0.6rem; border-radius:1rem; font-size:0.75rem; font-weight:700; background:rgba(255,255,255,0.05); color:${color}">
+                    <i class="fas fa-${icon}"></i> ${sentiment}
+                </span>
+            </div>
+            ${reason ? `<p style="margin:0.75rem 0 0 0; font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${reason}</p>` : ""}
+        </div>
+    </a>`;
+    return div.firstElementChild;
+}
+
+export function createMessageCard(message, type = "info") {
+    const color = type === "error" ? "var(--danger)" : "var(--text-muted)";
+    return `<div class="card" style="padding:1rem; text-align:center; color:${color}">${message}</div>`;
+}
+
+export function createComparisonTable(tickers, metrics) {
+    let html = `<table class="comparison-table"><thead><tr><th>Metrik</th>`;
+    tickers.forEach(r => { html += `<th>${r.ticker}</th>`; });
+    html += `</tr></thead><tbody>`;
+    metrics.forEach(([label, fn]) => {
+        const vals = tickers.map(fn);
+        if (vals.every(v => v === "-")) return;
+        html += `<tr><td>${label}</td>`;
+        vals.forEach(v => { html += `<td>${v}</td>`; });
+        html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+    return html;
+}

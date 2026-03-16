@@ -43,3 +43,13 @@ class TestDetectMarketCaseInsensitive:
         market, fetcher, _ = detect_market("thyao")
         assert market == "TR"
         assert "THYAO" in fetcher
+
+
+class TestDetectMarketCrypto:
+    """Kripto paraların doğru algılanması."""
+
+    @pytest.mark.parametrize("ticker", ["BTC-USD", "ETHUSDT"])
+    def test_crypto_tickers(self, ticker):
+        market, _, is_tefas = detect_market(ticker)
+        assert market == "CRYPTO"
+        assert is_tefas is False

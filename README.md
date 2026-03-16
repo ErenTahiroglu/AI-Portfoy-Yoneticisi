@@ -14,7 +14,7 @@
 
 ## Türkçe (Turkish)
 
-**Portföy Analiz Platformu (v4.6)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir web uygulamasıdır. 
+**Portföy Analiz Platformu (v5.0)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir web uygulamasıdır. 
 Finansal verileri hesaplar, opsiyonel olarak İslami uygunluk (AAOIFI) denetimi yapar, sonuçları Google Gemini AI modeli ile yorumlar ve modern, mobil uyumlu, logolu bir arayüz sunar.
 
 ### ✨ Temel Özellikler
@@ -94,6 +94,8 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **Start Command:** `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
 *   **💡 Güvenlik & Hız Sınırı [v4.8]:** DDoS ve aşırı API kota tüketimini önlemek için yerel **IP Tabanlı Rate Limiter** (`FastAPI` Sliding Window) entegre edilmiştir. Kritik analiz endpoint'leri dakikada 3 istek ile sınırlıdır. CORS kuralları `.env` tabanlı dinamik `ALLOWED_ORIGINS` listesiyle sıkılaştırılmıştır.
 *   **💡 Free Tier Optimizasyonu [v4.7]:** SSE (Streaming), IndexedDB Önbellekleme, Dosya Ayrıştırma ve İleri Analiz Hesaplamaları (Monte Carlo vb.) Render'ın 512MB RAM sınırına takılmamak için **İstemci Tarafına (Client-Side)** taşınmıştır. Yoğun hesaplamalar sırasında tarayıcı akıcılığını korumak için **Web Worker** mimarisi kullanılmaktadır.
+*   **💡 Modüler Mimari & Test Kapsamı [v5.0]:** Tüm HTML Template üretimi `CardComponent.js` altına izole edilmiş; dairesel içe aktarma sızıntıları giderilmiş ve `pytest-asyncio` ile test kapsamı 30/30 (tam yeşil) seviyeye çıkarılmıştır.
+*   **💡 Service Worker Cache [v5.1]:** PWA önbelleklemesinde static query file sürüm çakışmaları temizlenmiş; modern `activate` loop with clean hooks ile garanti altına alınmıştır.
 
 #### 2. Frontend (Vercel)
 *   `src/frontend/js/utils.js` dosyasındaki `API_BASE` değişkenini Render URL'iniz ile güncelleyin.

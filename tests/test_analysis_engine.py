@@ -46,3 +46,58 @@ class TestCache:
         key = _cache_key("THYAO", False, True)
         assert "THYAO" in key
         assert "False" in key
+
+
+from unittest.mock import patch, MagicMock
+from core.analysis_engine import AnalysisEngine
+from api.rate_limiter import RateLimiter
+
+class TestAnalysisEngineRun:
+    """Motor çalıştırma ve strateji testleri."""
+
+    @pytest.fixture
+    def engine(self):
+        return AnalysisEngine()
+
+    @patch("src.data.market_detector.detect_market")
+    def test_analyze_single_isolated(self, mock_detect, engine):
+        """Analyze tekli çağrısının izolasyon testi."""
+        mock_detect.return_value = ("TR", "THYAO.IS", False)
+        
+        # Mock Analyzer
+        mock_analyzer = MagicMock()
+        mock_analyzer.analiz_et.return_value = {"finansal": "Olumlu"}
+        engine._analyzers["TR"] = mock_analyzer
+
+        result_entry = engine._analyze_single("THYAO", check_islamic=True, check_financials=True, use_ai=False, api_key="fake", model="fake", lang="tr")
+
+        assert result_entry["ticker"] == "THYAO"
+        assert result_entry["market"] == "TR"
+
+
+class TestRateLimiterAsync:
+    """Rate Limiter asenkron testleri."""
+
+    @pytest.mark.asyncio
+    async def test_rate_limiter_allows(self):
+        limiter = RateLimiter(requests_limit=1, period=60)
+        mock_request = MagicMock()
+        mock_request.headers.get.return_value = None
+        mock_request.client.host = "127.0.0.1"
+        
+        await limiter.check(mock_request)
+        assert len(limiter.history["127.0.0.1"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_rate_limiter_blocks(self):
+        limiter = RateLimiter(requests_limit=1, period=60)
+        mock_request = MagicMock()
+        mock_request.headers.get.return_value = None
+        mock_request.client.host = "127.0.0.1"
+        
+        await limiter.check(mock_request)
+        
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            await limiter.check(mock_request)
+        assert exc.value.status_code == 429

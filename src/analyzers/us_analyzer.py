@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 # ══════════════════════════════════════════════════════════════════════════════
 class HisseAnaliz(BaseAnalyzer):
+    market_code = "US"
 # ══════════════════════════════════════════════════════════════════════════════
 
     def __init__(self, av_key: str = None):

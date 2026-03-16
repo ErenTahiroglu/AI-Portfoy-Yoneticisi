@@ -70,6 +70,7 @@ POPULER_BIST = {
 
 # ══════════════════════════════════════════════════════════════════════════════
 class HisseAnaliz(BaseAnalyzer):
+    market_code = "TR"
 # ══════════════════════════════════════════════════════════════════════════════
 
     def __init__(self, stop_event: Optional[threading.Event] = None):

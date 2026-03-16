@@ -16,7 +16,25 @@ class RateLimiter:
         self.history = {} # {ip: [timestamp, ...]}
         self.lock = asyncio.Lock()
 
+    async def _cleanup_loop(self):
+        """Asenkron arka plan temizlik döngüsü (Idle IP listelerini RAM'den uçurur)."""
+        while True:
+            await asyncio.sleep(60)
+            now = time.time()
+            async with self.lock:
+                to_remove = []
+                for ip, timestamps in self.history.items():
+                    # Süresi dolan zaman damgalarını liste içinden sil
+                    self.history[ip] = [t for t in timestamps if now - t < self.period]
+                    if not self.history[ip]:
+                        to_remove.append(ip)
+                for ip in to_remove:
+                    self.history.pop(ip, None)
+
     async def check(self, request: Request):
+        # Arka plan temizlik görevini bir kez başlat (first request triggers)
+        if not hasattr(self, "_cleanup_task"):
+            self._cleanup_task = asyncio.create_task(self._cleanup_loop())
         # Reverse proxy (Render/Vercel) arkasindaki IP'yi yakala
         forwarded = request.headers.get("X-Forwarded-For")
         client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")

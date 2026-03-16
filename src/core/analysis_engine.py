@@ -176,7 +176,9 @@ class FinancialAnalyzerStrategy(BaseAnalyzerStrategy):
         market = context.get("market")
         is_tefas = context.get("is_tefas")
         engine = context.get("engine")
-        analyzer = engine._tr_analyzer if market == "TR" else engine._us_analyzer
+        
+        # OCP Registry ile dinamik eşleştirme
+        analyzer = engine._analyzers.get(market) if hasattr(engine, "_analyzers") else None
         fin_data = None
         
         if analyzer:
@@ -212,7 +214,11 @@ class ValuationAnalyzerStrategy(BaseAnalyzerStrategy):
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
         if context.get("is_tefas"): return
         from src.analyzers.valuation_analyzer import run_valuation_check
-        run_valuation_check(context.get("fetcher_ticker"), result_entry)
+        
+        def _call():
+            run_valuation_check(context.get("fetcher_ticker"), result_entry)
+            
+        safe_api_call(_call)
 
 class TechnicalAnalyzerStrategy(BaseAnalyzerStrategy):
     @property
@@ -221,7 +227,11 @@ class TechnicalAnalyzerStrategy(BaseAnalyzerStrategy):
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
         if not context.get("check_financials") or context.get("is_tefas"): return
         from src.analyzers.technical_analyzer import run_technical_indicators
-        run_technical_indicators(context.get("fetcher_ticker"), result_entry)
+        
+        def _call():
+            run_technical_indicators(context.get("fetcher_ticker"), result_entry)
+            
+        safe_api_call(_call)
 
 class SectorAnalyzerStrategy(BaseAnalyzerStrategy):
     @property
@@ -297,48 +307,55 @@ class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
             else:
                 result_entry["ai_comment"] = _friendly_error(err_msg)
 
-from src.analyzers.crypto_analyzer import CryptoAnalyzerStrategy
+def register_default_strategies():
+    from src.analyzers.crypto_analyzer import CryptoAnalyzerStrategy
+    
+    # Register Default Strategies
+    analyzer_registry.register(CryptoAnalyzerStrategy())
+    analyzer_registry.register(IslamicAnalyzerStrategy())
+    analyzer_registry.register(FinancialAnalyzerStrategy())
+    analyzer_registry.register(ValuationAnalyzerStrategy())
+    analyzer_registry.register(TechnicalAnalyzerStrategy())
+    analyzer_registry.register(SectorAnalyzerStrategy())
+    analyzer_registry.register(AICommentAnalyzerStrategy())
 
-# Register Default Strategies
-analyzer_registry.register(CryptoAnalyzerStrategy())
-analyzer_registry.register(IslamicAnalyzerStrategy())
-analyzer_registry.register(FinancialAnalyzerStrategy())
-analyzer_registry.register(ValuationAnalyzerStrategy())
-analyzer_registry.register(TechnicalAnalyzerStrategy())
-analyzer_registry.register(SectorAnalyzerStrategy())
-analyzer_registry.register(AICommentAnalyzerStrategy())
+# Strategies will be registered dynamically or lazy inside AnalysisEngine.__init__
 
 
 class AnalysisEngine:
     """Portföy analiz orkestrasyonu — puzzle parçalarını bir araya getirir."""
     
     def __init__(self):
-        self._us_analyzer = None
-        self._tr_analyzer = None
+        self._analyzers = {} # Analyzer Registry
         self._init_errors = []
         self._last_av_key = None
+        
+        # Register strategies (Already defined above)
+        register_default_strategies()
     
     def _init_financial_analyzers(self, av_api_key: str = None):
         """Finansal analizörleri tembel (lazy) olarak başlatır."""
-        if self._us_analyzer is not None and self._last_av_key == av_api_key:
+        if self._analyzers and self._last_av_key == av_api_key:
             return
-        
+            
         self._init_errors = []
         self._last_av_key = av_api_key
+        self._analyzers = {}
+        
         try:
-            from src.analyzers.us_analyzer import HisseAnaliz
-            self._us_analyzer = HisseAnaliz(av_key=av_api_key)
+            from src.analyzers.us_analyzer import HisseAnaliz as UsAnaliz
+            from src.analyzers.bist_analyzer import HisseAnaliz as BistAnaliz
+            
+            instances = [UsAnaliz(av_key=av_api_key), BistAnaliz()]
+            for a in instances:
+                code = getattr(a, "market_code", None)
+                if code:
+                    self._analyzers[code] = a
+                    
         except Exception as e:
             import traceback
-            logger.error(f"US Analyzer hatası:\n{traceback.format_exc()}")
-            self._init_errors.append(f"US Analyzer hatası: {str(e)}")
-        try:
-            from src.analyzers.bist_analyzer import HisseAnaliz as BistHisseAnaliz
-            self._tr_analyzer = BistHisseAnaliz()
-        except Exception as e:
-            import traceback
-            logger.error(f"TR Analyzer hatası:\n{traceback.format_exc()}")
-            self._init_errors.append(f"TR Analyzer hatası: {str(e)}")
+            logger.error(f"Analyzer yükleme hatası:\n{traceback.format_exc()}")
+            self._init_errors.append(f"Finansal analizör yükleme hatası: {str(e)}")
     
     def analyze(self, tickers: list, *, 
                 use_ai: bool = False,

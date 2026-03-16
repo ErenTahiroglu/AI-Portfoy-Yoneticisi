@@ -97,41 +97,22 @@ async function loadNews(results) {
 
         const data = await res.json();
 
+        const { createNewsCard, createMessageCard } = await import('./components/CardComponent.js');
+
         if (!data.news || data.news.length === 0) {
-            container.innerHTML = `<div class="card" style="padding:1rem; text-align:center; color:var(--text-muted)">Portföydeki şirketler için kayda değer önemli bir haber bulunamadı.</div>`;
+            container.innerHTML = createMessageCard("Portföydeki şirketler için kayda değer önemli bir haber bulunamadı.");
             return;
         }
 
-        let html = "";
+        container.innerHTML = ""; // Clear Previous
         data.news.forEach(item => {
-            const title = item.title || "İsimsiz Haber";
-            const link = item.link || "#";
-            const sentiment = item.sentiment || "Neutral";
-            const reason = item.reason || "";
-
-            let color = "var(--text-muted)";
-            let icon = "minus";
-            if (sentiment.toLowerCase().includes("bull")) { color = "var(--success)"; icon = "arrow-trend-up"; }
-            else if (sentiment.toLowerCase().includes("bear")) { color = "var(--danger)"; icon = "arrow-trend-down"; }
-
-            html += `
-            <a href="${link}" target="_blank" style="text-decoration:none; color:inherit; outline:none;">
-                <div class="card" style="padding:1.2rem; background:var(--card-bg); border:1px solid var(--card-border); border-radius:var(--radius); transition:transform 0.2s, box-shadow 0.2s; cursor:pointer;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)'; this.style.borderColor='rgba(255,255,255,0.1)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'; this.style.borderColor='var(--card-border)'">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
-                        <h4 style="margin:0; font-size:1.05rem; line-height:1.4; color:var(--text-main); flex:1;">${title}</h4>
-                        <span style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.3rem 0.6rem; border-radius:1rem; font-size:0.75rem; font-weight:700; background:rgba(255,255,255,0.05); color:${color}">
-                            <i class="fas fa-${icon}"></i> ${sentiment}
-                        </span>
-                    </div>
-                    ${reason ? `<p style="margin:0.75rem 0 0 0; font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${reason}</p>` : ""}
-                </div>
-            </a>`;
+            const cardNode = createNewsCard(item);
+            container.appendChild(cardNode);
         });
 
-        container.innerHTML = html;
-
     } catch (err) {
-        container.innerHTML = `<div class="card" style="padding:1rem; color:var(--danger)">Haberler yüklenirken hata oluştu: ${err.message}</div>`;
+        const { createMessageCard } = await import('./components/CardComponent.js');
+        container.innerHTML = createMessageCard(`Haberler yüklenirken hata oluştu: ${err.message}`, "error");
     }
 }
 

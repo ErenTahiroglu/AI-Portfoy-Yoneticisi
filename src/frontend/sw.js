@@ -1,17 +1,18 @@
-const CACHE_NAME = 'portfolio-v4';
+const CACHE_NAME = 'portfolio-ai-v5';
+
 const STATIC_ASSETS = [
     './',
     './index.html',
-    './styles.css?v=4.1',
+    './styles.css',
     './manifest.json',
     './logo.png',
-    './js/i18n.js?v=4.1',
-    './js/utils.js?v=4.1',
-    './js/db.js?v=4.1',
-    './js/state.js?v=4.1',
-    './js/api.js?v=4.1',
-    './js/charts.js?v=4.1',
-    './js/app.js?v=4.1',
+    './js/i18n.js',
+    './js/utils.js',
+    './js/db.js',
+    './js/state.js',
+    './js/api.js',
+    './js/charts.js',
+    './js/app.js',
     './js/components/CardComponent.js'
 ];
 
@@ -24,11 +25,12 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-        )
+        (async () => {
+            const keys = await caches.keys();
+            await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+            await self.clients.claim();
+        })()
     );
-    self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
