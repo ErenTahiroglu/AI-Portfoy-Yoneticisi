@@ -599,32 +599,17 @@ function initCopilot() {
 // ═══════════════════════════════════════
 let macroBuffer = "";
 
-window.renderMacroAI = function(chunk, isDone) {
+window.renderMacroAI = async function(chunk, isDone) {
     let container = document.getElementById("macro-advice-container");
     
     if (!container) {
         const grid = document.getElementById("results-grid");
-        if (!grid) return; // Grid yoksa çizme
+        if (!grid) return; 
         
-        container = document.createElement("div");
-        container.id = "macro-advice-container";
-        container.className = "macro-advice-card glass-panel stagger-enter";
-        container.style.marginTop = "2rem";
-        container.style.padding = "1.5rem";
-        container.style.width = "100%";
-        
-        container.innerHTML = `
-            <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                <h3 style="display:flex; align-items:center; gap:0.5rem; color:var(--primary); margin:0;">
-                    <i class="fas fa-brain"></i> AI Portföy Yöneticisi Özeti
-                </h3>
-            </div>
-            <div class="macro-content markdown-body" id="macro-content" style="font-size: 0.92rem; line-height: 1.6;"></div>
-        `;
-        
-        // Grid'in bulunduğu container'a ekle (Grid'in altına)
+        const { createMacroCardHolder } = await import('./components/CardComponent.js');
+        container = createMacroCardHolder();
         grid.parentNode.appendChild(container);
-        macroBuffer = ""; // Tamponu sıfırla
+        macroBuffer = ""; 
     }
 
     const contentDiv = document.getElementById("macro-content");

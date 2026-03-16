@@ -254,3 +254,45 @@ export function createComparisonTable(tickers, metrics) {
     html += `</tbody></table>`;
     return html;
 }
+
+// ── New Helpers for Pure Modularity ──
+
+export function createSkeletonCard(t) {
+    const card = document.createElement("div");
+    card.className = "result-card glass-panel skeleton-card";
+    card.id = `skeleton-${t}`;
+    card.innerHTML = `
+        <div class="card-header"><span class="ticker-name">${t}</span></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line medium"></div>
+        <div class="skeleton-line short"></div>
+    `;
+    return card;
+}
+
+export function createLoadingSpinnerCard(message) {
+    return `
+    <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+        <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:1rem"></i><br>
+        ${message}
+    </div>`;
+}
+
+export function createMacroCardHolder() {
+    const container = document.createElement("div");
+    container.id = "macro-advice-container";
+    container.className = "macro-advice-card glass-panel stagger-enter";
+    container.style.marginTop = "2rem";
+    container.style.padding = "1.5rem";
+    container.style.width = "100%";
+    
+    container.innerHTML = `
+        <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <h3 style="display:flex; align-items:center; gap:0.5rem; color:var(--primary); margin:0;">
+                <i class="fas fa-brain"></i> AI Portföy Yöneticisi Özeti
+            </h3>
+        </div>
+        <div class="macro-content markdown-body" id="macro-content" style="font-size: 0.92rem; line-height: 1.6;"></div>
+    `;
+    return container;
+}

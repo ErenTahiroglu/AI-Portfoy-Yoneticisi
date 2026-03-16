@@ -77,7 +77,8 @@ async function loadNews(results) {
     }
 
     wrap.classList.remove("hidden");
-    container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:1rem"></i><br>Yapay zeka haberleri tarayıp portföyünüz için en önemlilerini seçiyor...</div>`;
+    const { createLoadingSpinnerCard } = await import('./components/CardComponent.js');
+    container.innerHTML = createLoadingSpinnerCard("Yapay zeka haberleri tarayıp portföyünüz için en önemlilerini seçiyor...");
 
     let aKey = "";
     if (localStorage.getItem("settingsParams")) {
@@ -300,17 +301,10 @@ async function runAnalysis(payload, endpoint) {
         grid.innerHTML = ""; 
         document.getElementById("summary-table-body").innerHTML = "";
 
+        const { createSkeletonCard } = await import('./components/CardComponent.js');
         tickers.forEach(t => {
             if (cachedItems.some(r => r.ticker === t)) return; // Skip cached ones
-            const card = document.createElement("div");
-            card.className = "result-card glass-panel skeleton-card";
-            card.id = `skeleton-${t}`;
-            card.innerHTML = `
-                <div class="card-header"><span class="ticker-name">${t}</span></div>
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line medium"></div>
-                <div class="skeleton-line short"></div>
-            `;
+            const card = createSkeletonCard(t);
             grid.appendChild(card);
         });
 
