@@ -152,19 +152,19 @@ class IslamicAnalyzerStrategy(BaseAnalyzerStrategy):
             else:
                 p_ratio = round(data.get('purification_ratio', 0), 2)
                 d_ratio = round(data.get('debt_ratio', 0), 2)
-                i_ratio = round(data.get('interest', 0), 2)
+                l_ratio = round(data.get('liquidity_ratio', 0), 2)
                 status = data.get('status', 'Bilinmiyor')
                 
                 result_entry["purification_ratio"] = p_ratio
                 result_entry["debt_ratio"] = d_ratio
-                result_entry["interest"] = i_ratio
+                result_entry["liquidity_ratio"] = l_ratio
                 result_entry["status"] = status
                 result_entry["is_etf"] = data.get("is_etf", False)
                 
                 result_entry["compliance_details"] = {
-                    "debt": {"value": d_ratio, "limit": 33.33, "pass": d_ratio < 33.33},
-                    "interest": {"value": i_ratio, "limit": 33.33, "pass": i_ratio < 33.33},
-                    "haram_income": {"value": p_ratio, "limit": 5.0, "pass": p_ratio < 5.0}
+                    "haram_income": {"value": p_ratio, "limit": 5.0, "pass": p_ratio <= 5.0},
+                    "debt": {"value": d_ratio, "limit": 30.0, "pass": d_ratio <= 30.0},
+                    "liquidity": {"value": l_ratio, "limit": 30.0, "pass": l_ratio <= 30.0}
                 }
 
 class FinancialAnalyzerStrategy(BaseAnalyzerStrategy):

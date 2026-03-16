@@ -68,6 +68,8 @@ def _get_single_stock_data(ticker):
         interest_income = abs(interest_income)
         
         total_assets, total_debt, bal_date = 0.0, 0.0, "Bilinmiyor"
+        cash, st_investments, receivables = 0.0, 0.0, 0.0
+        
         for _, row in bal.iterrows():
             ast = get_val(row, ['TotalAssets'])
             if ast > 0:
@@ -75,15 +77,26 @@ def _get_single_stock_data(ticker):
                 total_debt = get_val(row, ['TotalDebt'])
                 if total_debt == 0:
                     total_debt = get_val(row, ['CurrentDebt', 'ShortTermDebt']) + get_val(row, ['LongTermDebt'])
+                
+                cash = get_val(row, ['CashAndCashEquivalents'])
+                st_investments = get_val(row, ['OtherShortTermInvestments', 'ShortTermInvestments'])
+                receivables = get_val(row, ['AccountsReceivable', 'Receivables'])
+                
                 bal_date = str(row.get('asOfDate', 'Bilinmiyor')).split(' ')[0]
                 break
             
         if revenue == 0 or total_assets == 0: 
             return None
             
+        pur_ratio = (interest_income / revenue) * 100
+        debt_ratio = (total_debt / total_assets) * 100
+        liq_ratio = ((cash + st_investments) / total_assets) * 100
+            
         return {
-            "purification_ratio": (interest_income / revenue) * 100,
-            "debt_ratio": (total_debt / total_assets) * 100,
+            "purification_ratio": pur_ratio,
+            "debt_ratio": debt_ratio,
+            "liquidity_ratio": liq_ratio,
+            "cash_and_ST_investments": cash + st_investments,
             "revenue": revenue, "interest": interest_income,
             "assets": total_assets, "debt": total_debt,
             "inc_date": inc_date, "bal_date": bal_date
@@ -133,12 +146,14 @@ def get_financials(ticker):
                         # _get_single_stock_data is blocking, run in thread
                         sub_data = await asyncio.to_thread(_get_single_stock_data, sub_ticker)
                         if sub_data:
-                            pur = sub_data.get('pur_ratio', sub_data.get('purification_ratio', 0))
+                            pur = sub_data.get('purification_ratio', 0)
                             debt = sub_data.get('debt_ratio', 0)
+                            liq = sub_data.get('liquidity_ratio', 0)
                             return {
                                 "symbol": sub_ticker, "weight": weight,
                                 "pur_ratio": pur,
-                                "debt_ratio": debt
+                                "debt_ratio": debt,
+                                "liquidity_ratio": liq
                             }
                     except Exception:
                         pass
@@ -169,20 +184,21 @@ def get_financials(ticker):
                 return None, f"ETF ({ticker}) içindeki şirketlerin bilançolarına ulaşılamadı."
                 
             # Ağırlıklı Ortalamaları Hesapla
-            agg_pur, agg_debt, holdings_str = 0.0, 0.0, ""
+            agg_pur, agg_debt, agg_liq, holdings_str = 0.0, 0.0, 0.0, ""
             
             for h in valid_holdings:
                 normalized_weight = h['weight'] / total_valid_weight
                 agg_pur += h['pur_ratio'] * normalized_weight
                 agg_debt += h['debt_ratio'] * normalized_weight
-                holdings_str += f"{h['symbol']}|%{h['weight']*100:.2f}|%{h['pur_ratio']:.2f}|%{h['debt_ratio']:.2f}\n"
+                agg_liq += h.get('liquidity_ratio', 0) * normalized_weight
+                holdings_str += f"{h['symbol']}|%{h['weight']*100:.2f}|%{h['pur_ratio']:.2f}|%{h['debt_ratio']:.2f}|%{h.get('liquidity_ratio',0):.2f}\n"
                 
-            is_halal = "Uygun" if (agg_pur <= 5.0 and agg_debt <= 30.0) else "Uygun Değil"
+            is_halal = "Uygun" if (agg_pur <= 5.0 and agg_debt <= 30.0 and agg_liq <= 30.0) else "Uygun Değil"
             
             return {
                 "is_etf": True,
-                "revenue": 0, "interest": 0, "assets": 0, "debt": 0, # ETF toplamı
-                "purification_ratio": agg_pur, "debt_ratio": agg_debt,
+                "revenue": 0, "interest": 0, "assets": 0, "debt": 0,
+                "purification_ratio": agg_pur, "debt_ratio": agg_debt, "liquidity_ratio": agg_liq,
                 "status": is_halal, "holdings_str": holdings_str,
                 "inc_date": "Fon Ağırlıklı Veri", "bal_date": "Fon Ağırlıklı Veri"
             }, None
@@ -195,16 +211,21 @@ def get_financials(ticker):
             # Tip uyuşmazlığını önlemek için yeni bir sözlük oluşturuyoruz.
             purification = float(data.get('purification_ratio', 0.0))
             debt = float(data.get('debt_ratio', 0.0))
+            liquidity = float(data.get('liquidity_ratio', 0.0))
+            
+            is_halal = "Uygun" if (purification <= 5.0 and debt <= 30.0 and liquidity <= 30.0) else "Uygun Değil"
             
             result_data = {
                 "is_etf": False,
-                "status": "Uygun" if (purification <= 5.0 and debt <= 30.0) else "Uygun Değil",
+                "status": is_halal,
                 "purification_ratio": purification,
                 "debt_ratio": debt,
+                "liquidity_ratio": liquidity,
                 "revenue": data.get("revenue", 0.0),
                 "interest": data.get("interest", 0.0),
                 "assets": data.get("assets", 0.0),
                 "debt": data.get("debt", 0.0),
+                "cash_and_ST_investments": data.get("cash_and_ST_investments", 0.0),
                 "inc_date": data.get("inc_date", "Bilinmiyor"),
                 "bal_date": data.get("bal_date", "Bilinmiyor")
             }

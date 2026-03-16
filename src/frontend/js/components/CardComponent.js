@@ -94,19 +94,30 @@ export function createCard(res, idx) {
     let sectorBadge = `<span class="market-badge" style="font-size:0.65rem">${sectorLabel}</span>`;
 
     let compHTML = "";
-    if (res.purification_ratio !== undefined && res.debt_ratio !== undefined) {
-        const pr = res.purification_ratio;
-        const dr = res.debt_ratio;
-        const prClass = pr <= 5 ? "comp-pass" : "comp-fail";
-        const drClass = dr <= 30 ? "comp-pass" : "comp-fail";
+    if (res.compliance_details) {
+        const det = res.compliance_details;
+        const haram = det.haram_income || {};
+        const debt = det.debt || {};
+        const liq = det.liquidity || {};
         
+        const hClass = haram.pass ? "comp-pass" : "comp-fail";
+        const dClass = debt.pass ? "comp-pass" : "comp-fail";
+        const lClass = liq.pass ? "comp-pass" : "comp-fail";
+        
+        const hVal = Number(haram.value || 0);
+        const dVal = Number(debt.value || 0);
+        const lVal = Number(liq.value || 0);
+
         compHTML = `
         <div class="compliance-bars">
-            <div class="comp-bar-row"><span>Haram Gelir (%${pr.toFixed(2)})</span><span>Sınır: %5</span></div>
-            <div class="comp-bar-bg"><div class="comp-bar-fill ${prClass}" style="width:${Math.min(pr, 100)}%"></div></div>
+            <div class="comp-bar-row"><span>Haram Gelir (%${hVal.toFixed(2)})</span><span>Sınır: %5</span></div>
+            <div class="comp-bar-bg"><div class="comp-bar-fill ${hClass}" style="width:${Math.min((hVal / 5) * 100, 100)}%"></div></div>
             
-            <div class="comp-bar-row" style="margin-top:0.4rem"><span>Faizli Borç (%${dr.toFixed(2)})</span><span>Sınır: %30</span></div>
-            <div class="comp-bar-bg"><div class="comp-bar-fill ${drClass}" style="width:${Math.min((dr/30)*100, 100)}%"></div></div>
+            <div class="comp-bar-row" style="margin-top:0.4rem"><span>Faizli Borç (%${dVal.toFixed(2)})</span><span>Sınır: %30</span></div>
+            <div class="comp-bar-bg"><div class="comp-bar-fill ${dClass}" style="width:${Math.min((dVal / 30) * 100, 100)}%"></div></div>
+            
+            <div class="comp-bar-row" style="margin-top:0.4rem"><span>Likidite (%${lVal.toFixed(2)})</span><span>Sınır: %30</span></div>
+            <div class="comp-bar-bg"><div class="comp-bar-fill ${lClass}" style="width:${Math.min((lVal / 30) * 100, 100)}%"></div></div>
         </div>`;
     }
 
