@@ -24,6 +24,8 @@
     <!-- File Parsers -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- TradingView Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 
 <body>
@@ -456,6 +458,41 @@
                             <div class="beta-indicator">
                                 <span>Portföy Beta Değeri:</span>
                                 <strong id="portfolio-beta-val">1.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Backtest & Simulation Card -->
+                    <div class="scenario-card premium-card" style="grid-column: 1 / -1;">
+                        <div class="card-glow"></div>
+                        <div class="card-inner">
+                            <div class="card-head">
+                                <span class="card-icon"><i class="fas fa-chart-line"></i></span>
+                                <div class="card-titles">
+                                    <h4>Gelişmiş Backtest Simülasyonu</h4>
+                                    <span>Tarihsel getiri ve DCA (Aylık Alım) projeksiyonu</span>
+                                </div>
+                            </div>
+
+                            <div id="bt-chart-container" style="height: 350px; margin-top: 1.5rem; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.1); border: 1px solid var(--glass-border);"></div>
+
+                            <div class="backtest-metrics-grid" id="bt-metrics-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+                                <div class="metric-box no-modal">
+                                    <div class="metric-label">Son Bakiye</div>
+                                    <div class="metric-value" id="bt-final-balance">-</div>
+                                </div>
+                                <div class="metric-box no-modal">
+                                    <div class="metric-label">CAGR (Yıllık Getiri)</div>
+                                    <div class="metric-value" id="bt-cagr">-</div>
+                                </div>
+                                <div class="metric-box no-modal">
+                                    <div class="metric-label">Max Drawdown</div>
+                                    <div class="metric-value" id="bt-max-dd" style="color: var(--danger);">-</div>
+                                </div>
+                                <div class="metric-box no-modal">
+                                    <div class="metric-label">Sharpe Oranı</div>
+                                    <div class="metric-value" id="bt-sharpe">-</div>
+                                </div>
                             </div>
                         </div>
                     </div>

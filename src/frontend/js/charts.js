@@ -109,6 +109,97 @@ function createTVChart(containerId, res) {
     chart.timeScale().fitContent();
 }
 
+function createBacktestChart(containerId, simData) {
+    const container = document.getElementById(containerId);
+    if (!container || !simData || !simData.dates || simData.dates.length === 0) return;
+
+    // Önceki içeriği temizle
+    container.innerHTML = "";
+
+    const isDark = document.documentElement.getAttribute("data-theme") !== "light" || (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    const chartOptions = {
+        layout: {
+            background: { type: 'solid', color: 'transparent' },
+            textColor: isDark ? '#94a3b8' : '#64748b',
+        },
+        grid: {
+            vertLines: { color: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(0,0,0,0.04)' },
+            horzLines: { color: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(0,0,0,0.04)' },
+        },
+        crosshair: { mode: 1 },
+        rightPriceScale: { borderVisible: false },
+        timeScale: { borderVisible: false, timeVisible: true },
+        handleScroll: true,
+        handleScale: true,
+    };
+
+    const chart = LightweightCharts.createChart(container, chartOptions);
+
+    const resizeObserver = new ResizeObserver(entries => {
+        if (entries[0].contentRect.width > 0) {
+            chart.applyOptions({ width: entries[0].contentRect.width, height: container.clientHeight || 350 });
+        }
+    });
+    resizeObserver.observe(container);
+
+    // 1. Portföy Büyümesi (Alan)
+    const portfolioSeries = chart.addAreaSeries({
+        lineColor: '#0ea5e9',
+        topColor: 'rgba(14, 165, 233, 0.4)',
+        bottomColor: 'rgba(14, 165, 233, 0.0)',
+        lineWidth: 3,
+        title: 'Portföy',
+    });
+
+    // 2. Benchmark Büyümesi (Çizgi)
+    const benchmarkSeries = chart.addLineSeries({
+        color: '#f43f5e',
+        lineWidth: 2,
+        lineStyle: 1, // 0:Solid, 1:Dotted
+        title: 'Blended Index',
+    });
+
+    const portfolioData = [];
+    const benchmarkData = [];
+
+    for (let i = 0; i < simData.dates.length; i++) {
+        const timeVal = Math.floor(new Date(simData.dates[i]).getTime() / 1000);
+        if (isNaN(timeVal)) continue;
+
+        if (simData.balance_history && simData.balance_history[i] !== undefined) {
+             portfolioData.push({ time: timeVal, value: simData.balance_history[i] });
+        }
+
+        if (simData.benchmark_history && simData.benchmark_history[i] !== undefined) {
+             benchmarkData.push({ time: timeVal, value: simData.benchmark_history[i] });
+        }
+    }
+
+    portfolioData.sort((a, b) => a.time - b.time);
+    benchmarkData.sort((a, b) => a.time - b.time);
+
+    if (portfolioData.length > 0) portfolioSeries.setData(portfolioData);
+    if (benchmarkData.length > 0) benchmarkSeries.setData(benchmarkData);
+
+    chart.timeScale().fitContent();
+    updateBacktestMetrics(simData);
+}
+
+function updateBacktestMetrics(simData) {
+    if (!simData || !simData.metrics) return;
+
+    const finalBalanceEl = document.getElementById("bt-final-balance");
+    const cagrEl = document.getElementById("bt-cagr");
+    const maxDdEl = document.getElementById("bt-max-dd");
+    const sharpeEl = document.getElementById("bt-sharpe");
+
+    if (finalBalanceEl) finalBalanceEl.innerText = simData.final_balance ? `${simData.final_balance.toLocaleString("tr-TR")} ₺/$` : "-";
+    if (cagrEl) cagrEl.innerText = simData.metrics.cagr !== undefined ? `%${simData.metrics.cagr.toFixed(1)}` : "-";
+    if (maxDdEl) maxDdEl.innerText = simData.metrics.max_drawdown !== undefined ? `-%${Math.abs(simData.metrics.max_drawdown).toFixed(1)}` : "-";
+    if (sharpeEl) sharpeEl.innerText = simData.metrics.sharpe !== undefined ? simData.metrics.sharpe.toFixed(2) : "-";
+}
+
 function createReturnChart(canvasId, fin) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !fin) return;
@@ -285,6 +376,15 @@ function renderExtras(extras) {
         }
     } else if (pvWrap) {
         pvWrap.classList.add("hidden");
+    }
+
+    // New Advanced Backtest (Phase 1)
+    if (extras.pv_simulation) {
+        try {
+            createBacktestChart("bt-chart-container", extras.pv_simulation);
+        } catch (e) {
+            console.error("Backtest Chart error:", e);
+        }
     }
 
     // Factor Regression

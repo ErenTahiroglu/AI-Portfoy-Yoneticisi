@@ -59,8 +59,9 @@ function calculateCorrelation(seriesA, seriesB) {
 }
 
 function runPVSimulationJS(results, payload) {
-    const initialBalance = payload.initial_balance || 10000;
-    const monthlyContribution = payload.monthly_contribution || 0;
+    const initialBalance = Number(payload.initial_balance || 10000);
+    const monthlyContribution = Number(payload.monthly_contribution || 0);
+    
     const minLength = Math.min(...results.map(r => r.technicals.relative_performance.stock_history.length));
     if (minLength < 2) return null;
 
@@ -68,19 +69,40 @@ function runPVSimulationJS(results, payload) {
     const initialWeights = results.map(r => (r.weight || 1.0) / totalWeight);
 
     let currentBalance = initialBalance;
+    let currentBenchmark = initialBalance;
+
     const balanceHistory = [currentBalance];
+    const benchmarkHistory = [currentBenchmark];
     const drawdownSeries = [0];
+
     let maxBalance = currentBalance;
     let maxDrawdown = 0;
 
+    const dates = results[0]?.technicals?.relative_performance?.dates || [];
+
     for (let t = 1; t < minLength; t++) {
         let periodReturn = 0;
+        let periodBmReturn = 0;
+
         results.forEach((r, idx) => {
             const hist = r.technicals.relative_performance.stock_history;
-            periodReturn += ((hist[t] / hist[t-1]) - 1) * initialWeights[idx];
+            const bmHist = r.technicals.relative_performance.bm_history;
+
+            if (hist && hist[t-1] > 0) {
+                periodReturn += ((hist[t] / hist[t-1]) - 1) * initialWeights[idx];
+            }
+            
+            if (bmHist && bmHist[t-1] > 0) {
+                periodBmReturn += ((bmHist[t] / bmHist[t-1]) - 1) * initialWeights[idx];
+            }
         });
+
         currentBalance = currentBalance * (1 + periodReturn) + monthlyContribution;
+        currentBenchmark = currentBenchmark * (1 + periodBmReturn) + monthlyContribution;
+
         balanceHistory.push(currentBalance);
+        benchmarkHistory.push(currentBenchmark);
+
         if (currentBalance > maxBalance) maxBalance = currentBalance;
         const dd = maxBalance > 0 ? ((maxBalance - currentBalance) / maxBalance) * 100 : 0;
         drawdownSeries.push(-dd);
@@ -88,8 +110,12 @@ function runPVSimulationJS(results, payload) {
     }
 
     const finalBalance = currentBalance;
-    const totalReturn = (finalBalance - (initialBalance + monthlyContribution * (minLength - 1))) / (initialBalance + monthlyContribution * (minLength - 1));
-    const cagr = (minLength > 1) ? (Math.pow(1 + totalReturn, 12 / (minLength - 1)) - 1) * 100 : 0;
+    const totalInvested = initialBalance + (monthlyContribution * (minLength - 1));
+    const totalReturn = (finalBalance - totalInvested) / totalInvested;
+    
+    // Assuming 5-day step (weekly)
+    const weeksToYear = (minLength - 1) / 52;
+    const cagr = weeksToYear > 0 ? (Math.pow(1 + totalReturn, 1 / weeksToYear) - 1) * 100 : 0;
 
     const periodReturns = [];
     for (let t = 1; t < balanceHistory.length; t++) periodReturns.push((balanceHistory[t] / balanceHistory[t-1]) - 1);
@@ -99,12 +125,15 @@ function runPVSimulationJS(results, payload) {
 
     return {
         metrics: {
-            cagr: parseFloat(cagr.toFixed(1)), max_drawdown: parseFloat(maxDrawdown.toFixed(1)),
-            sharpe: stdDev > 0 ? parseFloat(((meanRet / stdDev) * Math.sqrt(12)).toFixed(2)) : 0,
-            sortino: downsideDev > 0 ? parseFloat(((meanRet / downsideDev) * Math.sqrt(12)).toFixed(2)) : 0,
+            cagr: parseFloat(cagr.toFixed(1)), 
+            max_drawdown: parseFloat(maxDrawdown.toFixed(1)),
+            sharpe: stdDev > 0 ? parseFloat(((meanRet / stdDev) * Math.sqrt(52)).toFixed(2)) : 0,
             drawdown_series: drawdownSeries
         },
-        final_balance: Math.round(finalBalance)
+        final_balance: Math.round(finalBalance),
+        dates: dates.slice(0, minLength),
+        balance_history: balanceHistory.map(v => Math.round(v)),
+        benchmark_history: benchmarkHistory.map(v => Math.round(v))
     };
 }
 

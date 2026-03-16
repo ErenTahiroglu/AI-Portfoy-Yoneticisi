@@ -538,12 +538,9 @@ function calculateClientSideExtras(results, payload) {
 }
 
 function runPVSimulationJS(results, payload) {
-    if (results.length === 0) return null;
-
-    const initialBalance = payload.initial_balance || 10000;
-    const monthlyContribution = payload.monthly_contribution || 0;
-    const rebalanceFreq = payload.rebalancing_freq || "none";
-
+    const initialBalance = Number(payload.initial_balance || 10000);
+    const monthlyContribution = Number(payload.monthly_contribution || 0);
+    
     const minLength = Math.min(...results.map(r => r.technicals.relative_performance.stock_history.length));
     if (minLength < 2) return null;
 
@@ -551,21 +548,39 @@ function runPVSimulationJS(results, payload) {
     const initialWeights = results.map(r => (r.weight || 1.0) / totalWeight);
 
     let currentBalance = initialBalance;
+    let currentBenchmark = initialBalance;
+
     const balanceHistory = [currentBalance];
+    const benchmarkHistory = [currentBenchmark];
     const drawdownSeries = [0];
+
     let maxBalance = currentBalance;
     let maxDrawdown = 0;
 
+    const dates = results[0]?.technicals?.relative_performance?.dates || [];
+
     for (let t = 1; t < minLength; t++) {
         let periodReturn = 0;
+        let periodBmReturn = 0;
+
         results.forEach((r, idx) => {
             const hist = r.technicals.relative_performance.stock_history;
-            const singleRet = (hist[t] / hist[t-1]) - 1;
-            periodReturn += singleRet * initialWeights[idx];
+            const bmHist = r.technicals.relative_performance.bm_history;
+
+            if (hist && hist[t-1] > 0) {
+                periodReturn += ((hist[t] / hist[t-1]) - 1) * initialWeights[idx];
+            }
+            
+            if (bmHist && bmHist[t-1] > 0) {
+                periodBmReturn += ((bmHist[t] / bmHist[t-1]) - 1) * initialWeights[idx];
+            }
         });
 
         currentBalance = currentBalance * (1 + periodReturn) + monthlyContribution;
+        currentBenchmark = currentBenchmark * (1 + periodBmReturn) + monthlyContribution;
+
         balanceHistory.push(currentBalance);
+        benchmarkHistory.push(currentBenchmark);
 
         if (currentBalance > maxBalance) maxBalance = currentBalance;
         const dd = maxBalance > 0 ? ((maxBalance - currentBalance) / maxBalance) * 100 : 0;
@@ -574,33 +589,29 @@ function runPVSimulationJS(results, payload) {
     }
 
     const finalBalance = currentBalance;
-    const totalReturn = (finalBalance - (initialBalance + monthlyContribution * (minLength - 1))) / (initialBalance + monthlyContribution * (minLength - 1));
-    const years = (minLength - 1) / 12; // Assuming monthly increments
-    const cagr = years > 0 ? (Math.pow(1 + totalReturn, 1 / years) - 1) * 100 : 0;
+    const totalInvested = initialBalance + (monthlyContribution * (minLength - 1));
+    const totalReturn = (finalBalance - totalInvested) / totalInvested;
+    
+    const weeksToYear = (minLength - 1) / 52;
+    const cagr = weeksToYear > 0 ? (Math.pow(1 + totalReturn, 1 / weeksToYear) - 1) * 100 : 0;
 
     const periodReturns = [];
-    for (let t = 1; t < balanceHistory.length; t++) {
-        periodReturns.push((balanceHistory[t] / balanceHistory[t-1]) - 1);
-    }
+    for (let t = 1; t < balanceHistory.length; t++) periodReturns.push((balanceHistory[t] / balanceHistory[t-1]) - 1);
     const meanRet = periodReturns.reduce((a, b) => a + b, 0) / periodReturns.length;
-    const downsideDiff = periodReturns.map(v => v < 0 ? Math.pow(v, 2) : 0);
-    const downsideDev = Math.sqrt(downsideDiff.reduce((a, b) => a + b, 0) / periodReturns.length);
+    const downsideDev = Math.sqrt(periodReturns.map(v => v < 0 ? Math.pow(v, 2) : 0).reduce((a, b) => a + b, 0) / periodReturns.length);
     const stdDev = Math.sqrt(periodReturns.map(v => Math.pow(v - meanRet, 2)).reduce((a, b) => a + b, 0) / periodReturns.length);
-
-    const sharpe = stdDev > 0 ? (meanRet / stdDev) * Math.sqrt(12) : 0;
-    const sortino = downsideDev > 0 ? (meanRet / downsideDev) * Math.sqrt(12) : 0;
-    const calmar = maxDrawdown > 0 ? (cagr / maxDrawdown) : 0;
 
     return {
         metrics: {
-            cagr: parseFloat(cagr.toFixed(1)),
+            cagr: parseFloat(cagr.toFixed(1)), 
             max_drawdown: parseFloat(maxDrawdown.toFixed(1)),
-            sharpe: parseFloat(sharpe.toFixed(2)),
-            sortino: parseFloat(sortino.toFixed(2)),
-            calmar: parseFloat(calmar.toFixed(2)),
+            sharpe: stdDev > 0 ? parseFloat(((meanRet / stdDev) * Math.sqrt(52)).toFixed(2)) : 0,
             drawdown_series: drawdownSeries
         },
-        final_balance: Math.round(finalBalance)
+        final_balance: Math.round(finalBalance),
+        dates: dates.slice(0, minLength),
+        balance_history: balanceHistory.map(v => Math.round(v)),
+        benchmark_history: benchmarkHistory.map(v => Math.round(v))
     };
 }
 

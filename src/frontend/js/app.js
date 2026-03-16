@@ -654,3 +654,47 @@ window.renderMacroAI = function(chunk, isDone) {
         showToast("Makro AI Analizi Hazır!", "success");
     }
 }
+
+// ═══════════════════════════════════════
+// BACKTEST BINDINGS
+// ═══════════════════════════════════════
+function setupBacktestBindings() {
+    const initBalanceInput = document.getElementById("sim-initial-balance");
+    const monthlyContInput = document.getElementById("sim-monthly-contribution");
+    const rebalanceInput = document.getElementById("sim-rebalance-freq");
+
+    if (!initBalanceInput || !monthlyContInput || !rebalanceInput) return;
+
+    function triggerRecalculation() {
+        const payload = {
+            initial_balance: parseFloat(initBalanceInput.value) || 10000,
+            monthly_contribution: parseFloat(monthlyContInput.value) || 0,
+            rebalancing_freq: rebalanceInput.value
+        };
+
+        const results = AppState.results || window.lastResults || [];
+        if (results.length === 0) return;
+
+        if (typeof runPVSimulationJS === "function") {
+            const validResults = results.filter(r => !r.error && r.technicals?.relative_performance);
+            if (validResults.length === 0) return;
+
+            const simRes = runPVSimulationJS(validResults, payload);
+            if (simRes) {
+                AppState.extras = { ...(AppState.extras || {}), pv_simulation: simRes };
+                try {
+                    createBacktestChart("bt-chart-container", simRes);
+                } catch (e) {
+                    console.error("Backtest chart error on adjust:", e);
+                }
+            }
+        }
+    }
+
+    initBalanceInput.addEventListener("input", triggerRecalculation);
+    monthlyContInput.addEventListener("input", triggerRecalculation);
+    rebalanceInput.addEventListener("change", triggerRecalculation);
+}
+
+// Start setup
+setTimeout(setupBacktestBindings, 500);
