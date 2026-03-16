@@ -307,6 +307,33 @@ class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
             else:
                 result_entry["ai_comment"] = _friendly_error(err_msg)
 
+class SentimentAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "sentiment"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        try:
+            from src.data.news_fetcher import fetch_recent_news_async
+            from .ai_agent import analyze_news_sentiment
+            import asyncio
+
+            async def _get_sentiment():
+                news = await fetch_recent_news_async(ticker)
+                if not news: return None
+                return analyze_news_sentiment(
+                    news_data=news,
+                    check_islamic=context.get("check_islamic", False),
+                    api_key=context.get("api_key"),
+                    model_name=context.get("model", "gemini-2.5-flash"),
+                    lang=context.get("lang", "tr")
+                )
+
+            sentiment_data = asyncio.run(_get_sentiment())
+            if sentiment_data:
+                result_entry["sentiment"] = sentiment_data
+        except Exception as e:
+            logger.debug(f"Sentiment analysis failed for {ticker}: {e}")
+
 def register_default_strategies():
     from src.analyzers.crypto_analyzer import CryptoAnalyzerStrategy
     
@@ -318,6 +345,7 @@ def register_default_strategies():
     analyzer_registry.register(TechnicalAnalyzerStrategy())
     analyzer_registry.register(SectorAnalyzerStrategy())
     analyzer_registry.register(AICommentAnalyzerStrategy())
+    analyzer_registry.register(SentimentAnalyzerStrategy())
 
 # Strategies will be registered dynamically or lazy inside AnalysisEngine.__init__
 

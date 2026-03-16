@@ -163,10 +163,44 @@ export function createCard(res, idx) {
     let statusBadgeFinal = statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "";
     const nameBadge = (res.full_name && res.full_name !== res.ticker) ? `<span style="font-size:0.85rem; color:var(--text-muted); margin-left:0.5rem; font-weight:normal">${res.full_name}</span>` : "";
 
+    // ── Sentiment & Islamic Risk (Phase 3) ──
+    let sentimentHTML = "";
+    let islamicRiskBarHTML = "";
+    if (res.sentiment) {
+        const sent = res.sentiment;
+        const score = sent.score !== undefined ? sent.score : 50;
+        const label = sent.sentiment_label || "Nötr";
+        
+        let color = "#eab308";
+        if (score <= 35) color = "#ef4444";
+        else if (score >= 66) color = "#22c55e";
+        
+        sentimentHTML = `
+        <div class="sentiment-box" style="margin-top:0.75rem; padding:0.85rem; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                <span style="font-size:0.78rem; color:var(--text-muted);"><i class="fas fa-newspaper"></i> Haber Duyarlılığı</span>
+                <span style="font-size:0.82rem; font-weight:700; color:${color};">${label}</span>
+            </div>
+            <div class="progress-bar-bg" style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;">
+                <div class="progress-bar-fill" style="width:${score}%; height:100%; background:${color};"></div>
+            </div>
+        </div>`;
+
+        if (sent.islamic_risk_flag === true) {
+            islamicRiskBarHTML = `
+            <div class="islamic-risk-bar" style="margin: 0.5rem 0 0.85rem 0; padding:0.75rem 1rem; background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; color:#f87171; font-size:0.82rem; font-weight:600; display:flex; align-items:center; gap:8px;">
+                 <i class="fas fa-exclamation-triangle" style="font-size:0.95rem;"></i>
+                 <span>🚨 İSLAMİ RİSK UYARISI: <span style="font-weight:normal;color:var(--text-main);">${sent.risk_reason || "Bilinmeyen risk"}</span></span>
+            </div>`;
+        }
+    }
+
     card.innerHTML = `
         <div class="card-header"><div><span class="ticker-name">${res.ticker}</span>${nameBadge}</div><div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${marketText}</span>${sectorBadge}${statusBadgeFinal}</div></div>
+        ${islamicRiskBarHTML}
         ${fundHTML}${errHTML}${compHTML}
         ${(radarHTML || gaugeHTML) ? `<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:center;">${radarHTML}${gaugeHTML}</div>` : ""}
+        ${sentimentHTML}
         ${metricsHTML ? `<div class="metrics-grid">${metricsHTML}</div>` : ""}
         ${techHTML}${relPerfHTML}${chartHTML}${returnTableHTML}${aiHTML}
     `;

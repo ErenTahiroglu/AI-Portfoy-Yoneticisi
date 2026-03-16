@@ -105,3 +105,24 @@ def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini
     # 2. AI ile filtrele (önemlileri seç)
     filtered = filter_impactful_news(all_news, api_key, model_name, lang)
     return {"news": filtered}
+
+import asyncio
+from yahooquery import Ticker
+
+async def fetch_recent_news_async(ticker: str):
+    """Verilen ticker için son 5 haberi asenkron ve timeout korumalı çeker."""
+    def _fetch():
+        try:
+            tkr = Ticker(ticker)
+            res = tkr.news()
+            if isinstance(res, list):
+                return res[:5]
+            return []
+        except:
+            return []
+            
+    try:
+        # 3 saniyelik timeout koruması
+        return await asyncio.wait_for(asyncio.to_thread(_fetch), timeout=3.0)
+    except Exception:
+        return []

@@ -234,3 +234,57 @@ def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = 
             yield "Kota sınırı aşıldı. Lütfen birkaç dakika bekleyin."
         else:
             yield f"Makro analiz akış hatası: {error_msg}"
+
+def analyze_news_sentiment(news_data: list, check_islamic: bool, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> dict:
+    """Haber başlıkları ve özetlerini analiz edip Duyarlılık Skoru ve İslami Risk döner."""
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key)
+    
+    news_context = []
+    for i, item in enumerate(news_data[:5]):
+        title = item.get("title", "Başlık yok")
+        summary = item.get("summary", "Özet yok")
+        news_context.append(f"[{i}] BAŞLIK: {title} | ÖZET: {summary}")
+        
+    context_str = "\n".join(news_context) if news_context else "Haber bulunamadı."
+    
+    islamic_prompt = "Ayrıca haberleri İslami finans ilkelerine (helal kazanç, faizsizlik vb.) aykırı bir 'risk' teşkil edip etmediği açısından incele. 'islamic_risk_flag' ve 'risk_reason' değerlerini buna göre belirle." if check_islamic else "İslami kontrol kapalıdır, 'islamic_risk_flag' false ve 'risk_reason' 'Kontrol kapalı' bırakabilirsiniz."
+
+    sys_prompt = f"""
+    Sen finansal haberleri ve piyasa duyarlılığını analiz eden bir AI asistanısın.
+    Aşağıda belirli bir şirket için yayınlanan son haberler bulunmaktadır:
+    
+    ====================
+    {context_str}
+    ====================
+    
+    GÖREVİN:
+    1. Bu haberlerin genel duyarlılık skorunu hesapla (0-100 arası). 
+       Skala: 0-35 (Korku), 36-65 (Nötr), 66-100 (Açgözlülük).
+    2. En uygun duyarlılık etiketini belirle (Korku / Nötr / Açgözlülük).
+    3. {islamic_prompt}
+    
+    DİKKAT: YALNIZCA aşağıdaki JSON formatında bir veri döndür. Backticks (```json) veya açıklama ekleme!
+    {{
+      "score": 75, 
+      "sentiment_label": "Açgözlülük", 
+      "islamic_risk_flag": false, 
+      "risk_reason": "Haberlerde helal uygunluğu bozacak bir unsur bulunamadı."
+    }}
+    """
+    
+    try:
+        response = llm.invoke(sys_prompt)
+        content = str(response.content).strip()
+        
+        if content.startswith("```json"): content = content[7:]
+        elif content.startswith("```"): content = content[3:]
+        if content.endswith("```"): content = content[:-3]
+        
+        return json.loads(content.strip())
+    except Exception as e:
+        return {
+            "score": 50,
+            "sentiment_label": "Hata",
+            "islamic_risk_flag": False,
+            "risk_reason": f"AI Analiz Hatası: {str(e)}"
+        }
