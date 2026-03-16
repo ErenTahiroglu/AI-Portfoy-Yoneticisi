@@ -9,7 +9,7 @@ export function createSummaryRow(res) {
     const fin = res.financials || {};
     const val = res.valuation || {};
     const sonFiyat = fin.son_fiyat ? `${fin.son_fiyat.fiyat?.toFixed(2) || "-"}` : "-";
-    const purRatio = res.purification_ratio !== undefined ? `%${res.purification_ratio}` : "-";
+    const purRatio = res.purification_ratio !== undefined ? `%${parseFloat(res.purification_ratio).toFixed(2)}` : "-";
 
     let statusText = res.status || "-";
     if (getLang() === "en") {

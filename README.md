@@ -99,6 +99,9 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Supabase Entegrasyonu [v5.2]:** Google Sign-In ile güvenli oturum açma, portföy kaydetme ve otomatik veri yükleme (Client-Side Auth & DB) aktif edilmiştir.
 *   **💡 Duyarlılık & İslami Haber Analizi [v5.3]:** Gemini AI destekli haber duyarlılığı (Korku/Açgözlülük) hesaplaması ve İslami Risk uyarı barları (Pulse barlar) komponentlere kazandırılmıştır.
 *   **💡 DCA Backtest Simülatörü [v5.4]:** TradingView lightweight-charts destekli aylık düzenli alım (DCA) ve bakiye büyüme senaryoları frontend Web Worker'ları üzerinde asenkron canlandırılabilir seviyeye çıkarılmıştır.
+*   **💡 Swing Trade Sinyalizasyonu [v5.5]:** RSI < 30 (Aşırı Satım) ve MACD Golden Cross kesişimlerini dinamik yakalayan asenkron `/api/portfolio-signals` radarı devreye alınmıştır (Faz 4).
+*   **💡 Üretim Doğrulama & Matematik Kesinliği [v6.0]:** `verify_production.py` ile asenkron logic kesikleri ve finansal oranlar (AAOIFI, CAGR, Sharpe) rigid assert doğrulamasıyla sabitlenmiştir (Faz 9).
+
 
 #### 2. Frontend (Vercel)
 *   `src/frontend/js/utils.js` dosyasındaki `API_BASE` değişkenini Render URL'iniz ile güncelleyin.
