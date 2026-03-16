@@ -101,85 +101,164 @@ function saveCurrentPortfolio() {
 // AUTOCOMPLETE
 // ═══════════════════════════════════════
 let autocompleteTimeout = null;
+const autocompleteCache = {};
+
 function setupAutocomplete() {
     const textarea = document.getElementById("ticker-input");
     const dropdown = document.getElementById("autocomplete-dropdown");
     if (!textarea || !dropdown) return;
 
+    // Dinamik CSS Ekle (Eğer yoksa)
+    if (!document.getElementById("autocomplete-style")) {
+        const style = document.createElement("style");
+        style.id = "autocomplete-style";
+        style.innerHTML = `
+            .autocomplete-item.selected { background: rgba(14, 165, 233, 0.15) !important; border-left: 2px solid var(--primary); }
+            .autocomplete-item.loading { text-align: center; padding: 0.75rem; color: var(--text-muted); font-size: 0.8rem; }
+            .ticker-exch { font-size: 0.65rem; padding: 0.1rem 0.3rem; border-radius: 3px; background: rgba(255,255,255,0.05); color: var(--text-muted); }
+        `;
+        document.head.appendChild(style);
+    }
+
+    let selectedIndex = -1;
+
+    function renderItems(items) {
+        if (!items || items.length === 0) {
+            dropdown.classList.add("hidden");
+            return;
+        }
+        dropdown.innerHTML = items.map((s, i) => `
+            <div class="autocomplete-item ${i === selectedIndex ? 'selected' : ''}" data-ticker="${s.symbol}">
+                <div style="flex:1; display:flex; align-items:center; gap:8px;" class="autocomplete-clickable">
+                    <span class="ticker-symbol">${s.symbol}</span>
+                    <span class="ticker-name">${s.name}</span>
+                    <span class="ticker-exch">${s.exchDisp || ""}</span>
+                </div>
+                <i class="fas fa-plus ticker-info-btn" title="Listeye Ekle" data-ticker="${s.symbol}"></i>
+            </div>`).join("");
+        dropdown.classList.remove("hidden");
+        attachItemEvents();
+    }
+
+    function attachItemEvents() {
+        dropdown.querySelectorAll(".autocomplete-clickable").forEach(el => {
+            el.addEventListener("click", (e) => {
+                const ticker = e.currentTarget.parentElement.dataset.ticker;
+                selectTicker(ticker);
+            });
+        });
+        dropdown.querySelectorAll(".ticker-info-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                selectTicker(e.currentTarget.dataset.ticker);
+            });
+        });
+    }
+
+    function selectTicker(ticker) {
+        const currentWords = textarea.value.split(/([\s,;]+)/);
+        let found = false;
+        for (let i = currentWords.length - 1; i >= 0; i--) {
+            if (currentWords[i].trim() && !found) {
+                currentWords[i] = ticker;
+                found = true;
+                break;
+            }
+        }
+        textarea.value = currentWords.join("") + ", ";
+        dropdown.classList.add("hidden");
+        textarea.focus();
+        selectedIndex = -1;
+    }
+
     textarea.addEventListener("input", () => {
         clearTimeout(autocompleteTimeout);
-
-        // Get the current word being typed (the one after the last comma/space)
         const content = textarea.value;
         const words = content.split(/[\s,;]+/);
         const lastWord = words[words.length - 1].trim();
 
-        // Show suggestions even for a single character
         if (!lastWord || lastWord.length < 1) {
             dropdown.classList.add("hidden");
             return;
         }
 
+        selectedIndex = -1; // Reset selection
+
+        // 1. Önbellek (Cache) Kontrolü
+        if (autocompleteCache[lastWord]) {
+            renderItems(autocompleteCache[lastWord]);
+            return;
+        }
+
+        // 2. Skeleton Loading göster
+        dropdown.innerHTML = `<div class="autocomplete-item loading"><i class="fas fa-spinner fa-spin"></i> Aranıyor...</div>`;
+        dropdown.classList.remove("hidden");
+
         autocompleteTimeout = setTimeout(async () => {
             try {
-                const res = await fetch(`${API_BASE}/api/suggest?q=${encodeURIComponent(lastWord)}`);
+                const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(lastWord)}`);
                 if (!res.ok) throw new Error("API error");
-
                 const data = await res.json();
-                if (data.suggestions && data.suggestions.length > 0) {
-                    dropdown.innerHTML = data.suggestions.map(s => `
-                        <div class="autocomplete-item" data-ticker="${s.ticker}">
-                            <div style="flex:1; display:flex; align-items:center; gap:8px;" class="autocomplete-clickable">
-                                <span class="ticker-symbol">${s.ticker}</span>
-                                <span class="ticker-name">${s.name}</span>
-                            </div>
-                            <i class="fas fa-info-circle ticker-info-btn" title="Hızlı Bilgi" data-ticker="${s.ticker}"></i>
-                        </div>`).join("");
-
-                    dropdown.classList.remove("hidden");
-
-                    // Handle suggestion click
-                    dropdown.querySelectorAll(".autocomplete-clickable").forEach(el => {
-                        el.addEventListener("click", (e) => {
-                            const ticker = e.currentTarget.parentElement.dataset.ticker;
-                            const currentWords = textarea.value.split(/([\s,;]+)/); // Preserve separators
-
-                            // Replace the last non-separator word
-                            let found = false;
-                            for (let i = currentWords.length - 1; i >= 0; i--) {
-                                if (currentWords[i].trim() && !found) {
-                                    currentWords[i] = ticker;
-                                    found = true;
-                                    break;
-                                }
-                            }
-
-                            textarea.value = currentWords.join("") + ", ";
-                            dropdown.classList.add("hidden");
-                            textarea.focus();
-                        });
-                    });
-
-                    // Handle info button click
-                    dropdown.querySelectorAll(".ticker-info-btn").forEach(btn => {
-                        btn.addEventListener("click", (e) => {
-                            e.stopPropagation();
-                            showTickerQuickModal(e.currentTarget.dataset.ticker);
-                        });
-                    });
-                } else {
-                    dropdown.classList.add("hidden");
-                }
+                
+                // Cache kaydet
+                autocompleteCache[lastWord] = data;
+                
+                renderItems(data);
             } catch (err) {
-                console.warn("Autocomplete fetch error:", err);
+                console.warn("Autocomplete error:", err);
                 dropdown.classList.add("hidden");
             }
-        }, 150); // Slightly faster debounce
+        }, 300); // 300ms Debounce
     });
 
-    // Hide dropdown on blur unless clicking inside it
-    textarea.addEventListener("blur", () => {
-        setTimeout(() => dropdown.classList.add("hidden"), 250);
+    // Klavye Gezinmesi
+    textarea.addEventListener("keydown", (e) => {
+        const items = dropdown.querySelectorAll(".autocomplete-item");
+        if (items.length === 0 || dropdown.classList.contains("hidden")) return;
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            selectedIndex = (selectedIndex + 1) % items.length;
+            updateSelection(items);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+            updateSelection(items);
+        } else if (e.key === "Enter") {
+            if (selectedIndex >= 0 && selectedIndex < items.length) {
+                e.preventDefault();
+                selectTicker(items[selectedIndex].dataset.ticker);
+            }
+        } else if (e.key === "Escape") {
+            dropdown.classList.add("hidden");
+        }
+    });
+
+    function updateSelection(items) {
+        items.forEach((item, i) => {
+            if (i === selectedIndex) {
+                item.classList.add("selected");
+                item.scrollIntoView({ block: "nearest" });
+            } else {
+                item.classList.remove("selected");
+            }
+        });
+    }
+
+    // Click Outside To Close
+    document.addEventListener("click", (e) => {
+        if (!textarea.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add("hidden");
+        }
+    });
+
+    // Input kutusuna tekrar tıklandığında eski sonuçları aç
+    textarea.addEventListener("click", () => {
+        const words = textarea.value.split(/[\s,;]+/);
+        const lastWord = words[words.length - 1].trim();
+        if (lastWord && autocompleteCache[lastWord]) {
+            renderItems(autocompleteCache[lastWord]);
+        }
     });
 }
 

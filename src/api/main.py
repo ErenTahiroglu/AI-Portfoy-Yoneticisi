@@ -194,6 +194,42 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
 # TICKER SUGGESTION ENDPOINT
 # ══════════════════════════════════════════════════════════════════════════
 
+@app.get("/api/search")
+async def search_tickers(q: str = ""):
+    """Yahoo Finance Arama API'sine hafif bir proxy sağlar."""
+    q = q.strip()
+    if not q:
+        return []
+    
+    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=6&newsCount=0"
+    
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            resp = await client.get(url, headers=headers)
+            if resp.status_code != 200:
+                logger.error(f"Yahoo Search API Hatası: {resp.status_code}")
+                return []
+            
+            data = resp.json()
+            quotes = data.get("quotes", [])
+            
+            results = []
+            for item in quotes:
+                # Sadece hisse, ETF veya fonları al (opsiyonel filtreleme istersen)
+                results.append({
+                    "symbol": item.get("symbol"),
+                    "name": item.get("shortname") or item.get("longname") or "",
+                    "exchDisp": item.get("exchDisp") or ""
+                })
+            return results
+    except Exception as e:
+        logger.error(f"Arama Hatası: {e}")
+        return []
+
 # ── Yardımcı Fonksiyonlar ────────────────────────────────────────────────
 def tr_lower(text: str) -> str:
     """Türkçe karakter duyarlı küçük harfe çevirme."""
