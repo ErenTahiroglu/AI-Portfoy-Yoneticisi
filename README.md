@@ -96,6 +96,9 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Free Tier Optimizasyonu [v4.7]:** SSE (Streaming), IndexedDB Önbellekleme, Dosya Ayrıştırma ve İleri Analiz Hesaplamaları (Monte Carlo vb.) Render'ın 512MB RAM sınırına takılmamak için **İstemci Tarafına (Client-Side)** taşınmıştır. Yoğun hesaplamalar sırasında tarayıcı akıcılığını korumak için **Web Worker** mimarisi kullanılmaktadır.
 *   **💡 Modüler Mimari & Test Kapsamı [v5.0]:** Tüm HTML Template üretimi `CardComponent.js` altına izole edilmiş; dairesel içe aktarma sızıntıları giderilmiş ve `pytest-asyncio` ile test kapsamı 30/30 (tam yeşil) seviyeye çıkarılmıştır.
 *   **💡 Service Worker Cache [v5.1]:** PWA önbelleklemesinde static query file sürüm çakışmaları temizlenmiş; modern `activate` loop with clean hooks ile garanti altına alınmıştır.
+*   **💡 Supabase Entegrasyonu [v5.2]:** Google Sign-In ile güvenli oturum açma, portföy kaydetme ve otomatik veri yükleme (Client-Side Auth & DB) aktif edilmiştir.
+*   **💡 Duyarlılık & İslami Haber Analizi [v5.3]:** Gemini AI destekli haber duyarlılığı (Korku/Açgözlülük) hesaplaması ve İslami Risk uyarı barları (Pulse barlar) komponentlere kazandırılmıştır.
+*   **💡 DCA Backtest Simülatörü [v5.4]:** TradingView lightweight-charts destekli aylık düzenli alım (DCA) ve bakiye büyüme senaryoları frontend Web Worker'ları üzerinde asenkron canlandırılabilir seviyeye çıkarılmıştır.
 
 #### 2. Frontend (Vercel)
 *   `src/frontend/js/utils.js` dosyasındaki `API_BASE` değişkenini Render URL'iniz ile güncelleyin.
