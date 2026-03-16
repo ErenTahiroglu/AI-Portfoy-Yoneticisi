@@ -698,3 +698,78 @@ function setupBacktestBindings() {
 
 // Start setup
 setTimeout(setupBacktestBindings, 500);
+
+// ═══════════════════════════════════════
+// SUPABASE AUTH & DB BINDINGS (Phase 2)
+// ═══════════════════════════════════════
+async function setupSupabaseAuth() {
+    const loginBtn = document.getElementById("google-login-btn");
+    const saveSupaBtn = document.getElementById("save-supa-portfolio-btn");
+    const authBtnText = document.getElementById("auth-btn-text");
+
+    if (!loginBtn) return;
+
+    // 1. Session ve User Kontrolü
+    const user = typeof SupabaseAuth !== "undefined" ? await SupabaseAuth.getUser() : null;
+
+    if (user) {
+        if (authBtnText) authBtnText.innerText = "Çıkış Yap";
+        loginBtn.style.background = "rgba(239,68,68,0.1)";
+        loginBtn.style.borderColor = "rgba(239,68,68,0.3)";
+        loginBtn.style.color = "#ef4444";
+        
+        // Logged In: Load Portfolio
+        try {
+            const savedTickers = await SupabaseAuth.loadPortfolio();
+            if (savedTickers && savedTickers.length > 0) {
+                const textarea = document.getElementById("ticker-input");
+                if (textarea && !textarea.value.trim()) {
+                     textarea.value = savedTickers.join(", ") + ", ";
+                     showToast("Kayıtlı portföyünüz Supabase'den yüklendi.", "success");
+                }
+            }
+        } catch (e) {
+            console.warn("Portfolio load error:", e);
+        }
+    }
+
+    // 2. Login / Logout click
+    loginBtn.addEventListener("click", async () => {
+        if (typeof SupabaseAuth === "undefined") return alert("Supabase Client Yüklenemedi!");
+        const currentUser = await SupabaseAuth.getUser();
+        if (currentUser) {
+            await SupabaseAuth.signOut();
+        } else {
+            await SupabaseAuth.signInWithGoogle();
+        }
+    });
+
+    // 3. Save Portfolio click
+    if (saveSupaBtn) {
+        saveSupaBtn.addEventListener("click", async () => {
+            if (typeof SupabaseAuth === "undefined") return showToast("Supabase Client Yüklenemedi!", "danger");
+            const currentUser = await SupabaseAuth.getUser();
+            if (!currentUser) {
+                showToast("Portföy kaydetmek için giriş yapmalısınız!", "warning");
+                return;
+            }
+
+            const currentResults = AppState.results || window.lastResults || [];
+            if (currentResults.length === 0) {
+                showToast("Kaydedilecek analiz sonucu bulunamadı.", "warning");
+                return;
+            }
+
+            const tickers = currentResults.map(r => r.ticker);
+            try {
+                await SupabaseAuth.savePortfolio(tickers);
+                showToast("Portföy Supabase'e kaydedildi! 💾", "success");
+            } catch (err) {
+                showToast("Kayıt hatası: " + err.message, "danger");
+            }
+        });
+    }
+}
+
+// Start setup
+setTimeout(setupSupabaseAuth, 1000);

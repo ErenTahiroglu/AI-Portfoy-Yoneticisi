@@ -219,8 +219,14 @@
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
-        <div class="top-bar">
+        <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center;">
             <span class="top-badge" data-i18n="header.badge">AI Destekli Analiz</span>
+            
+            <div class="auth-controls" id="auth-controls" style="margin-left:auto;">
+                <button class="btn btn-secondary" id="google-login-btn" style="padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); color:var(--text-main); cursor:pointer;">
+                    <i class="fab fa-google"></i> <span id="auth-btn-text">Giriş Yap</span>
+                </button>
+            </div>
         </div>
 
         <h1 class="main-title" data-i18n="header.title">Portföy Analiz Platformu</h1>
@@ -635,6 +641,12 @@
                         <tbody id="summary-table-body"></tbody>
                     </table>
                 </div>
+                <!-- Save Portfolio Tool -->
+                <div style="display:flex; justify-content:flex-end; margin-top:0.75rem;">
+                    <button class="btn btn-secondary" id="save-supa-portfolio-btn" style="padding:0.5rem 1rem; font-weight:600; font-size:0.85rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#10b981; cursor:pointer;">
+                        <i class="fas fa-save"></i> 💾 Portföyümü Kaydet
+                    </button>
+                </div>
             </div>
 
             <!-- Portfolio Extras: Sector + Correlation + Monte Carlo -->
@@ -698,7 +710,9 @@
     <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <script src="js/charts.js?v=4.1"></script>
-    <script src="js/app.js?v=4.1"></script>
+    <!-- Supabase Auth / DB Client -->
+    <script type="module" src="js/supabaseClient.js"></script>
+    <script type="module" src="js/app.js?v=4.1"></script>
     <script>
         // Service Worker registration
         if ('serviceWorker' in navigator) {
