@@ -128,7 +128,7 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
                 
                 # Align dates
                 df = pd.DataFrame({"stock": close, "bm": bm_close}).dropna()
-                if len(df) > 30:
+                if len(df) > 30 and df["stock"].iloc[0] > 0 and df["bm"].iloc[0] > 0:
                     # Rebase to 100
                     stock_perf = (df["stock"] / df["stock"].iloc[0]) * 100
                     bm_perf = (df["bm"] / df["bm"].iloc[0]) * 100

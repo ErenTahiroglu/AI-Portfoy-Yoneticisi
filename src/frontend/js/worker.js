@@ -111,7 +111,7 @@ function runPVSimulationJS(results, payload) {
 
     const finalBalance = currentBalance;
     const totalInvested = initialBalance + (monthlyContribution * (minLength - 1));
-    const totalReturn = (finalBalance - totalInvested) / totalInvested;
+    const totalReturn = totalInvested > 0 ? (finalBalance - totalInvested) / totalInvested : 0;
     
     // Assuming 5-day step (weekly)
     const weeksToYear = (minLength - 1) / 52;
@@ -147,8 +147,10 @@ function runMonteCarloJS(results) {
     for (let i = 1; i < minLength; i++) {
         let periodRet = 0;
         results.forEach(r => {
-            const hist = r.technicals.relative_performance.stock_history;
-            periodRet += (((hist[i] / hist[i-1]) - 1) * ((r.weight || 1.0) / totalWeight));
+            const hist = r.technicals?.relative_performance?.stock_history;
+            if (hist && hist[i-1] > 0) {
+                periodRet += (((hist[i] / hist[i-1]) - 1) * ((r.weight || 1.0) / totalWeight));
+            }
         });
         portfolioReturns.push(periodRet);
     }
