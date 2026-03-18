@@ -97,10 +97,10 @@ class BaseAnalyzerStrategy(ABC):
     """Analiz adımları için temel strateji sınıfı."""
     @property
     @abstractmethod
-    def name(self) -> str: pass
+    def name(self) -> str: ...  # pragma: no cover
 
     @abstractmethod
-    def run(self, ticker: str, result_entry: dict, context: dict) -> None: pass
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None: ...  # pragma: no cover
 
 class AnalyzerRegistry:
     """Tüm analiz stratejilerini yöneten registry."""
@@ -328,9 +328,13 @@ class SentimentAnalyzerStrategy(BaseAnalyzerStrategy):
                     lang=context.get("lang", "tr")
                 )
 
-            sentiment_data = asyncio.run(_get_sentiment())
-            if sentiment_data:
-                result_entry["sentiment"] = sentiment_data
+            loop = asyncio.new_event_loop()
+            try:
+                sentiment_data = loop.run_until_complete(_get_sentiment())
+                if sentiment_data:
+                    result_entry["sentiment"] = sentiment_data
+            finally:
+                loop.close()
         except Exception as e:
             logger.debug(f"Sentiment analysis failed for {ticker}: {e}")
 
@@ -354,14 +358,14 @@ class AnalysisEngine:
     """Portföy analiz orkestrasyonu — puzzle parçalarını bir araya getirir."""
     
     def __init__(self):
-        self._analyzers = {} # Analyzer Registry
-        self._init_errors = []
-        self._last_av_key = None
+        self._analyzers: dict = {}  # Analyzer Registry
+        self._init_errors: list = []
+        self._last_av_key: Optional[str] = None
         
         # Register strategies (Already defined above)
         register_default_strategies()
     
-    def _init_financial_analyzers(self, av_api_key: str = None):
+    def _init_financial_analyzers(self, av_api_key: Optional[str] = None):
         """Finansal analizörleri tembel (lazy) olarak başlatır."""
         if self._analyzers and self._last_av_key == av_api_key:
             return
@@ -387,8 +391,8 @@ class AnalysisEngine:
     
     def analyze(self, tickers: list, *, 
                 use_ai: bool = False,
-                api_key: str = None,
-                av_api_key: str = None,
+                api_key: Optional[str] = None,
+                av_api_key: Optional[str] = None,
                 model: str = "gemini-2.5-flash",
                 check_islamic: bool = False,
                 check_financials: bool = True,
@@ -457,7 +461,7 @@ class AnalysisEngine:
                         check_islamic: bool,
                         check_financials: bool,
                         use_ai: bool,
-                        api_key: str,
+                        api_key: Optional[str],
                         model: str,
                         lang: str) -> dict:
         """Tek bir ticker için tüm analiz adımlarını çalıştırır."""

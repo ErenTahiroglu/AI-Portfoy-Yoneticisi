@@ -90,8 +90,10 @@ class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
                 if "financials" not in result_entry:
                     result_entry["error"] = f"Kripto veri hatası: {str(e)}"
 
+        loop = asyncio.new_event_loop()
         try:
-            # Stratejiler genellikle ThreadPool'da çalıştığı için asyncio.run güvenlidir
-            asyncio.run(fetch_crypto())
+            loop.run_until_complete(fetch_crypto())
         except Exception as e:
             logger.error(f"Crypto Strategy Error for {ticker}: {e}")
+        finally:
+            loop.close()

@@ -67,7 +67,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 
 ## English
 
-**Portfolio Analysis Platform (v4.3)** is a locally-hosted, AI-powered web application for analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds simultaneously. It features a modern, mobile-responsive interface with professional branding.
+**Portfolio Analysis Platform (v6.0)** is a locally-hosted, AI-powered web application for analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds simultaneously. It features a modern, mobile-responsive interface with professional branding.
 
 ### ✨ Key Features
 
@@ -101,6 +101,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 DCA Backtest Simülatörü [v5.4]:** TradingView lightweight-charts destekli aylık düzenli alım (DCA) ve bakiye büyüme senaryoları frontend Web Worker'ları üzerinde asenkron canlandırılabilir seviyeye çıkarılmıştır.
 *   **💡 Swing Trade Sinyalizasyonu [v5.5]:** RSI < 30 (Aşırı Satım) ve MACD Golden Cross kesişimlerini dinamik yakalayan asenkron `/api/portfolio-signals` radarı devreye alınmıştır (Faz 4).
 *   **💡 Üretim Doğrulama & Matematik Kesinliği [v6.0]:** `verify_production.py` ile asenkron logic kesikleri ve finansal oranlar (AAOIFI, CAGR, Sharpe) rigid assert doğrulamasıyla sabitlenmiştir (Faz 9).
+*   **💡 Production Hardening [v6.1]:** Dead code (`desktop_app.py`) silinmiş, `asyncio.run()` bloklayıcıları ThreadPool-safe `new_event_loop` mimarisine taşınmış, kullanılmayan bağımlılıklar (`colorama`, `nest-asyncio`, `pillow`) temizlenmiş, `.gitignore` güçlendirilmiştir.
 
 
 #### 2. Frontend (Vercel)

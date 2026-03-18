@@ -172,8 +172,12 @@ def get_financials(ticker):
                     tasks.append(fetch_holding(sub_ticker, weight, sem))
                 return await asyncio.gather(*tasks)
 
-            # Run parallel fetch in worker thread
-            results = asyncio.run(run_fetch())
+            # Run parallel fetch in worker thread (ThreadPool-safe)
+            loop = asyncio.new_event_loop()
+            try:
+                results = loop.run_until_complete(run_fetch())
+            finally:
+                loop.close()
             
             for r in results:
                 if r:

@@ -73,3 +73,8 @@ test_output.txt
 # Debug & Scratch files
 debug_*.py
 *debug*.py
+out.txt
+
+# Database files
+*.db
+*.sqlite3
