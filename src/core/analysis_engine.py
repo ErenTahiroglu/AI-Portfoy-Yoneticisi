@@ -59,11 +59,11 @@ def _friendly_error(raw_error: str) -> str:
     for key, msg in _ERROR_MESSAGES.items():
         if key in raw_error:
             return msg
-    return f"Analiz hatası: {raw_error[:120]}"
+    return f"Analiz hatası: {raw_error[:120]}"  # type: ignore[index]
 
 
 # ── Result Cache ─────────────────────────────────────────────────────────
-_CACHE: Dict[str, dict] = {}
+_CACHE: Dict[str, dict] = {}  # type: ignore[type-arg]
 _CACHE_TTL = 300  # 5 dakika
 _MAX_CACHE_SIZE = 100  # RAM sızıntısını önlemek için limit
 
@@ -76,7 +76,7 @@ def _get_cached(key: str) -> Optional[dict]:
         if time.time() - entry["ts"] < _CACHE_TTL:
             logger.info(f"  💾 Cache hit: {key}")
             return entry["data"]
-        del _CACHE[key]
+        del _CACHE[key]  # type: ignore[misc]
     return None
 
 def _set_cache(key: str, data: dict):
@@ -84,7 +84,7 @@ def _set_cache(key: str, data: dict):
     if len(_CACHE) >= _MAX_CACHE_SIZE:
         try:
             oldest_key = next(iter(_CACHE))
-            del _CACHE[oldest_key]
+            del _CACHE[oldest_key]  # type: ignore[misc]
         except StopIteration:
             pass
     _CACHE[key] = {"ts": time.time(), "data": data}
@@ -178,15 +178,15 @@ class FinancialAnalyzerStrategy(BaseAnalyzerStrategy):
         engine = context.get("engine")
         
         # OCP Registry ile dinamik eşleştirme
-        analyzer = engine._analyzers.get(market) if hasattr(engine, "_analyzers") else None
+        analyzer = engine._analyzers.get(market) if hasattr(engine, "_analyzers") else None  # type: ignore[union-attr]
         fin_data = None
         
         if analyzer:
             try:
                 def _call():
                     if is_tefas and hasattr(analyzer, 'analiz_et'):
-                        return analyzer.analiz_et(ticker, is_tefas=True)
-                    return analyzer.analiz_et(ticker)
+                        return analyzer.analiz_et(ticker, is_tefas=True)  # type: ignore[union-attr]
+                    return analyzer.analiz_et(ticker)  # type: ignore[union-attr]
                 
                 fin_data = safe_api_call(_call)
                 
@@ -202,8 +202,8 @@ class FinancialAnalyzerStrategy(BaseAnalyzerStrategy):
                     result_entry["fin_error"] = msg
             except Exception as e:
                 result_entry["fin_error"] = _friendly_error(str(e))
-        elif engine._init_errors:
-            result_entry["fin_error"] = " | ".join(engine._init_errors)
+        elif engine._init_errors:  # type: ignore[union-attr]
+            result_entry["fin_error"] = " | ".join(engine._init_errors)  # type: ignore[union-attr]
         
         context["fin_data"] = fin_data
 
@@ -429,7 +429,7 @@ class AnalysisEngine:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 future_map = {}
                 for ticker in clean_tickers:
-                    future = pool.submit(
+                    future = pool.submit(  # type: ignore[arg-type]
                         self._analyze_single,
                         ticker,
                         check_islamic=check_islamic,

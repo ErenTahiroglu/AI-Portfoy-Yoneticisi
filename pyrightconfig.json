@@ -1,0 +1,13 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.9",
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false,
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [".", ".venv/lib/python3.9/site-packages"]
+    }
+  ]
+}
