@@ -1,0 +1,117 @@
+"""
+🔴 Redis Cache Adaptörü — P1 Öncelik Matrisi
+============================================
+Upstash Redis (REST API) → dışsal dağıtık cache.
+UPSTASH_REDIS_REST_URL ayarlanmadıysa sessizce
+in-memory sözlüğe fallback yapar.
+
+Mimari Not:
+  • Upstash: serverless HTTP tabanlı Redis (bağlantı havuzu gereksiz)
+  • TTL: Redis tarafında native EX komutuyla yönetilir
+  • In-Process Fallback: Production ortamında Redis bağlanamazsa sistem çökmez
+"""
+import json
+import logging
+import os
+import time
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# ── In-Memory Fallback ────────────────────────────────────────────────────
+_LOCAL: dict = {}
+
+# ── Upstash REST Client ───────────────────────────────────────────────────
+_UPSTASH_URL: Optional[str] = os.getenv("UPSTASH_REDIS_REST_URL")
+_UPSTASH_TOKEN: Optional[str] = os.getenv("UPSTASH_REDIS_REST_TOKEN")
+_redis_available: bool = False
+
+if _UPSTASH_URL and _UPSTASH_TOKEN:
+    try:
+        import httpx as _httpx
+        _redis_available = True
+        logger.info("✅ Upstash Redis bağlantısı hazır.")
+    except ImportError:
+        logger.warning("⚠️ httpx bulunamadı — Redis devre dışı, in-memory fallback aktif.")
+else:
+    logger.info("ℹ️ UPSTASH_REDIS_REST_URL tanımlı değil — in-memory cache kullanılıyor.")
+
+
+def _upstash_headers() -> dict:
+    return {
+        "Authorization": f"Bearer {_UPSTASH_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+
+def cache_get(key: str) -> Optional[dict]:
+    """Cache'den veri okur. Redis varsa Redis'i, yoksa in-memory'yi kullanır."""
+    if _redis_available and _UPSTASH_URL:
+        try:
+            import httpx
+            resp = httpx.get(
+                f"{_UPSTASH_URL}/get/{key}",
+                headers=_upstash_headers(),
+                timeout=2.0,
+            )
+            if resp.status_code == 200:
+                result = resp.json().get("result")
+                if result:
+                    logger.debug(f"💾 Redis cache hit: {key}")
+                    return json.loads(result)
+        except Exception as e:
+            logger.warning(f"Redis GET hatası ({key}): {e} — in-memory fallback.")
+
+    # In-memory fallback
+    entry = _LOCAL.get(key)
+    if entry and time.time() - entry["ts"] < entry["ttl"]:
+        logger.debug(f"💾 In-memory cache hit: {key}")
+        return entry["data"]
+    if key in _LOCAL:
+        del _LOCAL[key]
+    return None
+
+
+def cache_set(key: str, data: dict, ttl: int = 300) -> None:
+    """Cache'e veri yazar. Redis varsa Redis'e, her durumda in-memory'ye de yazar."""
+    serialized = json.dumps(data, ensure_ascii=False)
+
+    if _redis_available and _UPSTASH_URL:
+        try:
+            import httpx
+            httpx.post(
+                f"{_UPSTASH_URL}/set/{key}",
+                headers=_upstash_headers(),
+                content=json.dumps([serialized, "EX", ttl]),
+                timeout=2.0,
+            )
+            logger.debug(f"✍️ Redis cache set: {key} (TTL={ttl}s)")
+        except Exception as e:
+            logger.warning(f"Redis SET hatası ({key}): {e} — sadece in-memory yazıldı.")
+
+    # Her zaman in-memory'ye de yaz (ultra-hız için L1 cache gibi)
+    _LOCAL[key] = {"ts": time.time(), "ttl": ttl, "data": data}
+
+    # In-memory boyutunu 150 entry ile sınırla
+    if len(_LOCAL) > 150:
+        try:
+            oldest = next(iter(_LOCAL))
+            del _LOCAL[oldest]
+        except StopIteration:
+            pass
+
+
+def cache_delete(key: str) -> None:
+    """Belirli bir cache entry'sini geçersiz kılar."""
+    _LOCAL.pop(key, None)
+    if _redis_available and _UPSTASH_URL:
+        try:
+            import httpx
+            httpx.get(f"{_UPSTASH_URL}/del/{key}", headers=_upstash_headers(), timeout=2.0)
+        except Exception:
+            pass
+
+
+def cache_is_redis_active() -> bool:
+    """Redis'in aktif olup olmadığını döndürür (health check için)."""
+    return _redis_available

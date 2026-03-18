@@ -44,6 +44,10 @@ frontend_path = os.path.join(os.path.dirname(base_dir), "frontend")
 if os.path.exists(frontend_path):
     app.mount("/ui", StaticFiles(directory=frontend_path, html=True), name="ui")
 
+# ── WebSocket Entegrasyonu ────────────────────────────────────────────────
+from src.api.websocket import register_websocket_routes  # type: ignore[import]
+register_websocket_routes(app)
+
 # ── Cache-Control middleware (tarayıcı eski dosyaları kullanmasın) ─────────
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
@@ -387,6 +391,36 @@ async def chat_api(request: ChatRequest):
         return {"reply": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ══════════════════════════════════════════════════════════════════════════
+# ML PREDICTION & OPTIONS ENDPOINTS — P5/P6
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/predict/{ticker}", dependencies=[Depends(limiter.check)])
+async def predict_api(ticker: str):
+    """
+    7 günlük ML fiyat tahmini üretir (Prophet).
+    ML_PREDICTION_ENABLED=true env var ile aktifleşir.
+    """
+    from src.analyzers.ml_predictor import predict_price  # type: ignore[import]
+    # Ağır hesaplama — thread pool'a devret
+    res = await asyncio.to_thread(predict_price, ticker.upper())
+    if "error" in res and res["error"] and not res.get("enabled", True):
+        raise HTTPException(status_code=400, detail=res["error"])
+    return res
+
+
+@app.get("/api/options/{ticker}", dependencies=[Depends(limiter.check)])
+async def options_api(ticker: str, expiration: Optional[str] = None):
+    """
+    US Market hisseleri için opsiyon zinciri verisi döndürür.
+    """
+    from src.analyzers.options_analyzer import get_options_chain  # type: ignore[import]
+    res = await asyncio.to_thread(get_options_chain, ticker.upper(), expiration)
+    if "error" in res and res["error"]:
+        raise HTTPException(status_code=404, detail=res["error"])
+    return res
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # EXPORT ENDPOINTS

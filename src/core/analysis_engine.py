@@ -19,6 +19,7 @@ v4.0 Yenilikler:
 """
 
 import logging
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional
@@ -62,32 +63,23 @@ def _friendly_error(raw_error: str) -> str:
     return f"Analiz hatası: {raw_error[:120]}"  # type: ignore[index]
 
 
-# ── Result Cache ─────────────────────────────────────────────────────────
-_CACHE: Dict[str, dict] = {}  # type: ignore[type-arg]
-_CACHE_TTL = 300  # 5 dakika
-_MAX_CACHE_SIZE = 100  # RAM sızıntısını önlemek için limit
+# ── Result Cache (Διανεμημένο Redis → In-Memory Fallback) ────────────────────────────
+from src.core.redis_cache import cache_get, cache_set  # type: ignore[import]
+
+_CACHE_TTL = int(os.environ.get("CACHE_TTL_SECONDS", 300))  # Overridable via env
+
 
 def _cache_key(ticker: str, check_islamic: bool, check_financials: bool) -> str:
     return f"{ticker}:{check_islamic}:{check_financials}"
 
+
 def _get_cached(key: str) -> Optional[dict]:
-    if key in _CACHE:
-        entry = _CACHE[key]
-        if time.time() - entry["ts"] < _CACHE_TTL:
-            logger.info(f"  💾 Cache hit: {key}")
-            return entry["data"]
-        del _CACHE[key]  # type: ignore[misc]
-    return None
+    return cache_get(key)
+
 
 def _set_cache(key: str, data: dict):
-    # LRU-like simple FIFO cleanup to prevent RAM bloat
-    if len(_CACHE) >= _MAX_CACHE_SIZE:
-        try:
-            oldest_key = next(iter(_CACHE))
-            del _CACHE[oldest_key]  # type: ignore[misc]
-        except StopIteration:
-            pass
-    _CACHE[key] = {"ts": time.time(), "data": data}
+    cache_set(key, data, ttl=_CACHE_TTL)
+
 
 
 # ── Strategy Pattern & Registry ───────────────────────────────────────────
