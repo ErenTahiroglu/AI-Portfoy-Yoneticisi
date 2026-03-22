@@ -1,7 +1,7 @@
 import httpx
 import logging
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from src.core.analysis_engine import BaseAnalyzerStrategy
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,6 @@ class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
                         data = res_ticker.json()
                         price = float(data.get("lastPrice", 0))
                         change = float(data.get("priceChangePercent", 0))
-                        high = float(data.get("highPrice", 0))
-                        low = float(data.get("lowPrice", 0))
 
                         result_entry["financials"] = {
                             "son_fiyat": {"fiyat": price, "degisim": change},
@@ -43,8 +41,8 @@ class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
                         result_entry["status"] = "Kriter Dışı"  # Kripto İslami Uygunluk Kriteri Dışıdır genellikle
                         
                         result_entry["valuation"] = {
-                            "high_52w": high,
-                            "low_52w": low,
+                            "high_52w": 0, # Will be populated by true 100d history
+                            "low_52w": 0, 
                             "market_cap": 0
                         }
                     else:
@@ -58,22 +56,37 @@ class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
                         if isinstance(klines, list):
                             prices_yg = {}
                             klines_data = []
+                            highs = []
+                            lows = []
 
-                            for k in klines:
+                            for i, k in enumerate(klines):
                                 try:
                                     t_ms = k[0]
                                     t_sec = int(t_ms / 1000)
-                                    date_str = datetime.fromtimestamp(t_sec).strftime("%Y-%m-%d")
-                                    close = float(k[4])
+                                    date_str = datetime.fromtimestamp(t_sec, tz=timezone.utc).strftime("%Y-%m-%d")
                                     
-                                    prices_yg[date_str] = close
+                                    open_p = float(k[1])
+                                    high_p = float(k[2])
+                                    low_p = float(k[3])
+                                    close_p = float(k[4])
+                                    vol = float(k[5])
+                                    
+                                    highs.append(high_p)
+                                    lows.append(low_p)
+                                    
+                                    # Yarım Mum Koruması: Sadece kapanmış mumları (en son mum hariç) prices_yg'ye ekle.
+                                    # (En son mum klines_data için grafik verisi olarak eklenir, ancak AI/Portföy analizini bozmaz)
+                                    is_last_candle = (i == len(klines) - 1)
+                                    if not is_last_candle:
+                                        prices_yg[date_str] = close_p
+                                        
                                     klines_data.append({
                                         "time": t_sec,  # TV Lightweight Charts saniye türü bekler
-                                        "open": float(k[1]),
-                                        "high": float(k[2]),
-                                        "low": float(k[3]),
-                                        "close": close,
-                                        "volume": float(k[5])
+                                        "open": open_p,
+                                        "high": high_p,
+                                        "low": low_p,
+                                        "close": close_p,
+                                        "volume": vol
                                     })
                                 except Exception:
                                     continue
@@ -82,6 +95,11 @@ class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
                                 result_entry["financials"] = {}
                             result_entry["financials"]["yg"] = prices_yg
                             result_entry["klines"] = klines_data  # Mum Grafik Datası
+                            
+                            # Gerçek High/Low (100 günlük veriden çekilerek)
+                            if "valuation" in result_entry:
+                                result_entry["valuation"]["high_52w"] = max(highs) if highs else 0
+                                result_entry["valuation"]["low_52w"] = min(lows) if lows else 0
                     else:
                         logger.warning(f"Binance klines failed for {clean_symbol}: {res_hist.status_code}")
 

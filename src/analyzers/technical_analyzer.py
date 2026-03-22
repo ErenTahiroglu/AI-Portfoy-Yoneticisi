@@ -40,16 +40,29 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
             raise ValueError(f"'Close' kolonu eksik: {fetcher_ticker}")
             
         close = hist["Close"]
+        close = close.ffill().dropna()
+        
+        if close.empty or len(close) < 30:
+            raise ValueError(f"Close verisi temizlendikten sonra 30 günden az veri kaldı: {fetcher_ticker}")
+            
         technicals = {}
+        
+        def safe_assign(key, val, precision=2):
+            if val is not None and not pd.isna(val) and not np.isinf(val):
+                technicals[key] = round(float(val), precision)
         
         # ── RSI 14 ──
         delta = close.diff()
         gain = delta.where(delta > 0, 0.0).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
+        
         rs = gain / loss.replace(0, np.nan)
         rsi = 100 - (100 / (1 + rs))
-        if not rsi.empty and not np.isnan(rsi.iloc[-1]):
-            technicals["rsi_14"] = round(float(rsi.iloc[-1]), 2)
+        rsi = np.where(loss == 0, 100, rsi)
+        rsi = pd.Series(rsi, index=close.index)
+        
+        if not rsi.empty:
+            safe_assign("rsi_14", rsi.iloc[-1])
         
         # ── MACD (12, 26, 9) ──
         ema12 = close.ewm(span=12, adjust=False).mean()
@@ -57,25 +70,26 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
         macd_line = ema12 - ema26
         signal_line = macd_line.ewm(span=9, adjust=False).mean()
         macd_hist = macd_line - signal_line
+        
         if not macd_line.empty:
-            technicals["macd"] = round(float(macd_line.iloc[-1]), 4)
-            technicals["macd_signal"] = round(float(signal_line.iloc[-1]), 4)
-            technicals["macd_hist"] = round(float(macd_hist.iloc[-1]), 4)
+            safe_assign("macd", macd_line.iloc[-1], 4)
+            safe_assign("macd_signal", signal_line.iloc[-1], 4)
+            safe_assign("macd_hist", macd_hist.iloc[-1], 4)
         
         # ── EMA (20, 50, 100, 200) ──
         for period in [20, 50, 100, 200]:
             if len(close) >= period:
                 ema = close.ewm(span=period, adjust=False).mean()
-                technicals[f"ema_{period}"] = round(float(ema.iloc[-1]), 2)
+                safe_assign(f"ema_{period}", ema.iloc[-1])
         
         # ── SMA (20, 50, 100, 200) ──
         for period in [20, 50, 100, 200]:
             if len(close) >= period:
                 sma = close.rolling(window=period).mean()
-                technicals[f"sma_{period}"] = round(float(sma.iloc[-1]), 2)
+                safe_assign(f"sma_{period}", sma.iloc[-1])
         
         # ── Mevcut fiyat (gösterge referansı) ──
-        technicals["last_close"] = round(float(close.iloc[-1]), 2)
+        safe_assign("last_close", close.iloc[-1])
         
         # TradingView-style Technical Gauge Score (0-100)
         gauge_score = 50
@@ -88,10 +102,10 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
         if "macd_hist" in technicals:
             total_signals += 1
             if technicals["macd_hist"] > 0: bullish_signals += 1
-        if "ema_20" in technicals:
+        if "ema_20" in technicals and "last_close" in technicals:
             total_signals += 1
             if technicals["last_close"] > technicals["ema_20"]: bullish_signals += 1
-        if "sma_50" in technicals:
+        if "sma_50" in technicals and "last_close" in technicals:
             total_signals += 1
             if technicals["last_close"] > technicals["sma_50"]: bullish_signals += 1
             
@@ -108,16 +122,17 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
             elif technicals["rsi_14"] > 70:
                 signals.append({"signal": "BEARISH", "reason": "RSI Aşırı Alım Bölgesinde (> 70)"})
 
-        if 'macd_line' in locals() and 'signal_line' in locals() and len(macd_line) >= 2:
+        if len(macd_line) >= 2 and len(signal_line) >= 2:
             prev_macd = macd_line.iloc[-2]
             prev_sig = signal_line.iloc[-2]
             curr_macd = macd_line.iloc[-1]
             curr_sig = signal_line.iloc[-1]
             
-            if prev_macd <= prev_sig and curr_macd > curr_sig:
-                signals.append({"signal": "BULLISH", "reason": "MACD Alım Sinyali (Kesişim)"})
-            elif prev_macd >= prev_sig and curr_macd < curr_sig:
-                signals.append({"signal": "BEARISH", "reason": "MACD Satım Sinyali (Kesişim)"})
+            if not (pd.isna(prev_macd) or pd.isna(prev_sig) or pd.isna(curr_macd) or pd.isna(curr_sig)):
+                if prev_macd <= prev_sig and curr_macd > curr_sig:
+                    signals.append({"signal": "BULLISH", "reason": "MACD Alım Sinyali (Kesişim)"})
+                elif prev_macd >= prev_sig and curr_macd < curr_sig:
+                    signals.append({"signal": "BEARISH", "reason": "MACD Satım Sinyali (Kesişim)"})
 
         technicals["signals"] = signals
         
