@@ -22,7 +22,7 @@ source .venv/bin/activate
 
 # Bağımlılıkları kontrol et / güncelle
 echo -e "${YELLOW}Checking dependencies...${NC}"
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 # .env dosyası kontrolü
 if [ ! -f ".env" ]; then
@@ -38,4 +38,4 @@ fi
 
 # Uygulamayı başlat
 echo -e "${GREEN}🌐 Başlatılıyor: http://127.0.0.1:8000/ui ${NC}"
-uvicorn src.api.main:app --reload
+PYTHONPATH=. uvicorn backend.api.main:app --reload
