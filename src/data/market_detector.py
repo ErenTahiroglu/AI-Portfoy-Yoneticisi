@@ -47,9 +47,9 @@ def detect_market(ticker: str) -> tuple:
         return "TR", f"{ticker}.IS", False
     
     # 3. Kısa kod kriteri -> TEFAS Fonu
-    #    Tam 3 harfliyse ve sadece harflerden oluşuyorsa (TP2 vb. rakam içerebilir o yüzden isalpha() kuralı is_tefas için ayırt edici)
-    #    Kural: len(ticker) == 3 ve ticker.isalpha() -> TEFAS
-    if len(ticker) == 3 and ticker.isalpha():
+    #    Tam 3 harfliyse ve sadece harflerden veya rakamlardan oluşuyorsa (TP2, ZP8 vb.)
+    #    Kural: len(ticker) == 3 ve ticker.isalnum() -> TEFAS
+    if len(ticker) == 3 and ticker.isalnum():
         return "TR", ticker, True
         
     # 4. Alternatif: 4+ harfliyse ve bilinen listesinde olmasa dahi .IS eklenebilir ama varsayılan BIST 4-5 harflidir.
