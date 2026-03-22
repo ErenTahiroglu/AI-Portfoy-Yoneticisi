@@ -204,30 +204,30 @@ class ValuationAnalyzerStrategy(BaseAnalyzerStrategy):
     def name(self): return "valuation"
 
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
-        if context.get("is_tefas"): return
-        from src.analyzers.valuation_analyzer import run_valuation_check
-        
-        def _call():
+        try:
+            is_tefas = context.get("is_tefas", False)
+            if is_tefas:
+                return # TEFAS fonları için Valuation (P/E, P/B vb.) hesaplanmaz.
+                
+            from src.analyzers.valuation_analyzer import run_valuation_check
             run_valuation_check(context.get("fetcher_ticker"), result_entry)
-            
-        res = safe_api_call(_call)
-        if isinstance(res, dict) and "error" in res:
-            result_entry["valuation_error"] = res["error"]
+        except Exception as e:
+            result_entry["valuation_error"] = _friendly_error(str(e))
 
 class TechnicalAnalyzerStrategy(BaseAnalyzerStrategy):
     @property
-    def name(self): return "technical"
+    def name(self): return "technicals"
 
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
-        if not context.get("check_financials") or context.get("is_tefas"): return
-        from src.analyzers.technical_analyzer import run_technical_indicators
-        
-        def _call():
+        try:
+            is_tefas = context.get("is_tefas", False)
+            if is_tefas:
+                return # TEFAS fonları için mum bazlı Teknik Analiz çalıştırılmaz.
+                
+            from src.analyzers.technical_analyzer import run_technical_indicators
             run_technical_indicators(context.get("fetcher_ticker"), result_entry)
-            
-        res = safe_api_call(_call)
-        if isinstance(res, dict) and "error" in res:
-            result_entry["technical_error"] = res["error"]
+        except Exception as e:
+            result_entry["technical_error"] = _friendly_error(str(e))
 
 class SectorAnalyzerStrategy(BaseAnalyzerStrategy):
     @property
@@ -505,6 +505,10 @@ class AnalysisEngine:
         
         market, fetcher_ticker, is_tefas = detect_market(ticker)
         result_entry = {"ticker": ticker, "market": market}
+        
+        # Frontend Felci İçin Varsayılan Değerler (Fallback)
+        result_entry["radar_score"] = {"profitability": 50, "value": 50, "growth": 50, "debt": 50}
+        result_entry["technicals"] = {"gauge_score": 50}
         
         # Strateji Bağlamı (Context)
         context = {

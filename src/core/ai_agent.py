@@ -5,6 +5,7 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key)
 
     is_etf = data.get("is_etf", False) if data else False
+    is_tefas = data.get("is_tefas", False) if data else False # TEFAS bayrağı de alınsın
     
     islamic_context = ""
     financial_context = ""
@@ -79,9 +80,19 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
         system_errors_text = f"⚠️ SİSTEM UYARILARI VE EKSİK VERİ BEYANI: Aşağıdaki modüllerde API kesintisi veya veri eksikliği yaşanmıştır:\n{errors_list}\n"
         
     lang_instruction = "Generate the response entirely in English." if lang == "en" else "Sonuçları daima Türkçe üret."
+    
+    # Asset Type Description
+    asset_type = "Hisse Senedi"
+    if market == "CRYPTO":
+        asset_type = "Kripto Para"
+    elif is_tefas:
+        asset_type = "TEFAS Yatırım Fonu"
+    elif is_etf:
+        asset_type = "Borsa Yatırım Fonu (ETF)"
+
     prompt = f"""
     Sen teknik ve veriye odaklı konuşan kıdemli bir nicel finansal analistisin.
-    Görev: {ticker} {"(ETF/Fon)" if is_etf else "(Hisse)"} sembolü için gereksiz giriş cümleleri KULLANMADAN aşağıdaki özellikleri inceleyip kısa net bir analiz çıkartmak. Piyasası: {"Türk Piyasası (BIST/TEFAS)" if market == "TR" else "ABD Piyasası"}.
+    Görev: {ticker} ({asset_type}) sembolü için gereksiz giriş cümleleri KULLANMADAN aşağıdaki özellikleri inceleyip kısa net bir analiz çıkartmak. Piyasası: {"Türk Piyasası (BIST/TEFAS)" if market == "TR" else "ABD Piyasası"}.
     {lang_instruction}
     
     {system_errors_text}
@@ -113,6 +124,7 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     4. Gereksiz bir övgü yapma.
     5. HALÜSİNASYON YASAKTIR: Eğer sana verilen verilerde veya 'Sistem Uyarıları' bölümünde bir API çökmesi veya eksik veri raporlanmışsa, kesinlikle değer uydurma. Raporunda 'Şu teknik nedenden ötürü ([Hata Sebebi]) bu metrik değerlendirilememiştir' diyerek şeffaf ol. Zorunlu JSON bloğunda (METRIC_INSIGHTS) eksik kalan metriklerin karşılığına değer olarak 'Veri yetersizliği nedeniyle hesaplanamadı' yaz.
     6. Eğer sana Makine Öğrenimi tahmini sunulmuşsa, nihai değerlendirmeni ve fiyat/trend öngörülerini yaparken bu algoritmik veriyi referans al. '%X güven skoruyla Y yönünde bir trend öngörülmektedir' şeklinde doğrudan modelin tahminine atıfta bulun.
+    7. VARLIK TÜRÜNE MOBİNG YASAKTIR: Kripto paraları (CRYPTO) veya TEFAS fonlarını ASLA 'Hisse Senedi' (Stock) olarak adlandırma. TEFAS fonlarını kendi iç getiri dinamiklerine (risk değeri, getiri), Kriptoları ise kendi volatilite ve zincir yapılarına göre yorumla.
     """
     
     try:
