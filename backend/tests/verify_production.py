@@ -17,9 +17,9 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Test Edilecek Modüller
-from src.analyzers.islamic_analyzer import _get_single_stock_data
-from src.analyzers.technical_analyzer import run_technical_indicators
-from src.core.analysis_engine import AnalysisEngine, analyzer_registry
+from backend.analyzers.islamic_analyzer import _get_single_stock_data
+from backend.analyzers.technical_analyzer import run_technical_indicators
+from backend.core.analysis_engine import AnalysisEngine, analyzer_registry
 
 class TestProductionIntegrity(unittest.TestCase):
 

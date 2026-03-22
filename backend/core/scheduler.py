@@ -4,7 +4,7 @@ import httpx
 import logging
 from datetime import datetime, timezone
 
-from src.core.analysis_engine import AnalysisEngine
+from backend.core.analysis_engine import AnalysisEngine
 
 logger = logging.getLogger(__name__)
 

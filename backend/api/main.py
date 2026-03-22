@@ -14,13 +14,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
 
-from src.core.scheduler import start_alert_scheduler
-from src.api.websocket import register_websocket_routes
+from backend.core.scheduler import start_alert_scheduler
+from backend.api.websocket import register_websocket_routes
+from backend.utils.logger import setup_logging, CorrelationIdMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
+
 # ── Logging Setup ─────────────────────────────────────────────────────────
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+setup_logging()
 logger = logging.getLogger(__name__)
+
 
 # ── Lifespan (Background Tasks) ───────────────────────────────────────────
 @asynccontextmanager
@@ -44,7 +47,9 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
             response.headers["Expires"] = "0"
         return response
 
+app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(NoCacheMiddleware)
+
 
 # ── Middleware: CORS ──────────────────────────────────────────────────────
 origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5500,http://127.0.0.1:5500,https://ai-destekli-portfoy-yoneticisi.vercel.app")
@@ -62,7 +67,7 @@ app.add_middleware(
 register_websocket_routes(app)
 
 # ── Sub-Routers Include ───────────────────────────────────────────────────
-from src.api.routers import analysis, chat, user
+from backend.api.routers import analysis, chat, user
 
 app.include_router(analysis.router)
 app.include_router(chat.router)
@@ -78,7 +83,10 @@ def read_root():
     return RedirectResponse(url="/ui")
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_path = os.path.join(os.path.dirname(base_dir), "frontend")
+# In Monorepo, /frontend is at the root, 2 levels up from backend/api/
+frontend_path = os.path.join(os.path.dirname(os.path.dirname(base_dir)), "frontend")
+LineNumber:86
+
 
 if os.path.exists(frontend_path):
     app.mount("/ui", StaticFiles(directory=frontend_path, html=True), name="ui")

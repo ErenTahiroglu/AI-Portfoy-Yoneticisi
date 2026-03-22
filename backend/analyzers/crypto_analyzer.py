@@ -1,9 +1,12 @@
 import httpx
 import logging
 from datetime import datetime, timezone
-from src.core.analysis_engine import BaseAnalyzerStrategy
+from backend.core.analysis_engine import BaseAnalyzerStrategy
+from backend.utils.circuit_breaker import CircuitBreaker
 
 logger = logging.getLogger(__name__)
+
+binance_cb = CircuitBreaker(name="Binance", threshold=3, timeout=60, fallback_factory=None)
 
 class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
     """Kripto Para Analiz Stratejisi — Binance API"""
@@ -24,9 +27,11 @@ class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
             with httpx.Client(timeout=10.0) as client:
                 # 1. 24s Ticker Verisi (Anlık Fiyat & Değişim)
                 ticker_url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={clean_symbol}"
-                res_ticker = client.get(ticker_url)
+                # Wrap with CircuitBreaker
+                res_ticker = binance_cb(client.get)(ticker_url)
                 
                 if res_ticker.status_code == 200:
+
                     data = res_ticker.json()
                     price = float(data.get("lastPrice", 0))
                     change = float(data.get("priceChangePercent", 0))
@@ -51,8 +56,10 @@ class CryptoAnalyzerStrategy(BaseAnalyzerStrategy):
 
                 # 2. Mum Verisi (Historical Klines) — 100 Gün
                 klines_url = f"https://api.binance.com/api/v3/klines?symbol={clean_symbol}&interval=1d&limit=100"
-                res_hist = client.get(klines_url)
+                # Wrap with CircuitBreaker
+                res_hist = binance_cb(client.get)(klines_url)
                 if res_hist.status_code == 200:
+
                     klines = res_hist.json()
                     if isinstance(klines, list):
                         prices_yg = {}

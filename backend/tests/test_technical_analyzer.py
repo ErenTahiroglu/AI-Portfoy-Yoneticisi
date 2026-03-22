@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from unittest.mock import patch, MagicMock
 
-from src.analyzers.technical_analyzer import run_technical_indicators
+from backend.analyzers.technical_analyzer import run_technical_indicators
 
 
 def generate_synthetic_ohlc(ticker="AAPL", days=100) -> pd.DataFrame:

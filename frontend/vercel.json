@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/frontend/**",
+      "src": "**",
       "use": "@vercel/static"
     }
   ],
@@ -13,7 +13,8 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/src/frontend/$1"
+      "destination": "/$1"
     }
   ]
+
 }

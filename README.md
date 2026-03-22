@@ -44,19 +44,20 @@ python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # Bağımlılıkları yükleyin
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 # Uygulamayı başlatın
-uvicorn src.api.main:app --reload
+PYTHONPATH=. uvicorn backend.api.main:app --reload
 ```
 Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 
 ### 🧩 Temiz Mimari (Clean Architecture)
 
-*   `src/api/routers/`: Dekuple edilmiş FastAPI endpointleri (Analysis, Chat, User).
-*   `src/api/models.py`: Pydantic Request/Response şemaları.
-*   `src/core/`: Analiz orkestratörü (`analysis_engine.py`), Multi-Agent Motoru (`ai_agent.py`) ve Emir Motoru (`execution_engine.py`).
-*   `src/frontend/js/components/`: ES6 Modülleri halinde parçalanmış Frontend arayüz kodları.
+*   `backend/api/routers/`: Dekuple edilmiş FastAPI endpointleri (Analysis, Chat, User).
+*   `backend/api/models.py`: Pydantic Request/Response şemaları.
+*   `backend/core/`: Analiz orkestratörü (`analysis_engine.py`), Multi-Agent Motoru (`ai_agent.py`) ve Emir Motoru (`execution_engine.py`).
+*   `frontend/js/components/`: ES6 Modülleri halinde parçalanmış Frontend arayüz kodları.
+
 
 ---
 
@@ -83,17 +84,18 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 ### ☁️ Canlı Ortamda Yayınlama (Vercel + Render)
 
 #### 1. Backend (Render.com)
-*   **Build Command:** `pip install -r requirements.txt`
-*   **Start Command:** `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
+*   **Build Command:** `pip install -r backend/requirements.txt`
+*   **Start Command:** `PYTHONPATH=. uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT`
 *   **💡 Multi-Agent Architecture [v7.5]:** `ai_agent.py` birden fazla alt-ajanın (Analist, Araştırmacı) paralelde çalıştıran asenkron CIO yapısına taşındı.
 *   **💡 Risk Analyzer & Stress Testing [v7.6]:** %95 Güven Aralığında Günlük VaR, Max Drawdown ve %20 Endeks Şoku kurgusu backend hesaplamalarına bağlandı.
 *   **💡 Sanal Emir İletim Sistemi [v7.7]:** Fark Delta hesabı ile paper trade virtual market orders logging and Supabase write flow devrede.
 *   **💡 Otonom Bildirim Döngüsü [v7.8]:** Arka planda eşik kontrolü yapıp telegram/panoya alert yazan döngü Lifespan'a entegre edildi.
-*   **💡 SOLID & Clean Architecture [v8.0]:** FastAPI Router'ları (`src/api/routers/`) ve Frontend dosyaları ES6 Modüllerine kırılarak high-level decoupling sağlandı.
+*   **💡 SOLID & Clean Architecture [v8.0]:** FastAPI Router'ları (`backend/api/routers/`) ve Frontend dosyaları ES6 Modüllerine kırılarak high-level decoupling sağlandı.
 
 #### 2. Frontend (Vercel)
-*   `src/frontend/js/components/` ve `app.js` ES6 Modülleri üzerinden çalışmaktadır.
+*   `frontend/js/components/` ve `app.js` ES6 Modülleri üzerinden çalışmaktadır.
 *   Vercel Proxy ayarlarını `vercel.json` dosyasından takip edebilirsiniz.
+
 
 ---
 Geliştirici: [Eren Tahiroğlu](https://github.com/ErenTahiroglu)

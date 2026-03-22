@@ -3,10 +3,10 @@ import json
 import re
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
-from src.api.models import ChatRequest, NewsRequest
-from src.api.rate_limiter import limiter
-from src.api.auth import verify_jwt
-from src.core.execution_engine import execute_paper_trades
+from backend.api.models import ChatRequest, NewsRequest
+from backend.api.rate_limiter import limiter
+from backend.api.auth import verify_jwt
+from backend.core.execution_engine import execute_paper_trades
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ async def analyze_macro_endpoint(request: Request):
         if not api_key:
             raise HTTPException(status_code=400, detail="Gemini API Key is required")
 
-        from src.core.ai_agent import generate_macro_advice
+        from backend.core.ai_agent import generate_macro_advice
 
         def event_generator():
             try:
@@ -53,7 +53,7 @@ async def wizard_api(request: Request):
         if not api_key:
             raise HTTPException(status_code=400, detail="API key is required")
             
-        from src.core.ai_agent import generate_wizard_portfolio
+        from backend.core.ai_agent import generate_wizard_portfolio
         portfolio = generate_wizard_portfolio(prompt, api_key, model, lang)
         return {"portfolio": portfolio}
     except Exception as e:
@@ -64,7 +64,7 @@ async def news_api(request: NewsRequest):
     """Ticker listesi için önemli haberleri çeker ve AI ile filtreler."""
     if not request.tickers: return {"news": []}
     try:
-        from src.data.news_fetcher import fetch_and_filter_news
+        from backend.data.news_fetcher import fetch_and_filter_news
         data = fetch_and_filter_news(request.tickers, request.api_key, request.model, request.lang)
         return data
     except Exception as e:
@@ -76,7 +76,7 @@ async def chat_api(request: Request, body: ChatRequest):
     if not body.api_key:
         raise HTTPException(status_code=400, detail="API key is required")
     try:
-        from src.core.ai_agent import generate_chat_response
+        from backend.core.ai_agent import generate_chat_response
         reply = await generate_chat_response(body.messages, body.portfolio_context, body.api_key, body.model, body.lang)
         
         user = getattr(request.state, "user", None)

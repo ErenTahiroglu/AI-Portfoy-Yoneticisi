@@ -8,12 +8,12 @@ from fastapi.responses import StreamingResponse
 from typing import List, Optional
 import pandas as pd
 
-from src.api.models import AnalysisRequest, PortfolioOptimizeRequest, PortfolioRiskRequest
-from src.api.rate_limiter import limiter
-from src.api.auth import verify_jwt
-from src.api.dependencies import get_engine
-from src.api.utils import process_tickers_with_weights, tr_lower
-from src.data.constants import POPULAR_TICKERS
+from backend.api.models import AnalysisRequest, PortfolioOptimizeRequest, PortfolioRiskRequest
+from backend.api.rate_limiter import limiter
+from backend.api.auth import verify_jwt
+from backend.api.dependencies import get_engine
+from backend.api.utils import process_tickers_with_weights, tr_lower
+from backend.data.constants import POPULAR_TICKERS
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ async def get_portfolio_signals(tickers: str = ""):
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not ticker_list: return []
 
-    from src.analyzers.technical_analyzer import run_technical_indicators
+    from backend.analyzers.technical_analyzer import run_technical_indicators
     async def fetch_signal(ticker):
         res_entry = {"ticker": ticker}
         try:
@@ -123,7 +123,7 @@ async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest):
     if not req_body.tickers: raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
     try:
         from yahooquery import Ticker
-        from src.core.optimization_engine import optimize_portfolio
+        from backend.core.optimization_engine import optimize_portfolio
         t = Ticker(req_body.tickers)
         hist = t.history(period="1y", adj_ohlc=True)
         if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty): raise HTTPException(status_code=500, detail="Veri indirilemedi.")
@@ -141,7 +141,7 @@ async def risk_analysis_endpoint(req_body: PortfolioRiskRequest):
     if not req_body.tickers: raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
     try:
         from yahooquery import Ticker
-        from src.analyzers.risk_analyzer import calculate_portfolio_risk
+        from backend.analyzers.risk_analyzer import calculate_portfolio_risk
         t = Ticker(req_body.tickers)
         hist = t.history(period="1y", adj_ohlc=True)
         price_df = hist['close'].unstack(level=0)
@@ -153,12 +153,12 @@ async def risk_analysis_endpoint(req_body: PortfolioRiskRequest):
 
 @router.get("/predict/{ticker}", dependencies=[Depends(limiter.check)])
 async def predict_api(ticker: str):
-    from src.analyzers.ml_predictor import predict_price
+    from backend.analyzers.ml_predictor import predict_price
     res = await asyncio.to_thread(predict_price, ticker.upper())
     return res
 
 @router.get("/options/{ticker}", dependencies=[Depends(limiter.check)])
 async def options_api(ticker: str, expiration: Optional[str] = None):
-    from src.analyzers.options_analyzer import get_options_chain
+    from backend.analyzers.options_analyzer import get_options_chain
     res = await asyncio.to_thread(get_options_chain, ticker.upper(), expiration)
     return res

@@ -2,8 +2,8 @@ import logging
 import os
 import httpx
 from fastapi import APIRouter, HTTPException, Depends, Request
-from src.api.models import UserSettingsRequest
-from src.api.auth import verify_jwt
+from backend.api.models import UserSettingsRequest
+from backend.api.auth import verify_jwt
 
 logger = logging.getLogger(__name__)
 

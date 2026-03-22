@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: ai_portfoy_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5500,https://ai-destekli-portfoy-yoneticisi.vercel.app
+    restart: unless-stopped

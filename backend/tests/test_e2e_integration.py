@@ -2,7 +2,7 @@ import pytest
 import json
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import patch
-from src.api.main import app
+from backend.api.main import app
 
 @pytest.mark.asyncio
 async def test_api_search():
@@ -39,7 +39,7 @@ async def test_api_analyze_sse():
 @pytest.mark.asyncio
 async def test_ai_agent_mock_sentiment():
     """Mock Gemini Sentiment test."""
-    from src.core.ai_agent import analyze_news_sentiment
+    from backend.core.ai_agent import analyze_news_sentiment
     
     with patch("src.core.ai_agent.ChatGoogleGenerativeAI") as MockLLM:
         mock_instance = MockLLM.return_value
@@ -54,7 +54,7 @@ async def test_ai_agent_mock_sentiment():
 @pytest.mark.asyncio
 async def test_api_news_endpoint():
     """Haber filtreleme API Endpoint testi."""
-    from src.api.auth import verify_jwt
+    from backend.api.auth import verify_jwt
     app.dependency_overrides[verify_jwt] = lambda: {"id": "fake_user"}
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

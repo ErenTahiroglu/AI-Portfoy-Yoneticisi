@@ -5,7 +5,7 @@ Ticker sembollerinin hangi pazara (US / TR / TEFAS) ait olduğunu tespit eder.
 TEFAS fonları için Katılım fon sınıflandırması ve ilk işlem tarihi bilgisi sağlar.
 
 Kullanım:
-    from src.data.market_detector import detect_market, classify_fund
+    from backend.data.market_detector import detect_market, classify_fund
 """
 
 import logging

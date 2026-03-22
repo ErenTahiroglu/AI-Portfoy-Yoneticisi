@@ -64,7 +64,7 @@ def _friendly_error(raw_error: str) -> str:
 
 
 # ── Result Cache (Διανεμημένο Redis → In-Memory Fallback) ────────────────────────────
-from src.core.redis_cache import cache_get, cache_set  # type: ignore[import]
+from backend.core.redis_cache import cache_get, cache_set  # type: ignore[import]
 
 _CACHE_TTL = int(os.environ.get("CACHE_TTL_SECONDS", 300))  # Overridable via env
 
@@ -119,11 +119,11 @@ class IslamicAnalyzerStrategy(BaseAnalyzerStrategy):
         data = None
         
         if is_tefas:
-            from src.data.market_detector import classify_fund
+            from backend.data.market_detector import classify_fund
             data = classify_fund(fetcher_ticker)
         else:
             try:
-                from src.analyzers.islamic_analyzer import get_financials
+                from backend.analyzers.islamic_analyzer import get_financials
                 data, error = get_financials(fetcher_ticker)
                 if error or data is None:
                     result_entry["islamic_error"] = error or "Uygunluk verisi bulunamadı"
@@ -210,7 +210,7 @@ class ValuationAnalyzerStrategy(BaseAnalyzerStrategy):
             if is_tefas:
                 return # TEFAS fonları için Valuation (P/E, P/B vb.) hesaplanmaz.
                 
-            from src.analyzers.valuation_analyzer import run_valuation_check
+            from backend.analyzers.valuation_analyzer import run_valuation_check
             run_valuation_check(context.get("fetcher_ticker"), result_entry)
         except Exception as e:
             result_entry["valuation_error"] = _friendly_error(str(e))
@@ -225,7 +225,7 @@ class TechnicalAnalyzerStrategy(BaseAnalyzerStrategy):
             if is_tefas:
                 return # TEFAS fonları için mum bazlı Teknik Analiz çalıştırılmaz.
                 
-            from src.analyzers.technical_analyzer import run_technical_indicators
+            from backend.analyzers.technical_analyzer import run_technical_indicators
             run_technical_indicators(context.get("fetcher_ticker"), result_entry)
         except Exception as e:
             result_entry["technical_error"] = _friendly_error(str(e))
@@ -285,7 +285,7 @@ class MLAnalyzerStrategy(BaseAnalyzerStrategy):
             if is_tefas:
                 return # TEFAS fonları için ML tahmini devre dışıdır.
 
-            from src.analyzers.ml_predictor import predict_price
+            from backend.analyzers.ml_predictor import predict_price
             def _call():
                 return predict_price(ticker)
                 
@@ -347,7 +347,7 @@ class SentimentAnalyzerStrategy(BaseAnalyzerStrategy):
 
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
         try:
-            from src.data.news_fetcher import fetch_recent_news_async
+            from backend.data.news_fetcher import fetch_recent_news_async
             from .ai_agent import analyze_news_sentiment
             import asyncio
 
@@ -373,7 +373,7 @@ class SentimentAnalyzerStrategy(BaseAnalyzerStrategy):
             logger.debug(f"Sentiment analysis failed for {ticker}: {e}")
 
 def register_default_strategies():
-    from src.analyzers.crypto_analyzer import CryptoAnalyzerStrategy
+    from backend.analyzers.crypto_analyzer import CryptoAnalyzerStrategy
     
     # Register Default Strategies
     analyzer_registry.register(CryptoAnalyzerStrategy())
@@ -410,8 +410,8 @@ class AnalysisEngine:
         self._analyzers = {}
         
         try:
-            from src.analyzers.us_analyzer import HisseAnaliz as UsAnaliz
-            from src.analyzers.bist_analyzer import HisseAnaliz as BistAnaliz
+            from backend.analyzers.us_analyzer import HisseAnaliz as UsAnaliz
+            from backend.analyzers.bist_analyzer import HisseAnaliz as BistAnaliz
             
             instances = [UsAnaliz(av_key=av_api_key), BistAnaliz()]
             for a in instances:
@@ -499,7 +499,7 @@ class AnalysisEngine:
                         model: str,
                         lang: str) -> dict:
         """Tek bir ticker için tüm analiz adımlarını çalıştırır."""
-        from src.data.market_detector import detect_market
+        from backend.data.market_detector import detect_market
         
         # Cache kontrolü (AI hariç)
         ckey = _cache_key(ticker, check_islamic, check_financials)

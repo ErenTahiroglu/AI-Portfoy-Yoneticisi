@@ -1,4 +1,4 @@
-from src.core.analysis_engine import AnalysisEngine
+from backend.core.analysis_engine import AnalysisEngine
 
 # Singleton instance of analysis engine
 engine = AnalysisEngine()
