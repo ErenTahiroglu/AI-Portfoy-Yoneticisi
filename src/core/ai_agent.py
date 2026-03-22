@@ -1,6 +1,6 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr", system_errors: dict = None):
+def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr", system_errors: dict = None, ml_prediction: dict = None):
     """Gemini API'sini kullanarak seçili oranlara göre finansal rapor üretir."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key)
 
@@ -61,6 +61,15 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     # Metrik bazlı kısa içgörüler (Frontend modal için)
     requirements.append(f"{len(requirements)+1}. **🔍 Metrik İçgörüleri:** Her bir finansal metrik (P/E, P/B, Beta, Sharpe vb.) için sadece o metriğe özel, 1-2 cümlelik çok kısa profesyonel bir yorum hazırla.")
 
+    ml_context = ""
+    if ml_prediction:
+        ml_context = f"""
+        MAKİNE ÖĞRENİMİ 7 GÜNLÜK TAHMİNİ:
+        - Yön (Trend): {ml_prediction.get('direction', 'Bilinmiyor')}
+        - Güven Skoru (Confidence): {ml_prediction.get('confidence', 0)}
+        - 7 Günlük Hedef Fiyat: {ml_prediction.get('target_7d', 'Bilinmiyor')} (Değişim: %{ml_prediction.get('change_pct', 0)})
+        """
+
     if len(requirements) == 0:
         return "Gerekli analiz verisi seçilmediği için yorum üretilemedi."
         
@@ -79,6 +88,7 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     MEVCUT SIFILTRENMİŞ VERİLER:
     {islamic_context}
     {financial_context}
+    {ml_context}
     
     Aşağıdaki başlık formatlarını kullanarak kısa, net ve gereksiz cümlesiz bir rapor hazırla:
     {chr(10).join(requirements)}
@@ -102,6 +112,7 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     3. Çıktında KESİNLİKLE "$" (dolar) sembolü kullanma, yerine 'USD' veya 'TL' gibi ifadeler kullan. Markdown formatını bozmamaya dikkat et.
     4. Gereksiz bir övgü yapma.
     5. HALÜSİNASYON YASAKTIR: Eğer sana verilen verilerde veya 'Sistem Uyarıları' bölümünde bir API çökmesi veya eksik veri raporlanmışsa, kesinlikle değer uydurma. Raporunda 'Şu teknik nedenden ötürü ([Hata Sebebi]) bu metrik değerlendirilememiştir' diyerek şeffaf ol. Zorunlu JSON bloğunda (METRIC_INSIGHTS) eksik kalan metriklerin karşılığına değer olarak 'Veri yetersizliği nedeniyle hesaplanamadı' yaz.
+    6. Eğer sana Makine Öğrenimi tahmini sunulmuşsa, nihai değerlendirmeni ve fiyat/trend öngörülerini yaparken bu algoritmik veriyi referans al. '%X güven skoruyla Y yönünde bir trend öngörülmektedir' şeklinde doğrudan modelin tahminine atıfta bulun.
     """
     
     try:

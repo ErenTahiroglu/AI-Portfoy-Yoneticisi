@@ -274,6 +274,31 @@ class SectorAnalyzerStrategy(BaseAnalyzerStrategy):
         except Exception as e:
             logger.debug(f"Sector check failed for {fetcher_ticker}: {e}")
 
+class MLAnalyzerStrategy(BaseAnalyzerStrategy):
+    @property
+    def name(self): return "ml_prediction"
+
+    def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        try:
+            from src.analyzers.ml_predictor import predict_price
+            def _call():
+                return predict_price(ticker)
+                
+            res = safe_api_call(_call)
+            
+            if isinstance(res, dict):
+                if res.get("error"):
+                    result_entry["ml_error"] = res["error"]
+                elif res.get("enabled"):
+                    result_entry["ml_prediction"] = {
+                        "direction": res.get("direction"),
+                        "confidence": res.get("confidence"),
+                        "target_7d": res.get("target_7d"),
+                        "change_pct": res.get("change_pct")
+                    }
+        except Exception as e:
+            result_entry["ml_error"] = _friendly_error(str(e))
+
 class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
     @property
     def name(self): return "ai_comment"
@@ -284,7 +309,7 @@ class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
             from .ai_agent import generate_report
             
             system_errors = {}
-            for err_key in ["fin_error", "technical_error", "valuation_error", "islamic_error", "sector_error"]:
+            for err_key in ["fin_error", "technical_error", "valuation_error", "islamic_error", "sector_error", "ml_error"]:
                 if err_key in result_entry:
                     system_errors[err_key] = result_entry[err_key]
                     
@@ -299,7 +324,8 @@ class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
                 fin_data=context.get("fin_data"),
                 market=context.get("market"),
                 lang=context.get("lang"),
-                system_errors=system_errors
+                system_errors=system_errors,
+                ml_prediction=result_entry.get("ml_prediction")
             )
             result_entry["ai_comment"] = ai_comment
         except Exception as e:
@@ -351,6 +377,7 @@ def register_default_strategies():
     analyzer_registry.register(ValuationAnalyzerStrategy())
     analyzer_registry.register(TechnicalAnalyzerStrategy())
     analyzer_registry.register(SectorAnalyzerStrategy())
+    analyzer_registry.register(MLAnalyzerStrategy())
     analyzer_registry.register(AICommentAnalyzerStrategy())
     analyzer_registry.register(SentimentAnalyzerStrategy())
 
