@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 import asyncio
 import json
@@ -411,7 +411,7 @@ async def chat_api(request: ChatRequest):
         raise HTTPException(status_code=400, detail="API key is required for AI Copilot")
     try:
         from src.core.ai_agent import generate_chat_response
-        reply = generate_chat_response(request.messages, request.portfolio_context, request.api_key, request.model, request.lang)
+        reply = await generate_chat_response(request.messages, request.portfolio_context, request.api_key, request.model, request.lang)
         return {"reply": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

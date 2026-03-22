@@ -1,3 +1,4 @@
+import asyncio
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr", system_errors: dict = None, ml_prediction: dict = None):
@@ -174,17 +175,65 @@ def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = 
     except Exception as e:
         raise ValueError(f"AI yanıtı çözümlenemedi veya kota aşıldı: {str(e)}")
 
-def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> str:
-    """Yüzen Chatbot (Copilot) için kullanıcının portföy verisi üzerinden konuşma tabanlı (conversational) yanıt üretir."""
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
+async def run_analyst_agent(portfolio_summary: str, api_key: str, model_name: str) -> str:
+    """Quantitative & Risk Specialist Sub-Agent"""
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key)
+        
+        prompt = f"""
+        Sen bir Portföy Yönetim Platformunun 'Kantitatif ve Risk Analisti' alt ajanı özelindesin.
+        Görevin: Aşağıda JSON olarak verilen portföy verilerini MERCEK ALTINA alarak YALNIZCA sayısal metrikler üzerinden bir Risk/Getiri raporu üretmektir.
+        
+        Odaklanacağın veriler: optimization_results (Sharpe, Optimal Weights), risk_analysis (VaR, MaxDD, Beta), ml_prediction (fiyat tahminleri).
+        
+        === PORTFÖY VERİLERİ ===
+        {portfolio_summary}
+        ========================
+        
+        KURALLAR:
+        1. Boş laf, giriş veya sonuç cümleleri KULLANMA. 
+        2. Sektör, haber, bilanço gibi sözel temel verileri es geç, sadece sayısal risk (VaR, MaxDD), Sharpe rasyoları ve optimizasyon/getiri ağırlıklarına dair çıkarım yap.
+        """
+        response = await llm.ainvoke(prompt)
+        return str(response.content)
+    except Exception as e:
+        return f"Analyst Agent Hatası: {str(e)}"
+
+async def run_researcher_agent(portfolio_summary: str, api_key: str, model_name: str) -> str:
+    """Fundamentals & Sentiment Specialist Sub-Agent"""
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key)
+        
+        prompt = f"""
+        Sen bir Portföy Yönetim Platformunun 'Temel ve Teknik Analiz Araştırmacısı' alt ajanı özelindesin.
+        Görevin: Aşağıda JSON olarak verilen portföy verilerini MERCEK ALTINA alarak Şirket Sağlığı ve Haber Duyarlılığı raporu üretmektir.
+        
+        Odaklanacağın veriler: valuation (P/E, P/B, Borçluluk), technicals (RSI, MACD, Trendler), news (Haber Duyarlılığı, Alerts).
+        
+        === PORTFÖY VERİLERİ ===
+        {portfolio_summary}
+        ========================
+        
+        KURALLAR:
+        1. Boş laf, giriş veya sonuç cümleleri KULLANMA.
+        2. Optimizasyon, Sharpe, VaR gibi kantitatif hesaplamaları es geç. Sadece piyasa trendi (technicals) ve şirket finansal durumlarına (valuation) odaklan.
+        """
+        response = await llm.ainvoke(prompt)
+        return str(response.content)
+    except Exception as e:
+        return f"Researcher Agent Hatası: {str(e)}"
+
+async def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> str:
+    """Yüzen Chatbot (Copilot) için Çoklu Ajan (CIO-Orkestratör) mimarisiyle yanıt üretir."""
     
-    # Portföy bağlamını güvenlik filtresinden geçirerek temizle (Token israfını engelle)
+    # Portföy bağlamını güvenlik filtresinden geçirerek temizle
     safe_context = []
     if isinstance(context, list):
         for item in context:
             safe_item = item.copy() if isinstance(item, dict) else item
             if isinstance(safe_item, dict):
-                # Aşırı uzun raw verileri LLM payload'undan çıkar
                 safe_item.pop("klines", None)
                 if "financials" in safe_item and isinstance(safe_item["financials"], dict):
                     safe_item["financials"].pop("yg", None)
@@ -204,26 +253,39 @@ def generate_chat_response(messages: list, context: dict, api_key: str, model_na
 
     portfolio_summary = json.dumps(safe_context, indent=2, ensure_ascii=False)
     
-    system_instruction = f"""
-    Sen, bu uygulamanın (Portföy Analiz Platformu) içine entegre edilmiş, profesyonel ama dost canlısı bir "Yapay Zeka Portföy Asistanı"sın (AI Copilot).
-    Kullanıcı sana portföyü hakkında sorular soracak veya analiz isteyecek.
-    Aşağıda kullanıcının ŞU AN EKRANINDA GÖRDÜĞÜ portföyünün arka plan (JSON) analizi ve verileri bulunuyor:
+    # Alt Ajanları Paralel Olarak Çalıştır (Speedup)
+    import asyncio
+    analyst_task = run_analyst_agent(portfolio_summary, api_key, model_name)
+    researcher_task = run_researcher_agent(portfolio_summary, api_key, model_name)
     
-    === PORTFÖY VERİLERİ ===
-    {portfolio_summary}
-    ========================
+    reports = await asyncio.gather(analyst_task, researcher_task)
+    analyst_rep, researcher_rep = reports
+
+    # CIO Orchestration Agent (Chief Investment Officer)
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
+    
+    system_instruction = f"""
+    Sen, bu uygulamanın 'Baş Yatırım Sorumlusu' (Chief Investment Officer - CIO) AI ajanıdır.
+    Görevin: Alt analistlerinizden gelen raporları (Analyst ve Researcher) ve kullanıcı mesajlarını sentezleyerek kullanıcıya nihai, şık ve harekete geçirici bir yatırım tavsiyesi sunmaktır.
+    
+    === ANALİST RAPORU (Kantitatif/Risk) ===
+    {analyst_rep}
+    ======================================
+    
+    === ARAŞTIRMACI RAPORU (Temel/Teknik) ===
+    {researcher_rep}
+    ======================================
     
     KURALLAR:
-    1. Kullanıcının sorusuna doğrudan ve net yanıt ver. Sadece elindeki verileri (JSON) referans al.
+    1. Kullanıcının sorusuna doğrudan ve net yanıt ver. Alt ajan raporlarını SENTEZLE, aynen kopyalama.
     2. Cevapların kısa, güven verici ve teknik olarak doğru olsun (Markdown formatı kullan; kalın metinler, listeler vs.).
-    3. Kullanıcı "en riskli hissem hangisi" diye sorarsa, P/E oranı, Beta değeri veya Drawdown oranlarına bakarak mantıklı bir çıkarım yap.
+    3. Kullanıcı "en riskli hissem hangisi" diye sorarsa, Analist raporundaki metrikleri (Drawdown, VaR, Beta) referans alarak çıkarım yap.
     4. Sektör dağılımını veya ağırlıkları sormadan pat diye listeleme, sadece sorulana cevap ver.
-    5. Kullanıcı portföy tavsiyesi veya dengeleme istediğinde, mevcut riskleri (VaR, MaxDD) incele. Eğer Günlük VaR (Riske Maruz Değer) kayıp oranı %4'ten fazla veya MaxDD %25'ten fazla ise getiri ne olursa olsun AGRESİF ve NET bir dille uyararak riskleri azaltacak defansif dağılımlar öner.
+    5. Mevcut risk raporlarında Günlük VaR (Riske Maruz Değer) kayıp oranı %4'ten fazla veya MaxDD %25'ten fazla görünüyorsa getiriye bakılmaksızın kullanıcıyı AGRESİF ve NET bir dille uyararak riskleri azaltacak defansif (Nakit/Altın vb.) dağılımlar öner.
     6. Dil: {"Cevaplarını her zaman İngilizce üret" if lang == "en" else "Cevaplarını her zaman Türkçe dilinde üret"}.
     """
     
     from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-    
     langchain_msgs = [SystemMessage(content=system_instruction)]
     
     for msg in messages:
@@ -235,13 +297,13 @@ def generate_chat_response(messages: list, context: dict, api_key: str, model_na
             langchain_msgs.append(AIMessage(content=content))
             
     try:
-        response = llm.invoke(langchain_msgs)
+        response = await llm.ainvoke(langchain_msgs)
         return str(response.content)
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
             return "Kota sınırı aşıldı. Lütfen birkaç dakika bekleyin."
-        return f"Üzgünüm, şu an bağlantı kuramıyorum (Hata: {error_msg})"
+        return f"Üzgünüm, şu an bağlantı kuramıyorum (CIO Hatası: {error_msg})"
 
 def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr"):
     """
