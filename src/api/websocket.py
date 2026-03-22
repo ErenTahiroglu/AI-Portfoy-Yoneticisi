@@ -42,7 +42,15 @@ async def _polygon_reader(send_fn):
                         await send_fn(json.dumps(msg))
     except Exception as e:
         _polygon_connected = False
-        logger.error(f"Polygon WS hatası: {e}")
+        logger.error(f"Polygon WS hatası: {e}. Mevcut client'lar kapatılıyor (Graceful Shutdown)...")
+        for client in _clients.copy():
+            try:
+                # 1011: Internal error (Upstream lost)
+                # Client, kodu yakalayıp exponential backoff ile tekrar bağlanacaktır.
+                await client.close(code=1011, reason="Upstream Polygon connection lost.")
+            except Exception:
+                pass
+        _clients.clear()
 
 
 def register_websocket_routes(app, router=None):

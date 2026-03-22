@@ -107,7 +107,9 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Optimizer & ML Engine Hardening [v6.4]:** `optimization_engine.py` için veri temizliği (sanitization) ve Scipy matematiksel çökme korumaları (LinAlgError) eklendi; `ml_predictor.py` için 2 yıllık horizon ufku, piyasa freq="B"/"D" ayrımı ve yarım (unclosed) mum engeli mimarisi uygulandı.
 *   **💡 Vercel Deployment Trigger [v6.5]:** Frontend ve Backend son güncel optimizasyonlarla yayına alındı.
 *   **💡 Analyzer Data Sanity & UTC fixes [v7.0]:** `CryptoAnalyzerStrategy` saat dilimi (UTC) ve yarım mum kısıtlamaları dökümante edildi; `TechnicalAnalyzerStrategy` için RSI divide-by-zero hatası ve `ValuationAnalyzerStrategy` finansal radar skorlama veri yokluğu (not missing) cezalandırma bariyerleri devreye alındı. NaN/Inf sızıntıları tamamen izole edildi.
-*   **💡 Networkless Market Detection [v7.1]:** `market_detector.py` içerisindeki tüm harici Yahooquery (ağ/network) istekleri temizlendi. Timeout ve API bekleme çökmesi riski sıfırlanarak pazar algılama tamamen kural-tabanlı (string analysis) hale getirildi.
+*   **💡 Networkless Market Detection [v7.0]:** `market_detector.py` içerisindeki tüm harici Yahooquery (ağ/network) istekleri temizlendi. Timeout ve API bekleme çökmesi riski sıfırlanarak pazar algılama tamamen kural-tabanlı (string analysis) hale getirildi.
+*   **💡 Telegram Bildirimleri & Hafıza [v7.2]:** Arka plan alert döngüsüne Telegram Push desteği ve AI Chatbot'a 5 mesajlık kısa süreli bağlamsal hafıza eklendi (Faz 5).
+*   **💡 Portföy Optimizasyonu (Monte Carlo) [v7.3]:** scipy bağımlılığı olmadan %100 numpy tabanlı 5,000 iterasyonlu Monte Carlo optimizasyonu ve Ön yüzde karşılaştırmalı Visualizer/Rebalance Canvas entegrasyonu (Faz 6).
 
 
 #### 2. Frontend (Vercel)

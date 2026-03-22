@@ -70,6 +70,54 @@
         </div>
     </div>
 
+    <!-- User Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content premium-card">
+            <button class="modal-close" id="settings-modal-close"><i class="fas fa-times"></i></button>
+            <div class="card-glow"></div>
+            <div class="card-inner">
+                <div class="card-head">
+                    <span class="card-icon"><i class="fas fa-user-cog"></i></span>
+                    <div class="card-titles">
+                        <h4>Hesap Ayarları</h4>
+                        <span>Otonom Bildirim ve Profil Tercihleri</span>
+                    </div>
+                </div>
+
+                <div class="metric-detail-body">
+                    <div class="input-group">
+                        <label>
+                            <i class="fab fa-telegram"></i> Telegram Chat ID
+                            <span class="tooltip-icon" tabindex="0">
+                                <i class="fas fa-question-circle"></i>
+                                <span class="tooltip-text">
+                                    <strong>Telegram Chat ID Nasıl Alınır?</strong><br>
+                                    1. Telegram'da <em>@userinfobot</em> aratın.<br>
+                                    2. Bota <strong>/start</strong> mesajını gönderin.<br>
+                                    3. Size "Id: 123456789" şeklinde bir yanıt verecektir.<br>
+                                    4. O numarayı buraya yapıştırın.
+                                </span>
+                            </span>
+                        </label>
+                        <input type="text" id="telegram-chat-id-input" placeholder="Örn: 123456789">
+                        <p class="input-helper">Otonom alarmlar doğrudan seçtiğiniz Telegram hesabına iletilecektir.</p>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label><i class="fas fa-shield-alt"></i> Risk Toleransı</label>
+                        <select id="risk-tolerance-select">
+                            <option value="Düşük">Düşük Risk</option>
+                            <option value="Orta" selected>Orta Risk</option>
+                            <option value="Yüksek">Yüksek Risk</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" id="save-settings-btn" style="width: 100%; margin-top: 1rem;"><i class="fas fa-save"></i> Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SIDEBAR -->
     <aside class="sidebar glass-panel" id="sidebar">
         <div class="sidebar-logo">
@@ -223,7 +271,26 @@
         <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center;">
             <span class="top-badge" data-i18n="header.badge">AI Destekli Analiz</span>
             
-            <div class="auth-controls" id="auth-controls" style="margin-left:auto;">
+            <div class="auth-controls" id="auth-controls" style="margin-left:auto; display:flex; align-items:center;">
+                <!-- Otonom Uyarı Zili (Phase 4) -->
+                <div class="notification-container" id="notification-container" style="position:relative; display:none; margin-right:15px; cursor:pointer;">
+                    <i class="fas fa-bell" style="font-size:1.2rem; color:var(--text-main);" onclick="toggleNotifications()"></i>
+                    <span id="notification-badge" class="badge-optional" style="position:absolute; top:-5px; right:-8px; background:var(--danger); color:white; font-size:0.65rem; padding:2px 5px; border-radius:10px; display:none;">0</span>
+                    
+                    <!-- Açılır Menü -->
+                    <div id="notification-dropdown" class="glass-panel hidden" style="position:absolute; top:35px; right:0; width:300px; max-height:400px; overflow-y:auto; z-index:100; padding:10px; display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--glass-border); padding-bottom:8px; margin-bottom:5px;">
+                            <h4 style="margin:0; font-size:0.9rem;"><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> Otonom Piyasa Uyarıları</h4>
+                            <span id="mark-read-btn" onclick="markAllAlertsRead()" style="font-size:0.75rem; color:var(--primary); cursor:pointer;">Tümünü Okundu Tıklayın</span>
+                        </div>
+                        <div id="notification-list" style="font-size:0.82rem; color:var(--text-muted);">Temiz.</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" id="user-settings-btn" title="Hesap Ayarları" style="margin-right:15px; padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); color:var(--text-main); cursor:pointer; display:none;">
+                    <i class="fas fa-cog"></i>
+                </button>
+
                 <button class="btn btn-secondary" id="google-login-btn" style="padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); color:var(--text-main); cursor:pointer;">
                     <i class="fab fa-google"></i> <span id="auth-btn-text">Giriş Yap</span>
                 </button>
@@ -475,6 +542,37 @@
                             <div class="beta-indicator">
                                 <span>Portföy Beta Değeri:</span>
                                 <strong id="portfolio-beta-val">1.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Optimization Card -->
+                    <div class="scenario-card premium-card" style="grid-column: 1 / -1; margin-bottom: 2rem;" id="optimization-card">
+                        <div class="card-glow"></div>
+                        <div class="card-inner">
+                            <div class="card-head" style="display:flex; align-items:center;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="card-icon"><i class="fas fa-balance-scale"></i></span>
+                                    <div class="card-titles">
+                                        <h4>Varlık Dağılım Optimizasyonu</h4>
+                                        <span>Monte Carlo Simülasyonu ile Risk/Getiri Dengesi</span>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" id="btn-optimize-portfolio" style="margin-left:auto; width:auto; padding:0.5rem 1rem; font-size:0.8rem; border-radius:8px;">
+                                    <i class="fas fa-magic"></i> Optimize Et
+                                </button>
+                            </div>
+
+                            <div class="optimization-content hidden" id="optimization-content" style="margin-top: 1.5rem;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                                     <div style="height: 280px; position:relative;">
+                                          <canvas id="opt-comparison-chart"></canvas>
+                                     </div>
+                                     <div class="ai-insight-box" id="opt-ai-suggestion" style="display:flex; flex-direction:column; justify-content:center; padding:1.5rem; background:rgba(14, 165, 233, 0.05); border-radius:8px; border:1px solid var(--glass-border);">
+                                          <label style="color:var(--primary); font-weight:700; margin-bottom:0.5rem;"><i class="fas fa-robot"></i> AI Rebalance Önerisi</label>
+                                          <p style="font-size:0.85rem; color:var(--text-main); line-height:1.6;" id="opt-ai-text">Veriler optimize edilirken bekleyin...</p>
+                                     </div>
+                                </div>
                             </div>
                         </div>
                     </div>

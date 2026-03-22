@@ -42,6 +42,19 @@ export async function getUser() {
     return data?.user || null;
 }
 
+export async function getValidSession() {
+    if (!supabase) return null;
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error || !data.session) {
+        // Oturum süresi dolmuş veya token bozuk (Zero Trust Drop)
+        console.warn("Zero Trust: Geçersiz oturum, çıkış yapılıyor...");
+        await signOut(); // Refresh the DOM automatically
+        throw new Error("Oturum süreniz doldu. Lütfen tekrar giriş yapın (Zero Trust).");
+    }
+    return data.session;
+}
+
 // ── Database İşlemleri ───────────────────────────────────────────────
 
 export async function savePortfolio(tickersArray) {
@@ -84,4 +97,4 @@ export async function loadPortfolio() {
 }
 
 // Vanilla JS Fallback (expose to window if required by standard scripts)
-window.SupabaseAuth = { signInWithGoogle, signOut, getUser, savePortfolio, loadPortfolio };
+window.SupabaseAuth = { signInWithGoogle, signOut, getUser, getValidSession, savePortfolio, loadPortfolio };

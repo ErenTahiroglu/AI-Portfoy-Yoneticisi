@@ -148,9 +148,13 @@ class BaseAnalyzer:
             bu   = self._ydf(fiyatlar, yil)
             if once.empty or bu.empty:
                 return None
-            return ((bu["Close"].iloc[-1] - once["Close"].iloc[-1])
-                    / once["Close"].iloc[-1]) * 100
-        except Exception:
+            once_close_val = float(once["Close"].iloc[-1])
+            if once_close_val == 0.0:
+                return 0.0
+            return ((float(bu["Close"].iloc[-1]) - once_close_val)
+                    / once_close_val) * 100
+        except Exception as e:
+            logger.debug(f"Yıllık getiri hesabı hatası: {e}")
             return None
 
     def _toplam_getiri(self, fiyatlar: pd.DataFrame,
@@ -160,9 +164,13 @@ class BaseAnalyzer:
             bit  = self._ydf(fiyatlar, bit_yil)
             if once.empty or bit.empty:
                 return None
-            return ((bit["Close"].iloc[-1] - once["Close"].iloc[-1])
-                    / once["Close"].iloc[-1]) * 100
-        except Exception:
+            once_close_val = float(once["Close"].iloc[-1])
+            if once_close_val == 0.0:
+                return 0.0
+            return ((float(bit["Close"].iloc[-1]) - once_close_val)
+                    / once_close_val) * 100
+        except Exception as e:
+            logger.debug(f"Toplam getiri hesabı hatası: {e}")
             return None
 
     def _temettu_verimi(self, temettular: pd.Series,
@@ -174,8 +182,12 @@ class BaseAnalyzer:
             yf_ = self._ydf(fiyatlar, yil)
             if yf_.empty:
                 return 0.0
-            return (yt.sum() / yf_["Close"].iloc[0]) * 100
-        except Exception:
+            yf_close_val = float(yf_["Close"].iloc[0])
+            if yf_close_val == 0.0:
+                return 0.0
+            return (float(yt.sum()) / yf_close_val) * 100
+        except Exception as e:
+            logger.debug(f"Temettü verimi hesabı hatası: {e}")
             return 0.0
 
     def _donemsel_getiri(self, fiyatlar: pd.DataFrame, ay: int,
@@ -188,10 +200,14 @@ class BaseAnalyzer:
                 return None, None, None
             bas = sonraki.iloc[0]
             bit = fiyatlar.iloc[-1]
-            g   = ((bit["Close"] - bas["Close"]) / bas["Close"]) * 100
+            bas_close = float(bas["Close"])
+            if bas_close == 0.0:
+                return 0.0, 0.0, 0.0
+            g   = ((float(bit["Close"]) - bas_close) / bas_close) * 100
             enf = donem_enflasyonu_fn(bas.name, bit.name)
             return g, g - enf, enf
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Dönemsel getiri hesabı hatası: {e}")
             return None, None, None
 
     def _haftalik_getiri(self, haftalik: pd.DataFrame, hafta: int,
@@ -204,10 +220,14 @@ class BaseAnalyzer:
                 return None, None, None
             bas = sonraki.iloc[0]
             bit = haftalik.iloc[-1]
-            g   = ((bit["Close"] - bas["Close"]) / bas["Close"]) * 100
+            bas_close = float(bas["Close"])
+            if bas_close == 0.0:
+                return 0.0, 0.0, 0.0
+            g   = ((float(bit["Close"]) - bas_close) / bas_close) * 100
             enf = donem_enflasyonu_fn(bas.name, bit.name)
             return g, g - enf, enf
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Haftalık getiri hesabı hatası: {e}")
             return None, None, None
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -221,6 +241,8 @@ class BaseAnalyzer:
             if len(son) < 2:
                 return None
             gunluk_getiri = son["Close"].pct_change().dropna() * 100
+            if gunluk_getiri.empty:
+                return None
             return GunlukIstatistik(
                 ort    = float(gunluk_getiri.mean()),
                 std    = float(gunluk_getiri.std()),
@@ -230,7 +252,8 @@ class BaseAnalyzer:
                 negatif= int((gunluk_getiri < 0).sum()),
                 toplam = len(gunluk_getiri),
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Günlük istatistik hesabı hatası: {e}")
             return None
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -242,7 +265,11 @@ class BaseAnalyzer:
         try:
             son = fiyatlar.iloc[-1]
             onceki = fiyatlar.iloc[-2] if len(fiyatlar) > 1 else son
-            degisim = ((son["Close"] - onceki["Close"]) / onceki["Close"]) * 100
+            onceki_close = float(onceki["Close"])
+            degisim = 0.0
+            if onceki_close != 0.0:
+                degisim = ((float(son["Close"]) - onceki_close) / onceki_close) * 100
+                
             return SonFiyat(
                 fiyat   = float(son["Close"]),
                 degisim = float(degisim),
@@ -250,7 +277,8 @@ class BaseAnalyzer:
                 yuksek  = float(son["High"]) if "High" in son.index else float(son["Close"]),
                 dusuk   = float(son["Low"])  if "Low"  in son.index else float(son["Close"]),
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Son fiyat çıkarma hatası: {e}")
             return SonFiyat()
 
     # ─────────────────────────────────────────────────────────────────────────

@@ -1,6 +1,8 @@
 // ═══════════════════════════════════════
 // CHART HELPERS
 // ═══════════════════════════════════════
+let tvChartInstances = {};
+
 function destroyChart(id) {
     if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
 }
@@ -20,7 +22,11 @@ function createTVChart(containerId, res) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Önceki içeriği temizle
+    // Önceki içeriği temizle (Bellek sızıntısı önlemi: instance'ı güvenle .remove() ile yok et)
+    if (tvChartInstances[containerId]) {
+        try { tvChartInstances[containerId].remove(); } catch (e) {}
+        delete tvChartInstances[containerId];
+    }
     container.innerHTML = "";
 
     const isDark = document.documentElement.getAttribute("data-theme") !== "light" || (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -49,6 +55,7 @@ function createTVChart(containerId, res) {
     };
 
     const chart = LightweightCharts.createChart(container, chartOptions);
+    tvChartInstances[containerId] = chart;
     
     // Resize Observer
     const resizeObserver = new ResizeObserver(entries => {
@@ -113,7 +120,11 @@ function createBacktestChart(containerId, simData) {
     const container = document.getElementById(containerId);
     if (!container || !simData || !simData.dates || simData.dates.length === 0) return;
 
-    // Önceki içeriği temizle
+    // Önceki içeriği temizle (Bellek sızıntısı önlemi: instance'ı güvenle .remove() ile yok et)
+    if (tvChartInstances[containerId]) {
+        try { tvChartInstances[containerId].remove(); } catch (e) {}
+        delete tvChartInstances[containerId];
+    }
     container.innerHTML = "";
 
     const isDark = document.documentElement.getAttribute("data-theme") !== "light" || (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -135,6 +146,7 @@ function createBacktestChart(containerId, simData) {
     };
 
     const chart = LightweightCharts.createChart(container, chartOptions);
+    tvChartInstances[containerId] = chart;
 
     const resizeObserver = new ResizeObserver(entries => {
         if (entries[0].contentRect.width > 0) {
@@ -953,5 +965,55 @@ function createRelativePerformanceChart(canvasId, relPerfData) {
                 }
             }
         }
+    });
+}
+
+// ═══════════════════════════════════════
+// OPTIMIZATION CHART (Phase 6)
+// ═══════════════════════════════════════
+function renderOptChart(id, curWeights, optWeights) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    
+    // global chartInstances clear
+    if (typeof destroyChart === "function") {
+        destroyChart(id);
+    }
+
+    const tickers = Object.keys(optWeights);
+    const curData = tickers.map(t => curWeights[t] || 0);
+    const optData = tickers.map(t => optWeights[t] || 0);
+    
+    const { grid, text } = getChartColors();
+    
+    if (typeof chartInstances === "undefined") window.chartInstances = {};
+
+    chartInstances[id] = new Chart(canvas, {
+         type: 'bar',
+         data: {
+              labels: tickers,
+              datasets: [
+                   { label: 'Mevcut Dağılım (%)', data: curData, backgroundColor: 'rgba(148, 163, 184, 0.3)', borderColor: 'rgba(148, 163, 184, 0.6)', borderWidth: 1, borderRadius: 4 },
+                   { label: 'Optimum Dağılım (%)', data: optData, backgroundColor: 'rgba(14, 165, 233, 0.6)', borderColor: 'rgba(14, 165, 233, 1)', borderWidth: 1, borderRadius: 4 }
+              ]
+         },
+         options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { 
+                  legend: { position: 'top', labels: { color: text, font: { size: 11, family: 'Inter' }, boxWidth: 12 } },
+                  tooltip: {
+                      callbacks: {
+                          label: function(context) {
+                              return `${context.dataset.label}: %${context.parsed.y.toFixed(1)}`;
+                          }
+                      }
+                  }
+              },
+              scales: {
+                   x: { grid: { display: false }, ticks: { color: text, font: { size: 11 } } },
+                   y: { grid: { color: grid }, ticks: { color: text, font: { size: 10 }, callback: v => '%' + v } }
+              }
+         }
     });
 }

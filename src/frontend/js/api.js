@@ -16,9 +16,20 @@ async function runWizard() {
     btn.disabled = true;
 
     try {
+        let jwtToken = "";
+        try {
+            const session = await window.SupabaseAuth.getValidSession();
+            if (session) jwtToken = session.access_token;
+        } catch (e) {
+            throw new Error(e.message);
+        }
+
         const res = await fetch(`${API_BASE}/api/wizard`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${jwtToken}`
+            },
             body: JSON.stringify({ prompt: promptText, api_key: apiKey, model: currModel, lang: getLang() })
         });
 
@@ -90,9 +101,21 @@ async function loadNews(results) {
     const currModel = localStorage.getItem("ai_model") || "gemini-2.5-flash";
 
     try {
+        let jwtToken = "";
+        try {
+            const session = await window.SupabaseAuth.getValidSession();
+            if (session) jwtToken = session.access_token;
+        } catch (e) {
+            container.innerHTML = createMessageCard(`Güvenlik Hatası: ${e.message}`, "error");
+            return;
+        }
+
         const res = await fetch(`${API_BASE}/api/news`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${jwtToken}` 
+            },
             body: JSON.stringify({ tickers: tickers.slice(0, 5), api_key: aKey, model: currModel, lang: getLang() })
         });
 
@@ -718,9 +741,21 @@ async function runMacroAnalysis(onChunk) {
     };
 
     try {
+        let jwtToken = "";
+        try {
+            const session = await window.SupabaseAuth.getValidSession();
+            if (session) jwtToken = session.access_token;
+        } catch (e) {
+            if (onChunk) onChunk(`⚠️ **Güvenlik Hatası:** ${e.message}`, true);
+            return;
+        }
+
         const response = await fetch(`${API_BASE}/api/analyze-macro`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${jwtToken}`
+            },
             body: JSON.stringify({
                 portfolio: portfolioData,
                 api_key: apiKey,

@@ -77,17 +77,22 @@ def predict_price(ticker: str) -> dict:
         
         # EMA (Üstel Hareketli Ortalama) - Son trendi yakalamak için
         ema_12 = series.ewm(span=12, adjust=False).mean()
-        curr_ema = ema_12.iloc[-1]
+        curr_ema = float(ema_12.iloc[-1])
         
         # Momentum: Son 10 günlük eğilim (Doğrusal Regresyon Eğimi benzeri basit trend)
         if len(series) >= 10:
-            momentum = (series.iloc[-1] - series.iloc[-10]) / 10
+            momentum = float((series.iloc[-1] - series.iloc[-10]) / 10.0)
         else:
-            momentum = series.diff().mean()
+            momentum = float(series.diff().mean())
+            
+        if pd.isna(momentum):
+            momentum = 0.0
 
         # Volatilite (Günlük getiri standart sapması)
         returns = series.pct_change().dropna()
-        daily_vol = returns.std() # Günlük oynaklık oranı (Örn: 0.02)
+        daily_vol = float(returns.std()) # Günlük oynaklık oranı (Örn: 0.02)
+        if pd.isna(daily_vol) or daily_vol < 0:
+            daily_vol = 0.02 # Safe baseline volatility
         
         # ── 3. 7 Günlük Projeksiyon ───────────────────────────────────────
         proj_days = 7

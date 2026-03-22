@@ -360,6 +360,62 @@ body {
     margin-top: 0.25rem;
 }
 
+/* ── Tooltip Icon ─────────────────────── */
+.tooltip-icon {
+    position: relative;
+    display: inline-flex;
+    margin-left: 0.35rem;
+    color: var(--primary);
+    cursor: help;
+    font-size: 0.85rem;
+}
+
+.tooltip-icon:focus {
+    outline: none;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 240px;
+    background: var(--card-bg-hover);
+    color: var(--text-main);
+    text-align: left;
+    border-radius: 8px;
+    padding: 0.75rem;
+    position: absolute;
+    z-index: 1000;
+    bottom: 150%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    font-weight: normal;
+    pointer-events: none;
+}
+
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--glass-border) transparent transparent transparent;
+}
+
+.tooltip-icon:hover .tooltip-text,
+.tooltip-icon:focus .tooltip-text,
+.tooltip-icon.pinned .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
 /* ── Watchlist ───────────────────────── */
 .watchlist-item {
     display: flex;

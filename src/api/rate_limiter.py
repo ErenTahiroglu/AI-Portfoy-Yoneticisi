@@ -69,9 +69,11 @@ class RateLimiter:
                     self.history.pop(k, None)
 
     async def check(self, request: Request):
-        # Arka plan temizlik görevini bir kez başlat
+        # Arka plan temizlik görevini bir kez başlat (Race condition korumalı)
         if not self._cleanup_task:
-            self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+            async with self.lock:
+                if not self._cleanup_task:
+                    self._cleanup_task = asyncio.create_task(self._cleanup_loop())
 
         # ── Kimlik Anahtarı Belirleme ──────────────────────────────────────
         auth_header = request.headers.get("Authorization")

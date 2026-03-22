@@ -514,7 +514,7 @@ class AnalysisEngine:
         result_entry["radar_score"] = {"profitability": 50, "value": 50, "growth": 50, "debt": 50}
         result_entry["technicals"] = {"gauge_score": 50}
         result_entry["financials"] = {"son_fiyat": {"fiyat": 0.0, "degisim": 0.0, "tarih": ""}, "yg": {}}
-        result_entry["valuation"] = {"market_cap": 0, "pe": 0.0, "pb": 0.0, "peg": 0.0}
+        result_entry["valuation"] = {"market_cap": 0, "pe": None, "pb": None, "peg": None, "beta": None, "high_52w": 0, "low_52w": 0}
         result_entry["ml_prediction"] = {"direction": "SIDEWAYS", "confidence": 50, "target_7d": 0, "change_pct": 0}
         result_entry["klines"] = []
         

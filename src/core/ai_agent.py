@@ -178,8 +178,31 @@ def generate_chat_response(messages: list, context: dict, api_key: str, model_na
     """Yüzen Chatbot (Copilot) için kullanıcının portföy verisi üzerinden konuşma tabanlı (conversational) yanıt üretir."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
     
-    # Portföy bağlamını temiz bir string'e dönüştür
-    portfolio_summary = json.dumps(context, indent=2, ensure_ascii=False)
+    # Portföy bağlamını güvenlik filtresinden geçirerek temizle (Token israfını engelle)
+    safe_context = []
+    if isinstance(context, list):
+        for item in context:
+            safe_item = item.copy() if isinstance(item, dict) else item
+            if isinstance(safe_item, dict):
+                # Aşırı uzun raw verileri LLM payload'undan çıkar
+                safe_item.pop("klines", None)
+                if "financials" in safe_item and isinstance(safe_item["financials"], dict):
+                    safe_item["financials"].pop("yg", None)
+            safe_context.append(safe_item)
+    elif isinstance(context, dict):
+        safe_context = context.copy()
+        if "results" in safe_context and isinstance(safe_context["results"], list):
+            filtered_results = []
+            for item in safe_context["results"]:
+                safe_item = item.copy() if isinstance(item, dict) else item
+                if isinstance(safe_item, dict):
+                    safe_item.pop("klines", None)
+                    if "financials" in safe_item and isinstance(safe_item["financials"], dict):
+                        safe_item["financials"].pop("yg", None)
+                filtered_results.append(safe_item)
+            safe_context["results"] = filtered_results
+
+    portfolio_summary = json.dumps(safe_context, indent=2, ensure_ascii=False)
     
     system_instruction = f"""
     Sen, bu uygulamanın (Portföy Analiz Platformu) içine entegre edilmiş, profesyonel ama dost canlısı bir "Yapay Zeka Portföy Asistanı"sın (AI Copilot).
@@ -195,7 +218,8 @@ def generate_chat_response(messages: list, context: dict, api_key: str, model_na
     2. Cevapların kısa, güven verici ve teknik olarak doğru olsun (Markdown formatı kullan; kalın metinler, listeler vs.).
     3. Kullanıcı "en riskli hissem hangisi" diye sorarsa, P/E oranı, Beta değeri veya Drawdown oranlarına bakarak mantıklı bir çıkarım yap.
     4. Sektör dağılımını veya ağırlıkları sormadan pat diye listeleme, sadece sorulana cevap ver.
-    5. Dil: {"Cevaplarını her zaman İngilizce üret" if lang == "en" else "Cevaplarını her zaman Türkçe dilinde üret"}.
+    5. Kullanıcı portföy tavsiyesi veya dengeleme istediğinde, mevcut ağırlıkları optimum ağırlıklarla karşılaştır ve "A varlığını %10 azaltıp B varlığını artırmalısın" gibi net, matematiksel aksiyon (Rebalance) adımları sun.
+    6. Dil: {"Cevaplarını her zaman İngilizce üret" if lang == "en" else "Cevaplarını her zaman Türkçe dilinde üret"}.
     """
     
     from langchain_core.messages import SystemMessage, HumanMessage, AIMessage

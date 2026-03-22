@@ -30,9 +30,19 @@ import gc
 # ── Modül importları ──────────────────────────────────────────────────────
 # ── Modül importları ──────────────────────────────────────────────────────
 from src.core.analysis_engine import AnalysisEngine
+from contextlib import asynccontextmanager
+from src.core.scheduler import start_alert_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # API kalktığında otonom tarayıcıyı ayağa kaldır
+    task = asyncio.create_task(start_alert_scheduler())
+    yield
+    # API kapandığında memory leak olmaması için iptal et
+    task.cancel()
 
 # ── FastAPI uygulaması ────────────────────────────────────────────────────
-app = FastAPI(title="Portföy Analiz Platformu", version="3.0")
+app = FastAPI(title="Portföy Analiz Platformu", version="3.0", lifespan=lifespan)
 
 # ── Analiz motoru (singleton) ─────────────────────────────────────────────
 engine = AnalysisEngine()
@@ -46,6 +56,7 @@ if os.path.exists(frontend_path):
 
 # ── WebSocket Entegrasyonu ────────────────────────────────────────────────
 from src.api.websocket import register_websocket_routes  # type: ignore[import]
+from src.api.auth import verify_jwt  # Zero Trust IAM
 register_websocket_routes(app)
 
 # ── Cache-Control middleware (tarayıcı eski dosyaları kullanmasın) ─────────
@@ -97,6 +108,15 @@ class AnalysisRequest(BaseModel):
     initial_balance: float = 10000.0
     monthly_contribution: float = 0.0
     rebalancing_freq: str = "none"
+
+class UserSettingsRequest(BaseModel):
+    telegram_chat_id: Optional[str] = None
+    risk_tolerance: Optional[str] = "Orta"
+
+class PortfolioOptimizeRequest(BaseModel):
+    tickers: List[str]
+    weights: Optional[Dict[str, float]] = None
+    risk_free_rate: float = 0.02
 
 # TextAnalysisRequest kaldırıldı (Kullanılmıyor)
 
@@ -335,7 +355,7 @@ class MacroRequest(BaseModel):
     model: str = "gemini-2.5-flash"
     lang: str = "tr"
 
-@app.post("/api/analyze-macro", dependencies=[Depends(limiter.check)])
+@app.post("/api/analyze-macro", dependencies=[Depends(limiter.check), Depends(verify_jwt)])
 async def analyze_macro_endpoint(request: MacroRequest):
     """
     Tüm portföyün makro AI analizi için StreamingResponse (SSE) akışı sağlar.
@@ -357,7 +377,7 @@ async def analyze_macro_endpoint(request: MacroRequest):
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
-@app.post("/api/wizard")
+@app.post("/api/wizard", dependencies=[Depends(verify_jwt)])
 async def wizard_api(request: WizardRequest):
     """Metinsel komuttan portföy üretir."""
     if not request.api_key:
@@ -369,7 +389,7 @@ async def wizard_api(request: WizardRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/news")
+@app.post("/api/news", dependencies=[Depends(verify_jwt)])
 async def news_api(request: NewsRequest):
     """Ticker listesi için önemli haberleri çeker ve AI ile filtreler."""
     if not request.tickers: return {"news": []}
@@ -380,7 +400,7 @@ async def news_api(request: NewsRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/chat")
+@app.post("/api/chat", dependencies=[Depends(verify_jwt)])
 async def chat_api(request: ChatRequest):
     """Floating Copilot Chatbot Endpoint."""
     if not request.api_key:
@@ -421,6 +441,168 @@ async def options_api(ticker: str, expiration: Optional[str] = None):
         raise HTTPException(status_code=404, detail=res["error"])
     return res
 
+
+# ══════════════════════════════════════════════════════════════════════════
+# ALERTS ENDPOINTS (Phase 4)
+# ══════════════════════════════════════════════════════════════════════════
+import httpx
+
+@app.get("/api/alerts", dependencies=[Depends(verify_jwt)])
+async def get_alerts(request: Request):
+    """Kullanıcının Supabase alerts tablosundaki okunmamış son 10 bildirimini getir (Zero Trust)."""
+    user = getattr(request.state, "user", None)
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="User Identity Not Found")
+
+    user_id = user["sub"]
+    supa_url = os.getenv('SUPABASE_URL', '')
+    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+    
+    url = f"{supa_url}/rest/v1/alerts?user_id=eq.{user_id}&is_read=eq.false&order=created_at.desc&limit=10"
+    headers = {
+        "apikey": supa_key,
+        "Authorization": f"Bearer {supa_key}"
+    }
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        resp = await client.get(url, headers=headers)
+        if resp.status_code == 200:
+            return resp.json()
+        return []
+
+@app.post("/api/alerts/read", dependencies=[Depends(verify_jwt)])
+async def mark_alerts_read(request: Request):
+    """Kullanıcının tüm okunmamış bildirimlerini okundu (is_read=true) olarak işaretler."""
+    user = getattr(request.state, "user", None)
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="User Identity Not Found")
+
+    user_id = user["sub"]
+    supa_url = os.getenv('SUPABASE_URL', '')
+    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+    
+    url = f"{supa_url}/rest/v1/alerts?user_id=eq.{user_id}&is_read=eq.false"
+    headers = {
+        "apikey": supa_key,
+        "Authorization": f"Bearer {supa_key}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+    }
+    payload = {"is_read": True}
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        await client.patch(url, headers=headers, json=payload)
+    return {"status": "success"}
+
+# ══════════════════════════════════════════════════════════════════════════
+# USER SETTINGS ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/user-settings", dependencies=[Depends(verify_jwt)])
+async def get_user_settings(request: Request):
+    """Kullanıcının telegram_chat_id ve risk_tolerance ayarlarını getirir."""
+    user = getattr(request.state, "user", None)
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="User Identity Not Found")
+
+    user_id = user["sub"]
+    supa_url = os.getenv('SUPABASE_URL', '')
+    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+    
+    url = f"{supa_url}/rest/v1/user_settings?user_id=eq.{user_id}"
+    headers = {
+        "apikey": supa_key,
+        "Authorization": f"Bearer {supa_key}"
+    }
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        resp = await client.get(url, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data and len(data) > 0:
+                return data[0]
+        return {"telegram_chat_id": "", "risk_tolerance": "Orta"}
+
+@app.post("/api/user-settings", dependencies=[Depends(verify_jwt)])
+async def update_user_settings(settings: UserSettingsRequest, request: Request):
+    """Kullanıcının telegram_chat_id ve risk_tolerance ayarlarını kaydeder."""
+    user = getattr(request.state, "user", None)
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="User Identity Not Found")
+
+    user_id = user["sub"]
+    supa_url = os.getenv('SUPABASE_URL', '')
+    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+    
+    url = f"{supa_url}/rest/v1/user_settings"
+    headers = {
+        "apikey": supa_key,
+        "Authorization": f"Bearer {supa_key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    
+    payload = {
+        "user_id": user_id,
+        "telegram_chat_id": settings.telegram_chat_id,
+        "risk_tolerance": settings.risk_tolerance
+    }
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+        if resp.status_code not in [200, 201]:
+            raise HTTPException(status_code=500, detail=f"DB Error: {resp.text}")
+            
+    return {"status": "success"}
+
+# ══════════════════════════════════════════════════════════════════════════
+# PORTFOLIO OPTIMIZATION ENDPOINT
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/optimize-portfolio", dependencies=[Depends(verify_jwt)])
+async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest):
+    """Portföyü simülasyon (Monte Carlo) ile optimize eder."""
+    if not req_body.tickers:
+        raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
+        
+    try:
+        from yahooquery import Ticker
+        from src.core.optimization_engine import optimize_portfolio
+        
+        # Download prices
+        t = Ticker(req_body.tickers)
+        hist = t.history(period="1y", adj_ohlc=True)
+        
+        if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty):
+             raise HTTPException(status_code=500, detail="Fiyat verileri indirilemedi.")
+             
+        if not isinstance(hist, pd.DataFrame):
+             # Bazen hata mesajı dönebiliyor yahooquery
+             raise HTTPException(status_code=500, detail=str(hist))
+
+        # Unstack to get Returns
+        price_df = hist['close'].unstack(level=0)
+        # Clean tickers
+        price_df.columns = [c.upper() for c in price_df.columns]
+        price_df.ffill(inplace=True)
+        price_df.dropna(inplace=True)
+        
+        returns_df = price_df.pct_change().dropna()
+        
+        if returns_df.empty or len(returns_df) < 20:
+             raise HTTPException(status_code=400, detail="Simülasyon için yetersiz tarihsel veri.")
+             
+        opt_results = optimize_portfolio(returns_df, risk_free_rate=req_body.risk_free_rate)
+        
+        return {
+             "status": "success",
+             "current_weights": req_body.weights or {t: 100.0 / len(req_body.tickers) for t in req_body.tickers},
+             "optimal_weights": opt_results.get("max_sharpe", {}),
+             "min_volatility_weights": opt_results.get("min_volatility", {})
+        }
+    except Exception as e:
+         logger.error(f"Optimize Endpoint Hatası: {e}")
+         raise HTTPException(status_code=500, detail=str(e))
 
 # ══════════════════════════════════════════════════════════════════════════
 # EXPORT ENDPOINTS

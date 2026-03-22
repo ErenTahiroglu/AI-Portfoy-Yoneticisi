@@ -1,6 +1,86 @@
 // ═══════════════════════════════════════
-// GLOBAL STATE MANAGEMENT
+// GLOBAL STATE MANAGEMENT & ALERTS
 // ═══════════════════════════════════════
+
+// Local veya Production domain ayarı
+const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+    ? "http://localhost:8000" 
+    : "https://ai-portfoy.onrender.com";
+
+window.toggleNotifications = function() {
+    const dropdown = document.getElementById("notification-dropdown");
+    if (dropdown) {
+        if (dropdown.style.display === "none" || dropdown.classList.contains("hidden")) {
+            dropdown.style.display = "flex";
+            dropdown.classList.remove("hidden");
+        } else {
+            dropdown.style.display = "none";
+            dropdown.classList.add("hidden");
+        }
+    }
+};
+
+window.markAllAlertsRead = async function() {
+    try {
+        const session = await window.SupabaseAuth.getValidSession();
+        if (!session) return;
+
+        await fetch(`${API_BASE}/api/alerts/read`, {
+            method: "POST",
+            headers: { 
+                "Authorization": `Bearer ${session.access_token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({}) 
+        });
+        
+        document.getElementById("notification-badge").style.display = "none";
+        document.getElementById("notification-list").innerHTML = "Tüm bildirimler temizlendi.";
+    } catch(e) {
+        console.warn("Mark read failed:", e);
+    }
+};
+
+window.fetchAutonomousAlerts = async function() {
+    const container = document.getElementById("notification-container");
+    const badge = document.getElementById("notification-badge");
+    const list = document.getElementById("notification-list");
+    if (!container || !list) return;
+
+    try {
+        const session = await window.SupabaseAuth.getValidSession();
+        if (!session) return;
+
+        const res = await fetch(`${API_BASE}/api/alerts`, {
+            headers: { "Authorization": `Bearer ${session.access_token}` }
+        });
+        
+        if (!res.ok) return;
+        const alerts = await res.json();
+        
+        container.style.display = "block"; // Zili görünür yap
+        
+        if (alerts.length > 0) {
+            badge.style.display = "inline";
+            badge.innerText = alerts.length;
+            
+            list.innerHTML = alerts.map(a => `
+                <div style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 4px;">
+                    <div style="font-size: 0.70rem; color: var(--primary); margin-bottom: 4px;">
+                        <i class="fas fa-clock"></i> ${new Date(a.created_at).toLocaleDateString('tr-TR', {hour:'2-digit', minute:'2-digit'})}
+                    </div>
+                    <strong>${a.ticker}</strong> <span style="font-size:0.8rem;">${a.message}</span>
+                </div>
+            `).join("");
+        } else {
+            badge.style.display = "none";
+            list.innerHTML = "Piyasa sakin. Yeni uyarı yok.";
+        }
+    } catch (e) {
+        console.warn("Alert fetch failed:", e);
+    }
+};
+
 const AppState = createStore({
     viewMode: localStorage.getItem("viewMode") || "beginner",
     isHalalOnly: localStorage.getItem("isHalalOnly") === "true",
@@ -326,7 +406,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 statusDot.title = "Waking up...";
                 showToast(getLang() === "en" ? "Server waking up (Free Tier)..." : "Sunucu uyandırılıyor (Free Tier)...", "info");
                 
+                let retryCount = 0;
                 let pollInt = setInterval(async () => {
+                    retryCount++;
+                    if(retryCount > 20) {
+                        clearInterval(pollInt);
+                        statusDot.className = "status-dot dot-yellow"; 
+                        statusDot.title = "Offline / Timeout";
+                        showToast(getLang() === "en" ? "Server unreachable (Timeout)." : "Sunucuya ulaşılamadı (Zaman aşımı).", "warning");
+                        return;
+                    }
                     const h2 = await checkServerHealth();
                     if (h2.online) {
                         statusDot.className = "status-dot dot-green";
@@ -547,6 +636,7 @@ function initCopilot() {
         
         appendMsg(text, true);
         chatHistory.push({ role: "user", content: text });
+        if (chatHistory.length > 5) chatHistory = chatHistory.slice(-5);
         input.value = "";
         
         // Show loading indicator
@@ -570,9 +660,22 @@ function initCopilot() {
                 lang: getLang()
             };
             
+            let jwtToken = "";
+            try {
+                const session = await window.SupabaseAuth.getValidSession();
+                if (session) jwtToken = session.access_token;
+            } catch (e) {
+                loadDiv.remove();
+                appendMsg("Güvenlik Hatası: " + e.message, false);
+                return;
+            }
+            
             const res = await fetch(`${API_BASE}/api/chat`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${jwtToken}`
+                },
                 body: JSON.stringify(payload)
             });
             
@@ -761,7 +864,10 @@ async function setupSupabaseAuth() {
         loginBtn.style.borderColor = "rgba(239,68,68,0.3)";
         loginBtn.style.color = "#ef4444";
         
-        // Logged In: Load Portfolio
+        const settingsBtn = document.getElementById("user-settings-btn");
+        if (settingsBtn) settingsBtn.style.display = "flex";
+        
+        // Logged In: Load Portfolio and Autonomous Alerts
         try {
             const savedTickers = await SupabaseAuth.loadPortfolio();
             if (savedTickers && savedTickers.length > 0) {
@@ -772,6 +878,8 @@ async function setupSupabaseAuth() {
                      fetchAndRenderSignals(savedTickers.join(","));
                 }
             }
+            // Çan iconunu besle (Phase 4)
+            await fetchAutonomousAlerts();
         } catch (e) {
             console.warn("Portfolio load error:", e);
         }
@@ -817,3 +925,180 @@ async function setupSupabaseAuth() {
 
 // Start setup
 setTimeout(setupSupabaseAuth, 1000);
+
+// ═══════════════════════════════════════
+// USER SETTINGS (Phase 5)
+// ═══════════════════════════════════════
+function setupUserSettingsModal() {
+    const settingsBtn = document.getElementById("user-settings-btn");
+    const settingsModal = document.getElementById("settings-modal");
+    const closeBtn = document.getElementById("settings-modal-close");
+    const saveBtn = document.getElementById("save-settings-btn");
+    
+    if (!settingsBtn || !settingsModal) return;
+
+    settingsBtn.addEventListener("click", async () => {
+        settingsModal.classList.remove("hidden");
+        try {
+            const session = await window.SupabaseAuth.getValidSession();
+            if (!session) return;
+            const res = await fetch(`${API_BASE}/api/user-settings`, {
+                headers: { "Authorization": `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById("telegram-chat-id-input").value = data.telegram_chat_id || "";
+                if (data.risk_tolerance) {
+                    document.getElementById("risk-tolerance-select").value = data.risk_tolerance;
+                }
+            }
+        } catch (e) {
+            console.warn("Could not load settings:", e);
+        }
+    });
+
+    closeBtn.addEventListener("click", () => {
+        settingsModal.classList.add("hidden");
+    });
+    
+    window.addEventListener("click", (e) => {
+        if (e.target === settingsModal) settingsModal.classList.add("hidden");
+    });
+
+    saveBtn.addEventListener("click", async () => {
+        const tgId = document.getElementById("telegram-chat-id-input").value.trim();
+        const risk = document.getElementById("risk-tolerance-select").value;
+        const origText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+        
+        try {
+            const session = await window.SupabaseAuth.getValidSession();
+            if (!session) {
+                showToast("Önce giriş yapmalısınız.", "warning");
+                return;
+            }
+            const res = await fetch(`${API_BASE}/api/user-settings`, {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${session.access_token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ telegram_chat_id: tgId, risk_tolerance: risk })
+            });
+            if (res.ok) {
+                showToast("Ayarlarınız kaydedildi.", "success");
+                settingsModal.classList.add("hidden");
+            } else {
+                throw new Error("Sunucu hatası");
+            }
+        } catch (e) {
+            showToast("Ayarlar kaydedilirken hata oluştu: " + e.message, "error");
+        } finally {
+            saveBtn.innerHTML = origText;
+        }
+    });
+
+    // Tooltip Tıklama ile Sabitleme (Phase 5 Ek)
+    const tooltip = document.querySelector(".tooltip-icon");
+    if (tooltip) {
+        tooltip.addEventListener("click", (e) => {
+            e.stopPropagation();
+            tooltip.classList.toggle("pinned");
+        });
+        
+        // Başka yere basınca kapat
+        window.addEventListener("click", (e) => {
+            if (tooltip.classList.contains("pinned") && !tooltip.contains(e.target)) {
+                tooltip.classList.remove("pinned");
+            }
+        });
+    }
+}
+setTimeout(setupUserSettingsModal, 1000);
+
+// ═══════════════════════════════════════
+// PORTFOLIO OPTIMIZATION (Phase 6)
+// ═══════════════════════════════════════
+function setupOptimization() {
+    const optimizeBtn = document.getElementById("btn-optimize-portfolio");
+    const content = document.getElementById("optimization-content");
+    const aiText = document.getElementById("opt-ai-text");
+    
+    if (!optimizeBtn) return;
+    
+    optimizeBtn.addEventListener("click", async () => {
+         const currentResults = (typeof AppState !== "undefined" && AppState.results) || window.lastResults || [];
+         if (currentResults.length === 0) {
+              return showToast("Önce bir analiz çalıştırın veya portföy ekleyin.", "warning");
+         }
+
+         const tickers = currentResults.map(r => r.ticker);
+         const totalWeight = currentResults.reduce((sum, r) => sum + (r.weight || 1), 0);
+         const weights = {};
+         currentResults.forEach(r => {
+              weights[r.ticker] = ((r.weight || 1) / totalWeight) * 100;
+         });
+
+         const origText = optimizeBtn.innerHTML;
+         optimizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Optimize ediliyor...';
+         optimizeBtn.disabled = true;
+         
+         try {
+              const session = await window.SupabaseAuth.getValidSession();
+              if (!session) return showToast("Lütfen giriş yapın.", "warning");
+
+              const res = await fetch(`${API_BASE}/api/optimize-portfolio`, {
+                   method: "POST",
+                   headers: {
+                        "Authorization": `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json"
+                   },
+                   body: JSON.stringify({ tickers, weights })
+              });
+              
+              if (!res.ok) throw new Error("Ağ hatası veya yetersiz veri");
+              const data = await res.json();
+              
+              content.classList.remove("hidden");
+              
+              if (typeof renderOptChart === "function") {
+                  renderOptChart("opt-comparison-chart", data.current_weights, data.optimal_weights);
+              }
+
+              // AI rebalance prompt
+              const prompt = `Mevcut Varlık Dağılımım: ${JSON.stringify(data.current_weights)}
+Maksimum Sharpe Oranına göre Matematiksel Optimum Dağılım: ${JSON.stringify(data.optimal_weights)}
+
+Lütfen bu iki dağılımı karşılaştır. Hangilerini satıp hangilerini almam gerektiğini matematiksel aksiyon adımlarıyla Rebalance (Yeniden Dengeleme) tavsiyesi olarak Türkçe açıkla.`;
+              
+              aiText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI tavsiyesi oluşturuluyor...';
+              
+              const aiRes = await fetch(`${API_BASE}/api/chat`, {
+                   method: "POST",
+                   headers: { 
+                       "Authorization": `Bearer ${session.access_token}`,
+                       "Content-Type": "application/json" 
+                   },
+                   body: JSON.stringify({
+                        messages: [{ role: "user", content: prompt }],
+                        portfolio_context: JSON.stringify(currentResults.map(r => ({ ticker: r.ticker })))
+                   })
+              });
+              
+              if (aiRes.ok) {
+                   const aiData = await aiRes.json();
+                   aiText.innerHTML = aiData.response; 
+              } else {
+                   aiText.innerText = "Matematiksel optimum bulundu. Detaylar ve yorum için Copilot'a sorabilirsiniz.";
+              }
+              
+         } catch (e) {
+              console.error(e);
+              showToast("Optimizasyon başarısız oldu: " + e.message, "danger");
+         } finally {
+              optimizeBtn.innerHTML = origText;
+              optimizeBtn.disabled = false;
+         }
+    });
+}
+setTimeout(setupOptimization, 1000);

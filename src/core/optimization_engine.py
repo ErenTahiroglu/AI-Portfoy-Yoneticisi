@@ -43,28 +43,37 @@ def optimize_portfolio(returns_df: pd.DataFrame, risk_free_rate: float = 0.0) ->
         mean_returns = returns_df.mean() * 252
         cov_matrix = returns_df.cov() * 252
         
-        def port_ret(weights):
-            return np.sum(mean_returns * weights)
+        mean_returns = returns_df.mean() * 252
+        cov_matrix = returns_df.cov() * 252
         
-        def port_vol(weights):
-            return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
-            
-        import scipy.optimize as sco
+        # 3. Monte Carlo Simülasyonu (Numpy Only)
+        num_iterations = 5000
         
-        def min_func_sharpe(weights):
-            vol = port_vol(weights)
-            if vol == 0: return 0.0
-            return -(port_ret(weights) - risk_free_rate) / vol
-            
-        def min_func_volatility(weights):
-            return port_vol(weights)
-            
-        def min_func_return(weights):
-            return -port_ret(weights)
+        # Önceden rastgele ağırlık matrisini üret (Hızlı çarpım için)
+        weights_matrix = np.random.random((num_iterations, num_assets))
+        # Satırları toplayıp normalize et (Ağırlıklar toplamı = 1.0 olsun)
+        weights_matrix = weights_matrix / weights_matrix.sum(axis=1)[:, np.newaxis]
         
-        constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1.0})
-        bounds = tuple((0.0, 1.0) for _ in range(num_assets))
-        init_guess = [1.0 / num_assets] * num_assets
+        # Portföy Getirileri
+        port_returns = np.dot(weights_matrix, mean_returns)
+        
+        # Portföy Volatiliteleri (Vektörize edilmiş kovaryans çarpımı)
+        port_vols = np.zeros(num_iterations)
+        for i in range(num_iterations):
+            w = weights_matrix[i]
+            port_vols[i] = np.sqrt(np.dot(w.T, np.dot(cov_matrix, w)))
+            
+        # Sharpe Oranları
+        sharpe_ratios = np.zeros(num_iterations)
+        # 0'a bölme riskini engelle
+        valid_vols = port_vols > 0
+        sharpe_ratios[valid_vols] = (port_returns[valid_vols] - risk_free_rate) / port_vols[valid_vols]
+        
+        # İndeksleri Bul
+        max_sharpe_idx = np.argmax(sharpe_ratios)
+        min_vol_idx = np.argmin(port_vols)
+        # Max Getiri (Sharpe değil, sadece return)
+        max_ret_idx = np.argmax(port_returns)
         
         def format_weights(w_array):
             w_dict = {}
@@ -72,31 +81,12 @@ def optimize_portfolio(returns_df: pd.DataFrame, risk_free_rate: float = 0.0) ->
                 w_dict[t] = round(float(w_array[i]) * 100, 2)
             return w_dict
 
-        # Calculate Max Sharpe
-        res_sharpe = sco.minimize(min_func_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        if res_sharpe.success:
-            results["max_sharpe"] = format_weights(res_sharpe.x)
-        else:
-            logger.warning(f"optimize_portfolio: max_sharpe optimizasyonu başarısız: {res_sharpe.message}")
-
-        # Calculate Min Volatility
-        res_vol = sco.minimize(min_func_volatility, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        if res_vol.success:
-            results["min_volatility"] = format_weights(res_vol.x)
-        else:
-            logger.warning(f"optimize_portfolio: min_volatility optimizasyonu başarısız: {res_vol.message}")
+        results["max_sharpe"] = format_weights(weights_matrix[max_sharpe_idx])
+        results["min_volatility"] = format_weights(weights_matrix[min_vol_idx])
+        results["max_return"] = format_weights(weights_matrix[max_ret_idx])
             
-        # Calculate Max Return
-        res_ret = sco.minimize(min_func_return, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        if res_ret.success:
-            results["max_return"] = format_weights(res_ret.x)
-        else:
-            logger.warning(f"optimize_portfolio: max_return optimizasyonu başarısız: {res_ret.message}")
-            
-    except ImportError:
-        logger.info("scipy not found, using default equal weights fallback.")
     except Exception as e:
-        logger.warning(f"optimize_portfolio sırasında kritik hata oluştu (LinAlgError vs): {e}")
+        logger.warning(f"optimize_portfolio sırasında kritik hata oluştu (Numpy): {e}")
         # Hata durumunda results, fonksiyonun başında eşit ağırlıkla tanımlanmış halleriyle kalır.
         
     return results
