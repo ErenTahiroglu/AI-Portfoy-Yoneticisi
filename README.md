@@ -84,8 +84,9 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 ### ☁️ Canlı Ortamda Yayınlama (Vercel + Render)
 
 #### 1. Backend (Render.com)
-*   **Build Command:** `pip install -r backend/requirements.txt`
-*   **Start Command:** `PYTHONPATH=. uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT`
+*   **Root Directory:** `backend`
+*   **Build Command:** `pip install -r requirements.txt`
+*   **Start Command:** `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
 *   **💡 Multi-Agent Architecture [v7.5]:** `ai_agent.py` birden fazla alt-ajanın (Analist, Araştırmacı) paralelde çalıştıran asenkron CIO yapısına taşındı.
 *   **💡 Risk Analyzer & Stress Testing [v7.6]:** %95 Güven Aralığında Günlük VaR, Max Drawdown ve %20 Endeks Şoku kurgusu backend hesaplamalarına bağlandı.
 *   **💡 Sanal Emir İletim Sistemi [v7.7]:** Fark Delta hesabı ile paper trade virtual market orders logging and Supabase write flow devrede.
@@ -93,8 +94,8 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 SOLID & Clean Architecture [v8.0]:** FastAPI Router'ları (`backend/api/routers/`) ve Frontend dosyaları ES6 Modüllerine kırılarak high-level decoupling sağlandı.
 
 #### 2. Frontend (Vercel)
+*   **Root Directory:** Proje kök dizini (Root) — Kök dizindeki `vercel.json` otomatik olarak `frontend` klasörünü build eder ve API isteklerini Render'a yönlendirir (Reverse Proxy).
 *   `frontend/js/components/` ve `app.js` ES6 Modülleri üzerinden çalışmaktadır.
-*   Vercel Proxy ayarlarını `vercel.json` dosyasından takip edebilirsiniz.
 
 
 ---

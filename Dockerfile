@@ -11,9 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt .
+COPY backend/requirements.txt ./backend/
 
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r backend/requirements.txt
 
 # Stage 2: Run application
 FROM python:3.12-slim AS runner
@@ -27,8 +27,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Copy installed packages from builder
 COPY --from=builder /install /usr/local
 
-# Copy application code
-COPY . .
+# Copy ONLY backend code
+COPY backend ./backend
 
 EXPOSE 8000
 
@@ -36,6 +36,6 @@ EXPOSE 8000
 RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
-# CMD to run FastAPI with uvicorn
+# CMD to run FastAPI with uvicorn (relative to PYTHONPATH=/app)
 CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
