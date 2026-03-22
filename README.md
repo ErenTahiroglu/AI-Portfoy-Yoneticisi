@@ -107,6 +107,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Optimizer & ML Engine Hardening [v6.4]:** `optimization_engine.py` için veri temizliği (sanitization) ve Scipy matematiksel çökme korumaları (LinAlgError) eklendi; `ml_predictor.py` için 2 yıllık horizon ufku, piyasa freq="B"/"D" ayrımı ve yarım (unclosed) mum engeli mimarisi uygulandı.
 *   **💡 Vercel Deployment Trigger [v6.5]:** Frontend ve Backend son güncel optimizasyonlarla yayına alındı.
 *   **💡 Analyzer Data Sanity & UTC fixes [v7.0]:** `CryptoAnalyzerStrategy` saat dilimi (UTC) ve yarım mum kısıtlamaları dökümante edildi; `TechnicalAnalyzerStrategy` için RSI divide-by-zero hatası ve `ValuationAnalyzerStrategy` finansal radar skorlama veri yokluğu (not missing) cezalandırma bariyerleri devreye alındı. NaN/Inf sızıntıları tamamen izole edildi.
+*   **💡 Networkless Market Detection [v7.1]:** `market_detector.py` içerisindeki tüm harici Yahooquery (ağ/network) istekleri temizlendi. Timeout ve API bekleme çökmesi riski sıfırlanarak pazar algılama tamamen kural-tabanlı (string analysis) hale getirildi.
 
 
 #### 2. Frontend (Vercel)
