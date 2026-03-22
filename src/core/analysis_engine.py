@@ -185,10 +185,11 @@ class FinancialAnalyzerStrategy(BaseAnalyzerStrategy):
                 if fin_data:
                     if isinstance(fin_data, dict) and "error" in fin_data:
                         result_entry["fin_error"] = fin_data["error"]
-                        # Veri tipini bozmamak için boş financials ekle
-                        result_entry["financials"] = {} 
                     else:
                         result_entry["financials"] = fin_data
+                        # klines verisini yüzeye (surface) çıkar - Frontend uyumluluğu
+                        if isinstance(fin_data, dict) and "klines" in fin_data:
+                            result_entry["klines"] = fin_data["klines"]
                 else:
                     msg = "Tarihsel getiri verisi çekilemedi. (Sadece anlık değerleme metrikleri gösteriliyor)" if not is_tefas else "Fon verisi alınamadı (WAF engeli veya bağlantı sorunu)."
                     result_entry["fin_error"] = msg
@@ -280,6 +281,10 @@ class MLAnalyzerStrategy(BaseAnalyzerStrategy):
 
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
         try:
+            is_tefas = context.get("is_tefas", False)
+            if is_tefas:
+                return # TEFAS fonları için ML tahmini devre dışıdır.
+
             from src.analyzers.ml_predictor import predict_price
             def _call():
                 return predict_price(ticker)
@@ -508,6 +513,10 @@ class AnalysisEngine:
         # Frontend Felci İçin Varsayılan Değerler (Fallback)
         result_entry["radar_score"] = {"profitability": 50, "value": 50, "growth": 50, "debt": 50}
         result_entry["technicals"] = {"gauge_score": 50}
+        result_entry["financials"] = {"son_fiyat": {"fiyat": 0.0, "degisim": 0.0, "tarih": ""}, "yg": {}}
+        result_entry["valuation"] = {"market_cap": 0, "pe": 0.0, "pb": 0.0, "peg": 0.0}
+        result_entry["ml_prediction"] = {"direction": "SIDEWAYS", "confidence": 50, "target_7d": 0, "change_pct": 0}
+        result_entry["klines"] = []
         
         # Strateji Bağlamı (Context)
         context = {

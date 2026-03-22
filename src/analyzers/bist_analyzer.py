@@ -391,6 +391,20 @@ class HisseAnaliz(BaseAnalyzer):
         logger.info(f"\n  💰 Son Fiyat: {son_fiyat.fiyat:.2f} ₺ "
                      f"({son_fiyat.degisim:+.2f}%) — {son_fiyat.tarih}")
 
+        # ── klines formatı (Grafik Verisi) ────────────────────────────────────
+        klines_data = []
+        klines_df = fiyatlar.tail(100) # Son 100 bar
+        for idx, row in klines_df.iterrows():
+            close_v = float(row['Close'])
+            klines_data.append({
+                "time": int(idx.timestamp() * 1000),
+                "open": float(row.get('Open', close_v)),
+                "high": float(row.get('High', close_v)),
+                "low": float(row.get('Low', close_v)),
+                "close": close_v,
+                "volume": float(row.get('Volume', 0.0))
+            })
+
         sonuc = {
             "sembol": temiz, "ad": veri["ad"],
             "son_fiyat": asdict(son_fiyat),
@@ -399,6 +413,7 @@ class HisseAnaliz(BaseAnalyzer):
             "ay": {}, "hafta": {},
             "gunluk_ist": None,
             "risk": None,
+            "klines": klines_data # Grafik Verisi Ekleniyor
         }
 
         # ── Yıllık getiri ────────────────────────────────────────────────────

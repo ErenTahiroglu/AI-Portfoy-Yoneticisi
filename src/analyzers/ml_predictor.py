@@ -59,6 +59,9 @@ def predict_price(ticker: str) -> dict:
             "y": hist["Close"].values,
         })
         
+        if df.empty or "y" not in df.columns:
+            return {"ticker": ticker, "error": "Boş DataFrame döndü.", "enabled": True}
+        
         # Tamamlanmamış Mum Koruması (Incomplete Candle)
         today = pd.Timestamp.now().normalize()
         if df["ds"].iloc[-1].normalize() == today:
