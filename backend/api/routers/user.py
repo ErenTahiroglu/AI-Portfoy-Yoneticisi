@@ -125,3 +125,27 @@ async def get_paper_trades(request: Request):
     except Exception as e:
         logger.error(f"Paper trades fetch failed: {e}")
         return []
+
+@router.get("/portfolio/history", dependencies=[Depends(verify_jwt)])
+async def get_portfolio_history(request: Request):
+    """Kullanıcının geçmiş portföy snapshot verilerini (son 30 gün) getirir."""
+    user = getattr(request.state, "user", None)
+    if not user: raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = user["sub"]
+    supa_url = os.getenv('SUPABASE_URL', '')
+    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+    if not supa_url or not supa_key: return []
+
+    url = f"{supa_url}/rest/v1/portfolio_snapshots?user_id=eq.{user_id}&order=timestamp.desc&limit=30"
+    headers = { "apikey": supa_key, "Authorization": f"Bearer {supa_key}" }
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200: 
+                data = resp.json()
+                return data[::-1]  # Kronolojik sıra (eskiden yeniye)
+        return []
+    except Exception as e:
+        logger.error(f"Portfolio history fetch failed: {e}")
+        return []

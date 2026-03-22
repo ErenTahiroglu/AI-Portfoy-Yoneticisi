@@ -14,7 +14,7 @@
 
 ## Türkçe (Turkish)
 
-**Portföy Analiz Platformu (v8.0)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri, Kripto Paralar ve TEFAS fonlarını aynı anda analiz edebilen, çoklu-ajan (Multi-Agent) yapay zeka destekli yerel bir web uygulamasıdır. 
+**Portföy Analiz Platformu (v8.1)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri, Kripto Paralar ve TEFAS fonlarını aynı anda analiz edebilen, çoklu-ajan (Multi-Agent) yapay zeka destekli yerel bir web uygulamasıdır. 
 Finansal verileri hesaplar, risk analizleri (VaR, MaxDD) yapar, sanal emirlerle (Paper Trading) strateji takibi sağlar, sonuçları Google Gemini AI CIO modülü ile yorumlar ve modern, mobil uyumlu, logolu bir arayüz sunar.
 
 ### ✨ Temel Özellikler
@@ -23,7 +23,8 @@ Finansal verileri hesaplar, risk analizleri (VaR, MaxDD) yapar, sanal emirlerle 
 |---------|----------|
 | 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST, Kripto (Binance) ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
 | 🤖 **Çoklu-Ajan Mimari (CIO)** | Analist ve Araştırmacı alt ajanlarının raporlarını derleyen **Chief Investment Officer (CIO)** orkestrasyonu |
-| 🛡️ **Gelişmiş Risk Motoru** | %95 Güven Aralığı `VaR (Value at Risk)`, Maksimum Düşüş (`Max Drawdown`) ve Ayarlanabilir **Stres Testleri** |
+| 🛡️ **Gelişmiş Risk Motoru**| %95 Güven Aralığı `VaR (Value at Risk)`, Maksimum Düşüş (`Max Drawdown`) ve Ayarlanabilir **Stres Testleri** |
+| 📈 **Portföy Snapshot** | Günlük özsermaye (Equity Curve) fotoğrafları ve canlı performans grafiği |
 | 📉 **Sanal Emir Sistemi** | Optimize edilen dağılımları `Supabase` üzerinden AL/SAT emirlerine (Paper Trading) dönüştürerek test etme |
 | 🔔 **Otonom Alarm Sistemi** | Kritik piyasa seviyelerinde arka planda çalışan ve anında panoya/Telegram'a düşen uyarılar |
 | 📊 **Premium UX Grafikleri** | Fintables stili **Finansal Sağlık Radarı**, TV stili **Teknik Kadran** ve Koyfin stili **Göreli Performans** |
@@ -63,7 +64,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 
 ## English
 
-**Portfolio Analysis Platform (v8.0)** is a locally-hosted, Multi-Agent AI web application for analyzing US stocks, BIST equities, Cryptocurrencies, and TEFAS mutual funds. It offers modular codebases, advanced risk calculation algorithms, paper trading verification, and rich modern dashboards.
+**Portfolio Analysis Platform (v8.1)** is a locally-hosted, Multi-Agent AI web application for analyzing US stocks, BIST equities, Cryptocurrencies, and TEFAS mutual funds. It offers modular codebases, advanced risk calculation algorithms, paper trading verification, and rich modern dashboards.
 
 ### ✨ Key Features
 
@@ -72,6 +73,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 | 🌍 **Multi-Market** | Mix US, BIST, Crypto and TEFAS tickers — market is **auto-detected** |
 | 🤖 **Multi-Agent Orchestration** | Chief Investment Officer (CIO) agent aggregating reports from Analyst and Researcher agents |
 | 🛡️ **Risk Analytics** | Historical %95 confidence `Value at Risk (VaR)`, `Max Drawdown`, and stress tests |
+| 📈 **Equity Curve** | Daily portfolio valuation snapshots and lightweight visualization chart |
 | 📉 **Paper Trading** | Calculates delta difference between current & optimal weights and records virtual market orders |
 | 📊 **Premium Dashboards** | Financial Health **Radar**, Technical **Gauge** indicators, and Relative Performance charts |
 | 🗺️ **Dynamic Heatmap** | Interactive Treemap with P/E, Dividend Yield, and Daily Change filters |
@@ -92,6 +94,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Sanal Emir İletim Sistemi [v7.7]:** Fark Delta hesabı ile paper trade virtual market orders logging and Supabase write flow devrede.
 *   **💡 Otonom Bildirim Döngüsü [v7.8]:** Arka planda eşik kontrolü yapıp telegram/panoya alert yazan döngü Lifespan'a entegre edildi.
 *   **💡 SOLID & Clean Architecture [v8.0]:** FastAPI Router'ları (`backend/api/routers/`) ve Frontend dosyaları ES6 Modüllerine kırılarak high-level decoupling sağlandı.
+*   **💡 Portföy Snapshot & Equity Curve [v8.1]:** Günlük bakiye compound getiri hesaplayan scheduler logic ve canlı Lightweight-Charts dashboard widget entegrasyonu.
 
 #### 2. Frontend (Vercel)
 *   **Root Directory:** Proje kök dizini (Root) — Kök dizindeki `vercel.json` otomatik olarak `frontend` klasörünü build eder ve API isteklerini Render'a yönlendirir (Reverse Proxy).

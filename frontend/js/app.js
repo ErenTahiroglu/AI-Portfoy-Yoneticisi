@@ -185,6 +185,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     initCopilot();
 });
 
+async function loadEquityCurve() {
+    if (!window.SupabaseAuth) return;
+    try {
+        const session = await window.SupabaseAuth.getValidSession();
+        if (!session) return;
+        const token = session.access_token;
+        
+        const resp = await fetch(`${API_BASE}/api/portfolio/history`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await resp.json();
+        if (data && data.length > 0) {
+            const widget = document.getElementById("equity-curve-widget");
+            if (widget) widget.classList.remove("hidden");
+            if (typeof createEquityCurveChart === "function") {
+                createEquityCurveChart("equity-chart-container", data);
+            }
+        }
+    } catch (e) {
+        console.error("Equity Curve load failed:", e);
+    }
+}
+
 // ── Bindings & Triggers ───────────────────────────────────────────────────
 setTimeout(() => {
     setupBacktestBindings();
@@ -192,6 +215,9 @@ setTimeout(() => {
     setupRiskAnalysis();
     setupPaperTrades();
     if (typeof setupSupabaseAuth === "function") setupSupabaseAuth();
+    
+    // Yükleme Sonrası Kayıtlı Grafik Çek
+    loadEquityCurve();
 }, 1000);
 
 function renderResults(data) {

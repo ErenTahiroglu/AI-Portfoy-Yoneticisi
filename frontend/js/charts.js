@@ -1014,6 +1014,67 @@ function renderOptChart(id, curWeights, optWeights) {
                    x: { grid: { display: false }, ticks: { color: text, font: { size: 11 } } },
                    y: { grid: { color: grid }, ticks: { color: text, font: { size: 10 }, callback: v => '%' + v } }
               }
-         }
+          }
+     });
+}
+
+// ═══════════════════════════════════════
+// EQUITY CURVE CHART (Portfolio Snapshots)
+// ═══════════════════════════════════════
+function createEquityCurveChart(containerId, snapData) {
+    const container = document.getElementById(containerId);
+    if (!container || !snapData || snapData.length === 0) return;
+
+    if (tvChartInstances[containerId]) {
+        try { tvChartInstances[containerId].remove(); } catch (e) {}
+        delete tvChartInstances[containerId];
+    }
+    container.innerHTML = "";
+
+    const isDark = document.documentElement.getAttribute("data-theme") !== "light" || (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    const chartOptions = {
+        layout: {
+            background: { type: 'solid', color: 'transparent' },
+            textColor: isDark ? '#94a3b8' : '#64748b',
+        },
+        grid: {
+            vertLines: { color: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(0,0,0,0.04)' },
+            horzLines: { color: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(0,0,0,0.04)' },
+        },
+        crosshair: { mode: 1 },
+        rightPriceScale: { borderVisible: false },
+        timeScale: { borderVisible: false, timeVisible: true },
+        handleScroll: true,
+        handleScale: true,
+    };
+
+    const chart = LightweightCharts.createChart(container, chartOptions);
+    tvChartInstances[containerId] = chart;
+
+    const resizeObserver = new ResizeObserver(entries => {
+        if (entries[0].contentRect.width > 0) {
+            chart.applyOptions({ width: entries[0].contentRect.width, height: container.clientHeight || 250 });
+        }
     });
+    resizeObserver.observe(container);
+
+    const areaSeries = chart.addAreaSeries({
+        lineColor: '#22c55e',
+        topColor: 'rgba(34, 197, 94, 0.3)',
+        bottomColor: 'rgba(34, 197, 94, 0.0)',
+        lineWidth: 3,
+        title: 'Özsermaye (Equity)',
+    });
+
+    const data = snapData.map(s => {
+        const t = Math.floor(new Date(s.timestamp).getTime() / 1000);
+        return { time: t, value: parseFloat(s.total_value) };
+    }).sort((a, b) => a.time - b.time);
+
+    if (data.length > 0) {
+        areaSeries.setData(data);
+    }
+
+    chart.timeScale().fitContent();
 }
