@@ -67,11 +67,13 @@ app.add_middleware(
 register_websocket_routes(app)
 
 # ── Sub-Routers Include ───────────────────────────────────────────────────
-from backend.api.routers import analysis, chat, user
+from backend.api.routers import analysis, chat, user, admin, billing
 
 app.include_router(analysis.router)
 app.include_router(chat.router)
 app.include_router(user.router)
+app.include_router(admin.router)
+app.include_router(billing.router)
 
 # ── Root Redirect & Static Files (Frontend) ───────────────────────────────
 @app.get("/api/health")

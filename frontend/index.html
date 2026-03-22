@@ -27,6 +27,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body:not(.professional-mode) .pro-only { display: none !important; }
+        body.professional-mode .beginner-only { display: none !important; }
+        .switch .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary) !important; }
+        input:checked + .slider:before { transform: translateX(16px); }
+    </style>
 </head>
 
 <body>
@@ -118,11 +125,119 @@
         </div>
     </div>
 
+    <!-- LANDING PAGE OVERLAY (Visible when Not Authenticated) -->
+    <div id="landing-page" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 10%, #15161e 0%, #0b0c10 80%); z-index: 1200; overflow-y: auto; display: flex; flex-direction: column; font-family: 'Inter', sans-serif;">
+        <!-- Landing Navbar -->
+        <nav style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 3rem; background: rgba(0,0,0,0.2); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="logo.png" alt="Logo" style="height: 32px; filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));">
+                <span style="font-weight: 800; font-size: 1.25rem; color: #fff; letter-spacing: -0.5px;">Portföy <span style="background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Analiz</span></span>
+            </div>
+            <div>
+                <button onclick="document.getElementById('login-modal').classList.remove('hidden')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">Giriş Yap</button>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4rem 1rem; position: relative;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; background: rgba(99, 102, 241, 0.05); filter: blur(100px); border-radius: 50%; z-index: -1;"></div>
+            
+            <div style="background: rgba(99, 102, 241, 0.1); color: #818cf8; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.3); margin-bottom: 1.5rem; letter-spacing: 0.5px; text-transform: uppercase;"><i class="fas fa-sparkles"></i> Yapay Zeka & Multi-Agent Teknolojisi</div>
+            
+            <h1 style="color: #fff; font-size: 3.5rem; font-weight: 800; max-width: 850px; line-height: 1.1; letter-spacing: -1px; margin-bottom: 1rem;">Varlıklarınızı <span style="background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Otonom</span> Olarak Optimize Edin</h1>
+            <p style="color: #9ca3af; font-size: 1.1rem; max-width: 600px; line-height: 1.6; margin-bottom: 2.5rem;">Sanal Trading (Paper), Monte Carlo Risk analizleri ve Kurumsal yapay zeka ajanları ile portföyünüzü akıllı kontrol edin.</p>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 4rem;">
+                <button onclick="document.getElementById('login-modal').classList.remove('hidden')" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); transition: transform 0.2s;">Hemen Ücretsiz Başla <i class="fas fa-arrow-right" style="margin-left: 8px; font-size: 0.85rem;"></i></button>
+            </div>
+
+            <!-- Features Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; max-width: 1000px; width: 100%; padding: 0 2rem;">
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px); transition: transform 0.2s;">
+                    <div style="font-size: 1.5rem; color: #6366f1; margin-bottom: 8px;"><i class="fas fa-robot"></i></div>
+                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Multi-Agent CIO</h3>
+                    <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Yapay zeka ajanları piyasa trendlerini tek tek tarayarak kurumsal raporlar üretir.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
+                    <div style="font-size: 1.5rem; color: #10b981; margin-bottom: 8px;"><i class="fas fa-chart-pie"></i></div>
+                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Portföy Optimizasyonu</h3>
+                    <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Sharpe ve Markowitz algoritmalarıyla matematiksel olarak karlı dağılımlar hesaplar.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
+                    <div style="font-size: 1.5rem; color: #ef4444; margin-bottom: 8px;"><i class="fas fa-shield-halved"></i></div>
+                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Uçtan Uca Risk Motoru</h3>
+                    <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Value at Risk (VaR) ve Max Drawdown modellerini kullanarak kayıp toleransları çizer.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
+                    <div style="font-size: 1.5rem; color: #f59e0b; margin-bottom: 8px;"><i class="fas fa-receipt"></i></div>
+                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Sanal Paper Trading</h3>
+                    <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Hiçbir gerçek bakiye riske atmadan piyasada anlık alım/satım simülasyonları yapın.</p>
+                </div>
+            </div>
+        </section>
+        
+        <footer style="padding: 1.5rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.02); color: #6b7280; font-size: 0.85rem;">
+            © 2026 Portföy Analiz Platformu. Tüm Hakları Saklıdır.
+        </footer>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div id="admin-dashboard-modal" class="modal-overlay hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; display: flex;">
+        <div class="modal-content glass-panel" style="max-width: 900px; width: 95%; max-height: 85vh; overflow-y: auto; padding: 2rem; border: 1px solid rgba(231, 76, 60, 0.3);">
+            <div class="modal-header" style="justify-content: space-between; display: flex; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #e74c3c; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 0;"><i class="fas fa-user-shield"></i> Süper Yönetici Paneli (Admin)</h2>
+                <button id="admin-modal-close" class="modal-close" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="admin-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+                <div class="metric-card glass-panel" style="padding: 1.5rem; border-color: rgba(255,255,255,0.05); display: flex; align-items: center; gap: 15px;">
+                    <div class="card-icon" style="background: rgba(52, 152, 219, 0.1); color: #3498db; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;"><i class="fas fa-users"></i></div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Toplam Kullanıcı</h4>
+                        <span id="admin-total-users" style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">-</span>
+                    </div>
+                </div>
+                <div class="metric-card glass-panel" style="padding: 1.5rem; border-color: rgba(255,255,255,0.05); display: flex; align-items: center; gap: 15px;">
+                    <div class="card-icon" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;"><i class="fas fa-chart-line"></i></div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Platform AUM ($)</h4>
+                        <span id="admin-total-aum" style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">-</span>
+                    </div>
+                </div>
+                <div class="metric-card glass-panel" style="padding: 1.5rem; border-color: rgba(255,255,255,0.05); display: flex; align-items: center; gap: 15px;">
+                    <div class="card-icon" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;"><i class="fas fa-burn"></i></div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">24s LLM Cost</h4>
+                        <span id="admin-llm-cost" style="font-size: 1.5rem; font-weight: 700; color: #e74c3c;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-rows" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+                <div>
+                    <h4 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1rem;"><i class="fas fa-chart-area"></i> 7 Günlük LLM Maliyeti ($)</h4>
+                    <div id="admin-cost-chart" style="height: 250px; background: rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border);"></div>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1rem;"><i class="fas fa-crown"></i> En Aktif Kullanıcılar</h4>
+                    <ul id="admin-top-users" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li style="color: var(--text-muted); font-style: italic;">Yükleniyor...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SIDEBAR -->
     <aside class="sidebar glass-panel" id="sidebar">
         <div class="sidebar-logo">
             <img src="logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">Portföy <span class="logo-accent">Analiz</span> <span id="server-status-dot" class="status-dot dot-gray" title="Server Status"></span></span>
+        </div>
+
+        <!-- Admin Dashboard Button -->
+        <div id="admin-sidebar-section" class="sidebar-section hidden" style="border-top: 1px solid rgba(231, 76, 60, 0.15); padding: 1rem 1.25rem;">
+             <button class="btn btn-danger" id="open-admin-btn" style="width: 100%; border-radius: 8px; background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.4); color: #e74c3c; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s;"><i class="fas fa-user-shield"></i> Yönetici Paneli</button>
         </div>
 
         <div class="sidebar-section">
@@ -196,7 +311,7 @@
         </div>
 
         <!-- Advanced Settings (PV Features) -->
-        <div class="sidebar-section" id="advanced-settings-section">
+        <div class="sidebar-section pro-only" id="advanced-settings-section">
             <h3 class="section-title" style="cursor:pointer;" onclick="document.getElementById('advanced-settings-body').classList.toggle('hidden')">
                 <i class="fas fa-cogs"></i> <span data-i18n="sidebar.advanced">GELİŞMİŞ AYARLAR (PV)</span> <i class="fas fa-chevron-down" style="font-size:0.75rem; float:right; margin-top:4px;"></i>
             </h3>
@@ -271,6 +386,16 @@
         <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center;">
             <span class="top-badge" data-i18n="header.badge">AI Destekli Analiz</span>
             
+            <!-- Mode Switcher -->
+            <div class="mode-switcher" style="margin-left:auto; margin-right: 15px; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); padding:5px 12px; border-radius:20px; z-index:10;">
+                <span style="font-size:0.75rem; color:var(--text-muted);" id="lbl-beginner">Sade</span>
+                <label class="switch" style="position:relative; display:inline-block; width:34px; height:18px; margin:0;">
+                    <input type="checkbox" id="ui-mode-toggle" style="position:absolute; opacity:0; width:0; height:0;">
+                    <span class="slider round" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#333; transition:.4s; border-radius:34px;"></span>
+                </label>
+                <span style="font-size:0.75rem; color:var(--primary);" id="lbl-pro">Quant</span>
+            </div>
+            
             <div class="auth-controls" id="auth-controls" style="margin-left:auto; display:flex; align-items:center;">
                 <!-- Otonom Uyarı Zili (Phase 4) -->
                 <div class="notification-container" id="notification-container" style="position:relative; display:none; margin-right:15px; cursor:pointer;">
@@ -298,7 +423,7 @@
         </div>
 
         <!-- Radar & Signals Ticker (Phase 4) -->
-        <div id="radar-signal-widget" class="radar-signal-box hidden" style="margin-top: 1rem; margin-bottom: 1.25rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.01); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; gap: 10px; overflow-x: auto; white-space: nowrap;">
+        <div id="radar-signal-widget" class="radar-signal-box hidden pro-only" style="margin-top: 1rem; margin-bottom: 1.25rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.01); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; gap: 10px; overflow-x: auto; white-space: nowrap;">
             <div style="font-weight: 700; font-size: 0.82rem; color: var(--primary); display: flex; align-items: center; gap: 5px; flex-shrink: 0; padding-right: 10px; border-right: 1px solid var(--glass-border);">
                 <i class="fas fa-satellite-dish"></i> <span style="letter-spacing:1px;">RADAR</span>
             </div>
@@ -504,8 +629,8 @@
                 <div id="portfolio-heatmap" class="heatmap-container" style="margin-top:0.5rem;"></div>
             </div>
 
-            <!-- Scenarios & Dividend FI/RE Calculator -->
-            <div id="scenarios-wrap" class="hidden" style="margin-bottom:2rem;">
+            <!-- Scenario Simulations -->
+            <div id="scenarios-wrap" class="hidden pro-only" style="margin-bottom:2rem;">
                 <div class="section-header">
                     <h3 data-i18n="results.scenarios"><i class="fas fa-flask"></i> Senaryo & Stres Testleri</h3>
                     <p class="section-desc">Portföyünüzün piyasa şoklarına dayanıklılığını ve gelecek hedeflerinizi test
@@ -790,7 +915,7 @@
             </div>
 
             <!-- Optimization -->
-            <div id="optimization-wrap" class="hidden" style="margin-bottom:2rem;">
+            <div id="optimization-wrap" class="hidden pro-only" style="margin-bottom:2rem;">
                 <h3 data-i18n="results.optimization"><i class="fas fa-balance-scale"></i> Portföy Optimizasyonu</h3>
                 <div id="opt-bars"
                     style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:var(--radius); padding:1.5rem;">
@@ -813,22 +938,23 @@
                         <thead>
                             <tr>
                                 <th data-i18n="th.ticker">Hisse / Fon</th>
-                                <th data-i18n="th.market">Pazar</th>
-                                <th data-i18n="th.weight">Ağırlık</th>
+                                <th class="pro-only" data-i18n="th.market">Pazar</th>
+                                <th class="pro-only" data-i18n="th.weight">Ağırlık</th>
                                 <th data-i18n="th.price">Son Fiyat</th>
-                                <th data-i18n="th.compliance">Uygunluk / Katılım</th>
+                                <th data-i18n="th.change">Değişim %</th>
+                                <th data-i18n="th.compliance">Katılım</th>
                                 <th data-i18n="th.status">Durum</th>
-                                <th title="Fiyat/Kazanç Oranı. Hissenin ne kadar pahalı/ucuz olduğunu gösterir."
+                                <th class="pro-only" title="Fiyat/Kazanç Oranı. Hissenin ne kadar pahalı/ucuz olduğunu gösterir."
                                     data-i18n-title="tooltip.pe"
                                     style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">
                                     P/E <i class="fas fa-question-circle"
                                         style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
-                                <th title="Piyasa Değeri / Defter Değeri. Şirketin özsermayesine oranla fiyatı."
+                                <th class="pro-only" title="Piyasa Değeri / Defter Değeri. Şirketin özsermayesine oranla fiyatı."
                                     data-i18n-title="tooltip.pb"
                                     style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">
                                     P/B <i class="fas fa-question-circle"
                                         style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
-                                <th title="Oynaklık ölçüsü. Piyasa 1'dir. 1'den büyükse piyasadan daha hareketlidir."
+                                <th class="pro-only" title="Oynaklık ölçüsü. Piyasa 1'dir. 1'den büyükse piyasadan daha hareketlidir."
                                     data-i18n-title="tooltip.beta"
                                     style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">
                                     Beta <i class="fas fa-question-circle"

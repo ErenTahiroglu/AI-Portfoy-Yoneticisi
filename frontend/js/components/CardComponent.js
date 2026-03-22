@@ -10,6 +10,13 @@ export function createSummaryRow(res) {
     const val = res.valuation || {};
     const sonFiyat = fin.son_fiyat ? `${fin.son_fiyat.fiyat?.toFixed(2) || "-"}` : "-";
     const purRatio = res.purification_ratio !== undefined ? `%${parseFloat(res.purification_ratio).toFixed(2)}` : "-";
+    
+    let degisim = "-";
+    let degisimClass = "";
+    if (fin.son_fiyat && fin.son_fiyat.degisim !== undefined) {
+        degisim = `%${fin.son_fiyat.degisim.toFixed(2)}`;
+        degisimClass = fin.son_fiyat.degisim > 0 ? "positive" : (fin.son_fiyat.degisim < 0 ? "negative" : "");
+    }
 
     let statusText = res.status || "-";
     if (getLang() === "en") {
@@ -27,7 +34,18 @@ export function createSummaryRow(res) {
     let marketText = res.market || "?";
     if (getLang() === "tr" && marketText === "US") marketText = "ABD";
 
-    tr.innerHTML = `<td>${tickerDisplay}</td><td><span class="market-badge">${marketText}</span></td><td>${res.weight || 1}</td><td>${sonFiyat}</td><td>${purRatio}</td><td>${statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "-"}</td><td>${fmtNum(val.pe)}</td><td>${fmtNum(val.pb)}</td><td>${fmtNum(val.beta)}</td>`;
+    tr.innerHTML = `
+        <td>${tickerDisplay}</td>
+        <td class="pro-only"><span class="market-badge">${marketText}</span></td>
+        <td class="pro-only">${res.weight || 1}</td>
+        <td>${sonFiyat}</td>
+        <td><span class="${degisimClass}">${degisim}</span></td>
+        <td>${purRatio}</td>
+        <td>${statusText !== "-" ? `<span class="${statusClass}">${statusText}</span>` : "-"}</td>
+        <td class="pro-only">${fmtNum(val.pe)}</td>
+        <td class="pro-only">${fmtNum(val.pb)}</td>
+        <td class="pro-only">${fmtNum(val.beta)}</td>
+    `;
     return tr;
 }
 
@@ -215,11 +233,19 @@ export function createCard(res, idx) {
     card.innerHTML = `
         <div class="card-header"><div><span class="ticker-name">${res.ticker}</span>${nameBadge}</div><div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${marketText}</span>${sectorBadge}${statusBadgeFinal}</div></div>
         ${islamicRiskBarHTML}
-        ${fundHTML}${errHTML}${compHTML}
-        ${(radarHTML || gaugeHTML) ? `<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:center;">${radarHTML}${gaugeHTML}</div>` : ""}
-        ${sentimentHTML}
-        ${metricsHTML ? `<div class="metrics-grid">${metricsHTML}</div>` : ""}
-        ${techHTML}${relPerfHTML}${chartHTML}${returnTableHTML}${aiHTML}
+        <div class="beginner-only">
+             ${fundHTML}${errHTML}
+             <div style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-main); line-height:1.4;">
+                 <i class="fas fa-robot text-primary"></i> <span style="font-weight:600">Özet:</span> ${res.ai_comment ? res.ai_comment.split('.')[0] + '.' : 'Analiz bulunamadı.'}
+             </div>
+        </div>
+        <div class="pro-only">
+            ${compHTML}
+            ${(radarHTML || gaugeHTML) ? `<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:center;">${radarHTML}${gaugeHTML}</div>` : ""}
+            ${sentimentHTML}
+            ${metricsHTML ? `<div class="metrics-grid">${metricsHTML}</div>` : ""}
+            ${techHTML}${relPerfHTML}${chartHTML}${returnTableHTML}${aiHTML}
+        </div>
     `;
     
     return { card, chartId };

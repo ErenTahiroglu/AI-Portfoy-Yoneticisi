@@ -1,107 +1,104 @@
-<div align="center">
-  
-# 📊 Portföy Analiz Platformu — AI Destekli
-### (AI-Powered Portfolio Analysis Platform)
+# 👑 AI Destekli Otonom Portföy Yöneticisi — v9.0
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
-[![Gemini AI](https://img.shields.io/badge/Google_Gemini-AI-orange.svg)](https://ai.google.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-Modern%20API-009688?logo=fastapi) ![Javascript](https://img.shields.io/badge/Vanilla%20JS-Core-F7DF1E?logo=javascript) ![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?logo=supabase) ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
 
-</div>
+> **Varlıklarınızı matematiksel modeller ve akıllı multi-ajan (AI) mimarileriyle otonom olarak optimize edin.**
 
 ---
 
-## Türkçe (Turkish)
+## 🚀 Temel Özellikler (Devasa Altyapı)
 
-**Portföy Analiz Platformu (v8.1)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri, Kripto Paralar ve TEFAS fonlarını aynı anda analiz edebilen, çoklu-ajan (Multi-Agent) yapay zeka destekli yerel bir web uygulamasıdır. 
-Finansal verileri hesaplar, risk analizleri (VaR, MaxDD) yapar, sanal emirlerle (Paper Trading) strateji takibi sağlar, sonuçları Google Gemini AI CIO modülü ile yorumlar ve modern, mobil uyumlu, logolu bir arayüz sunar.
+*   **🧠 Multi-Agent Orkestratörü (CIO):** Langchain tabanlı otonom AI ajanları piyasa trendlerini tarar, temel ve teknik verileri çarpıştırır ve profesyonel kurumsal analizler üretir.
+*   **📊 Matematiksel Optimizasyon:** Markowitz (Efficient Frontier) ve Sharpe Ratio algoritmaları ile risk toleransınıza göre karlı portföy dağılım optimizasyonu.
+*   **🛡️ Uçtan Uca Risk Motoru:** `Value at Risk (VaR)`, `Beta` ve `Maximum Drawdown (MaxDD)` parametreleriyle risk metriklerinizi ve geçmiş 5 yıllık stres testi simülasyonlarınızı (PV) çizer.
+*   **💸 Sanal Paper Trading:** Gerçek bakiye riske etmeden karlı veya makul pozisyon dengelemelerini test edebileceğiniz tam entegre emir iletimi.
+*   **🚨 Otonom Alarmlar (Telegram):** Arka planda 12 saatte bir çalışan zero-trust cron task'ları piyasa çöküşlerini veya sinyalleri yakalayarak doğrudan Telegram'ıza iletir.
+*   **💳 Abonelik & Kota Yönetimi (Paywall):** LLM token limits (50.000 Free / 1.000.000 Pro) entegrasyonuyla güvenli platform ölçeklemesi.
+*   **🔐 Supervisor Admin Paneli:** Platform sahipleri için anlık LLM maliyet giderlerini (Chart.js), aktif kullanıcıları ve AUM (Assets Under Management) listelerini izleme.
+*   **🎭 Klasik & Profesyonel Görünüm (Adaptive UI):** Tek tıkla "Sade" (Beginner) ve "Quant" (Professional) görünümleri arasında geçiş yaparak analitik filtreleme.
 
-### ✨ Temel Özellikler
+---
 
-| Özellik | Açıklama |
-|---------|----------|
-| 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST, Kripto (Binance) ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
-| 🤖 **Çoklu-Ajan Mimari (CIO)** | Analist ve Araştırmacı alt ajanlarının raporlarını derleyen **Chief Investment Officer (CIO)** orkestrasyonu |
-| 🛡️ **Gelişmiş Risk Motoru**| %95 Güven Aralığı `VaR (Value at Risk)`, Maksimum Düşüş (`Max Drawdown`) ve Ayarlanabilir **Stres Testleri** |
-| 📈 **Portföy Snapshot** | Günlük özsermaye (Equity Curve) fotoğrafları ve canlı performans grafiği |
-| 📉 **Sanal Emir Sistemi** | Optimize edilen dağılımları `Supabase` üzerinden AL/SAT emirlerine (Paper Trading) dönüştürerek test etme |
-| 🔔 **Otonom Alarm Sistemi** | Kritik piyasa seviyelerinde arka planda çalışan ve anında panoya/Telegram'a düşen uyarılar |
-| 📊 **Premium UX Grafikleri** | Fintables stili **Finansal Sağlık Radarı**, TV stili **Teknik Kadran** ve Koyfin stili **Göreli Performans** |
-| 🕌 **İslami Finans (Zoya Stili)** | Hisse bazında detaylı Haram Gelir ve Faizli Borç ilerleme çubukları (AAOIFI) |
-| 🧪 **DCA Backtest** | TradingView lightweight-charts destekli aylık düzenli alım (DCA) ve bakiye büyüme senaryoları |
-| 🪄 **Autocomplete** | Türkçe/İngilizce harf duyarlı, 1-2 harften itibaren akıllı öneriler |
-| 📥 **Dışa Aktarım** | Excel, PDF, Word formatlarında profesyonel rapor indirme |
+## 📐 Sistem Mimarisi
 
-### 🛠️ Kurulum ve Çalıştırma
+Sistem, **FastAPI** ve **Multi-Agent Orkestrasyonu** etrafında tamamen asenkron olarak dekuple edilmiş mimariye sahiptir.
+
+```mermaid
+graph TD
+    A[Vanilla JS Frontend] -->|Auth / API Requests| B[FastAPI Backend]
+    B -->|Check Limits| C[Quota Check Middleware]
+    C -->|Aggregate Logs| D[(Supabase Database)]
+    B -->|Trigger Analyzers| E[Analysis Engine]
+    E -->|Strategy Node| F[Technical Analysis]
+    E -->|Strategy Node| G[Financial Analysis]
+    E -->|Strategy Node| H[Multi-Agent AI Commenter]
+    H -->|Prompting| I[Gemini 1.5/2.5 Pro]
+    I -->|Aggregate Token Logs| D
+    J[Autonomous Scheduler] -->|12H Cron| E
+    J -->|Alert Push| K[Telegram Bot]
+```
+
+---
+
+## ⚡ Hızlı Başlangıç (Quick Start)
+
+### 🐳 1. Docker Compose ile Tek Tıkla Kurulum
+Eğer sisteminizde Docker yüklüyse:
 
 ```bash
-# Depoyu klonlayın
-git clone https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi.git
-cd AI-Portfoy-Yoneticisi
-
-# Sanal ortam oluşturun ve aktif edin
-python3 -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Bağımlılıkları yükleyin
-pip install -r backend/requirements.txt
-
-# Uygulamayı başlatın
-PYTHONPATH=. uvicorn backend.api.main:app --reload
+docker-compose up -d --build
 ```
-Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
-
-### 🧩 Temiz Mimari (Clean Architecture)
-
-*   `backend/api/routers/`: Dekuple edilmiş FastAPI endpointleri (Analysis, Chat, User).
-*   `backend/api/models.py`: Pydantic Request/Response şemaları.
-*   `backend/core/`: Analiz orkestratörü (`analysis_engine.py`), Multi-Agent Motoru (`ai_agent.py`) ve Emir Motoru (`execution_engine.py`).
-*   `frontend/js/components/`: ES6 Modülleri halinde parçalanmış Frontend arayüz kodları.
-
+*   **Frontend:** `http://localhost:3000`
+*   **Backend:** `http://localhost:8000/docs`
 
 ---
 
-## English
+### 🛠️ 2. Yerel Geliştirme Ortamı Kurulumu
 
-**Portfolio Analysis Platform (v8.1)** is a locally-hosted, Multi-Agent AI web application for analyzing US stocks, BIST equities, Cryptocurrencies, and TEFAS mutual funds. It offers modular codebases, advanced risk calculation algorithms, paper trading verification, and rich modern dashboards.
+#### Backend (FastAPI) Setup
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn api.main:app --reload --port 8000
+```
 
-### ✨ Key Features
+#### Frontend Setup
+```bash
+# Frontend Vanilla JS ve HTML temelli olduğu için doğrudan bir http sunucuyla açabilirsiniz.
+cd frontend
+python3 -m http.server 5500
+```
+Tarayıcınızdan `http://localhost:5500` adresine gidin.
 
-| Feature | Description |
-|---------|-------------|
-| 🌍 **Multi-Market** | Mix US, BIST, Crypto and TEFAS tickers — market is **auto-detected** |
-| 🤖 **Multi-Agent Orchestration** | Chief Investment Officer (CIO) agent aggregating reports from Analyst and Researcher agents |
-| 🛡️ **Risk Analytics** | Historical %95 confidence `Value at Risk (VaR)`, `Max Drawdown`, and stress tests |
-| 📈 **Equity Curve** | Daily portfolio valuation snapshots and lightweight visualization chart |
-| 📉 **Paper Trading** | Calculates delta difference between current & optimal weights and records virtual market orders |
-| 📊 **Premium Dashboards** | Financial Health **Radar**, Technical **Gauge** indicators, and Relative Performance charts |
-| 🗺️ **Dynamic Heatmap** | Interactive Treemap with P/E, Dividend Yield, and Daily Change filters |
-| 🕌 **Shariah Compliance** | Detailed Shariah (Zoya-style) bars and analysis |
-| 📈 **Advanced Optimization** | Markowitz Max Sharpe and Min Volatility optimizer strategies |
-| 📥 **Export** | Download reports as Excel, PDF, or Word |
+---
+
+## 🔑 Gerekli Çevre Değişkenleri (Environment Variables)
+
+Sisteminizin çalışması için `.env` dosyanızı aşağıdaki şablona göre doldurun:
+
+```env
+SUPABASE_URL=https://[YOUR_INSTANCE].supabase.co
+SUPABASE_ANON_KEY=[YOUR_ANON_KEY]
+SUPABASE_SERVICE_ROLE_KEY=[YOUR_SERVICE_KEY]
+GEMINI_API_KEY=[YOUR_GEMINI_KEY]
+TELEGRAM_BOT_TOKEN=[OPTIONAL_BOT_TOKEN]
+```
 
 ---
 
-### ☁️ Canlı Ortamda Yayınlama (Vercel + Render)
+## 🤝 Katkıda Bulunun (Contribution)
 
-#### 1. Backend (Render.com)
-*   **Root Directory:** `backend`
-*   **Build Command:** `pip install -r requirements.txt`
-*   **Start Command:** `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
-*   **💡 Multi-Agent Architecture [v7.5]:** `ai_agent.py` birden fazla alt-ajanın (Analist, Araştırmacı) paralelde çalıştıran asenkron CIO yapısına taşındı.
-*   **💡 Risk Analyzer & Stress Testing [v7.6]:** %95 Güven Aralığında Günlük VaR, Max Drawdown ve %20 Endeks Şoku kurgusu backend hesaplamalarına bağlandı.
-*   **💡 Sanal Emir İletim Sistemi [v7.7]:** Fark Delta hesabı ile paper trade virtual market orders logging and Supabase write flow devrede.
-*   **💡 Otonom Bildirim Döngüsü [v7.8]:** Arka planda eşik kontrolü yapıp telegram/panoya alert yazan döngü Lifespan'a entegre edildi.
-*   **💡 SOLID & Clean Architecture [v8.0]:** FastAPI Router'ları (`backend/api/routers/`) ve Frontend dosyaları ES6 Modüllerine kırılarak high-level decoupling sağlandı.
-*   **💡 Portföy Snapshot & Equity Curve [v8.1]:** Günlük bakiye compound getiri hesaplayan scheduler logic ve canlı Lightweight-Charts dashboard widget entegrasyonu.
-
-#### 2. Frontend (Vercel)
-*   **Root Directory:** Proje kök dizini (Root) — Kök dizindeki `vercel.json` otomatik olarak `frontend` klasörünü build eder ve API isteklerini Render'a yönlendirir (Reverse Proxy).
-*   `frontend/js/components/` ve `app.js` ES6 Modülleri üzerinden çalışmaktadır.
-
+1.  Projeyi fork'layın (`Fork`)
+2.  Yeni bir feature branch açın (`git checkout -b feature/awesome-feature`)
+3.  Değişikliklerinizi commit edin (`git commit -m 'Add awesome feature'`)
+4.  Branch'inizi push edin (`git push origin feature/awesome-feature`)
+5.  Bir Pull Request (PR) açın
 
 ---
-Geliştirici: [Eren Tahiroğlu](https://github.com/ErenTahiroglu)
 
-*Disclaimer: This software is for informational and educational purposes only. It does not constitute financial or investment advice.*
+## 💖 Destekçilerimiz
+
+Siz de projeyi desteklemek ve geliştirmelere katkı sağlamak istiyorsanız bir kahve ☕ ısmarlayabilirsiniz!
+*(Sponsor kartı ve butonları destekleyici panellerde listelenmektedir)*

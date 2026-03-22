@@ -10,7 +10,8 @@ import pandas as pd
 
 from backend.api.models import AnalysisRequest, PortfolioOptimizeRequest, PortfolioRiskRequest
 from backend.api.rate_limiter import limiter
-from backend.api.auth import verify_jwt
+from backend.api.auth import verify_jwt, SUPABASE_JWT_SECRET
+import jwt
 from backend.api.dependencies import get_engine
 from backend.api.utils import process_tickers_with_weights, tr_lower
 from backend.data.constants import POPULAR_TICKERS
@@ -31,6 +32,24 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depen
     if not parsed_tickers:
         raise HTTPException(status_code=400, detail="No valid tickers provided")
 
+    # Optional Auth for Token Logging
+    user_id = None
+    auth_header = req.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+        if SUPABASE_JWT_SECRET:
+            try:
+                payload = jwt.decode(token, SUPABASE_JWT_SECRET, algorithms=["HS256"], options={"verify_aud": True}, audience="authenticated")
+                user_id = payload.get("sub")
+                
+                if request.use_ai:
+                     from backend.api.dependencies import check_llm_quota
+                     await check_llm_quota(req, payload=payload)
+            except HTTPException:
+                raise
+            except Exception:
+                pass 
+
     async def event_generator():
         semaphore = asyncio.Semaphore(2)  # Render 512MB limit için
         async def analyze_with_semaphore(ticker):
@@ -44,7 +63,8 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depen
                         use_ai=request.use_ai,
                         api_key=request.api_key,
                         model=request.model,
-                        lang=request.lang
+                        lang=request.lang,
+                        user_id=user_id
                     )
                     return ticker, res, None
                 except Exception as e:

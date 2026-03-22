@@ -62,3 +62,62 @@ export function openMetricModal(ticker, metricKey, label, aiCommentRaw) {
     aiBox.textContent = insight;
     modal.classList.remove("hidden");
 }
+
+export function openPaywallModal() {
+    const existing = document.getElementById("paywall-modal");
+    if (existing) {
+        existing.style.display = "flex";
+        return;
+    }
+
+    const modal = document.createElement("div");
+    modal.id = "paywall-modal";
+    modal.className = "modal-overlay";
+    modal.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; display: flex;";
+    
+    modal.innerHTML = `
+        <div class="modal-content glass-panel" style="max-width: 440px; width: 90%; padding: 2.5rem; text-align: center; border: 1px solid rgba(243, 156, 18, 0.4); background: rgba(20,20,25,0.95); animation: zoomIn 0.3s ease-out;">
+            <div style="font-size: 3.5rem; color: #f39c12; margin-bottom: 1rem;"><i class="fas fa-crown"></i></div>
+            <h2 style="color: #fff; font-size: 1.5rem; margin-bottom: 0.5rem; font-weight: 700;">Aylık Limitine Ulaştın!</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem; line-height: 1.5;">Yapay zeka analizlerini kullanmaya devam etmek için Pro sürümüne yükseltebilirsin.</p>
+            
+            <div style="background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.05);">
+                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem;"><span>Ücretsiz Plan:</span> <span style="color: var(--text-muted);">50k Token</span></div>
+                 <div style="display: flex; justify-content: space-between; font-weight: 700; color: #f1c40f; font-size: 1rem;"><span>Pro Plan:</span> <span>1.000.000 Token ✨</span></div>
+            </div>
+
+            <button id="upgrade-pro-btn" class="btn btn-primary" style="width: 100%; padding: 14px; font-weight: 700; font-size: 1rem; background: linear-gradient(135deg, #f1c40f, #f39c12); color: #111; border: none; box-shadow: 0 4px 20px rgba(243, 156, 18, 0.4); cursor:pointer; border-radius:8px; transition: transform 0.2s;"><i class="fas fa-rocket"></i> Pro'ya Yükselt</button>
+            <button id="close-paywall-btn" style="background: none; border: none; color: var(--text-muted); margin-top: 1.25rem; cursor: pointer; font-size: 0.85rem; text-decoration: underline;">Daha Sonra</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById("upgrade-pro-btn").addEventListener("click", async () => {
+         try {
+              const session = await window.SupabaseAuth.getValidSession();
+              if(!session) return;
+              
+              const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+                  ? "http://localhost:8000" 
+                  : "https://ai-portfoy.onrender.com";
+
+              const resp = await fetch(`${API_BASE}/api/billing/upgrade`, {
+                  method: "POST",
+                  headers: { "Authorization": `Bearer ${session.access_token}` }
+              });
+              
+              if (resp.ok) {
+                   modal.style.display = "none";
+                   alert("Tebrikler! Hesabınız Pro sürümüne başarıyla yükseltildi.");
+                   window.location.reload();
+              } else {
+                   alert("Abonelik işlemi gerçekleştirilemedi.");
+              }
+         } catch(e) { console.error("Upgrade failed:", e); }
+    });
+
+    document.getElementById("close-paywall-btn").addEventListener("click", () => {
+         modal.style.display = "none";
+    });
+}

@@ -7,12 +7,13 @@ from backend.api.models import ChatRequest, NewsRequest
 from backend.api.rate_limiter import limiter
 from backend.api.auth import verify_jwt
 from backend.core.execution_engine import execute_paper_trades
+from backend.api.dependencies import check_llm_quota
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["Chat"])
 
-@router.post("/analyze-macro", dependencies=[Depends(limiter.check), Depends(verify_jwt)])
+@router.post("/analyze-macro", dependencies=[Depends(limiter.check), Depends(check_llm_quota)])
 async def analyze_macro_endpoint(request: Request):
     """Tüm portföyün makro AI analizi için StreamingResponse (SSE) akışı sağlar."""
     try:
@@ -40,7 +41,7 @@ async def analyze_macro_endpoint(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/wizard", dependencies=[Depends(verify_jwt)])
+@router.post("/wizard", dependencies=[Depends(check_llm_quota)])
 async def wizard_api(request: Request):
     """Metinsel komuttan portföy üretir."""
     try:
@@ -53,13 +54,16 @@ async def wizard_api(request: Request):
         if not api_key:
             raise HTTPException(status_code=400, detail="API key is required")
             
+        user = getattr(request.state, "user", None)
+        user_id = user["sub"] if user else None
+            
         from backend.core.ai_agent import generate_wizard_portfolio
-        portfolio = generate_wizard_portfolio(prompt, api_key, model, lang)
+        portfolio = generate_wizard_portfolio(prompt, api_key, model, lang, user_id=user_id)
         return {"portfolio": portfolio}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/news", dependencies=[Depends(verify_jwt)])
+@router.post("/news", dependencies=[Depends(check_llm_quota)])
 async def news_api(request: NewsRequest):
     """Ticker listesi için önemli haberleri çeker ve AI ile filtreler."""
     if not request.tickers: return {"news": []}
@@ -70,17 +74,17 @@ async def news_api(request: NewsRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/chat", dependencies=[Depends(verify_jwt)])
+@router.post("/chat", dependencies=[Depends(check_llm_quota)])
 async def chat_api(request: Request, body: ChatRequest):
     """Floating Copilot Chatbot Endpoint with downstream Execution trigger."""
     if not body.api_key:
         raise HTTPException(status_code=400, detail="API key is required")
     try:
-        from backend.core.ai_agent import generate_chat_response
-        reply = await generate_chat_response(body.messages, body.portfolio_context, body.api_key, body.model, body.lang)
-        
         user = getattr(request.state, "user", None)
         user_id = user["sub"] if user else None
+
+        from backend.core.ai_agent import generate_chat_response
+        reply = await generate_chat_response(body.messages, body.portfolio_context, body.api_key, body.model, body.lang, user_id=user_id)
         
         if user_id and body.messages:
              user_msg = ""

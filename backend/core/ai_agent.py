@@ -1,7 +1,55 @@
 import asyncio
 from langchain_google_genai import ChatGoogleGenerativeAI
+import os
+import httpx
+import logging
 
-def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr", system_errors: dict = None, ml_prediction: dict = None):
+logger = logging.getLogger(__name__)
+
+async def _log_usage_async(user_id: str, response):
+    """Token kullanımlarını asenkron (fire-and-forget) olarak veri tabanına loglar."""
+    if not user_id:
+        return
+    try:
+        if not hasattr(response, "response_metadata"):
+            return
+        meta = response.response_metadata
+        # Langchain-Google-GenAI standard: usage_metadata may be in meta or top level
+        usage = meta.get("usage_metadata") or getattr(response, "usage_metadata", {})
+        
+        if not usage:
+             return
+
+        prompt_tokens = usage.get("prompt_tokens", 0)
+        completion_tokens = usage.get("candidates_tokens", usage.get("completion_tokens", 0)) or usage.get("output_tokens", 0)
+        
+        # Calculate cost (Approximate Gemini 1.5 rates)
+        # Prompt: $1.25 / 1M token, Completion: $5.00 / 1M token
+        cost = (prompt_tokens * 0.00000125) + (completion_tokens * 0.000005)
+        
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        if not url or not key:
+            return
+            
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "apikey": key,
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }
+            payload = {
+                "user_id": user_id,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "cost_usd": cost
+            }
+            await client.post(f"{url}/rest/v1/llm_usage_logs", json=payload, headers=headers)
+    except Exception as e:
+        logger.error(f"Failed to log LLM usage: {e}")
+        
+def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr", system_errors: dict = None, ml_prediction: dict = None, user_id: str = None):
     """Gemini API'sini kullanarak seçili oranlara göre finansal rapor üretir."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key)
 
@@ -130,6 +178,9 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     
     try:
         response = llm.invoke(prompt)
+        # Asenkron loglama
+        if user_id:
+             asyncio.create_task(_log_usage_async(user_id, response))
         return str(response.content)
     except Exception as e:
         error_msg = str(e)
@@ -140,7 +191,7 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
 
 import json
 
-def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> list:
+def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr", user_id: str = None) -> list:
     """Kullanıcının metin girişini analiz edip ticker ve ağırlık öneren JSON döndürür."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key)
     
@@ -163,6 +214,8 @@ def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = 
     
     try:
         response = llm.invoke(sys_prompt)
+        if user_id:
+             asyncio.create_task(_log_usage_async(user_id, response))
         content = str(response.content).strip()
         
         # Temizle (markdown backticks bazen sızabiliyor)
@@ -225,7 +278,7 @@ async def run_researcher_agent(portfolio_summary: str, api_key: str, model_name:
     except Exception as e:
         return f"Researcher Agent Hatası: {str(e)}"
 
-async def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> str:
+async def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr", user_id: str = None) -> str:
     """Yüzen Chatbot (Copilot) için Çoklu Ajan (CIO-Orkestratör) mimarisiyle yanıt üretir."""
     
     # Portföy bağlamını güvenlik filtresinden geçirerek temizle
@@ -298,6 +351,8 @@ async def generate_chat_response(messages: list, context: dict, api_key: str, mo
             
     try:
         response = await llm.ainvoke(langchain_msgs)
+        if user_id:
+             asyncio.create_task(_log_usage_async(user_id, response))
         return str(response.content)
     except Exception as e:
         error_msg = str(e)

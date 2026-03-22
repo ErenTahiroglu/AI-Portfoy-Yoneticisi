@@ -9,6 +9,7 @@ import { openMetricModal } from './components/Modals.js';
 import { showComparison } from './components/Comparison.js';
 import { initCopilot, renderMacroAI } from './components/Chat.js';
 import { setupBacktestBindings, fetchAndRenderSignals, setupOptimization, setupRiskAnalysis, setupPaperTrades } from './components/Analysis.js';
+import { initAdminDashboard } from './components/AdminDashboard.js';
 
 // ── Globale Bağlama (Backward Compatibility) ──────────────────────────────
 window.toggleNotifications = toggleNotifications;
@@ -37,6 +38,8 @@ AppState.subscribe((prop, val, oldValue) => {
         localStorage.setItem("viewMode", val);
         const profToggle = document.getElementById("prof-mode-toggle");
         if (profToggle) profToggle.checked = (val === "pro");
+        const uiToggle = document.getElementById("ui-mode-toggle");
+        if (uiToggle) uiToggle.checked = (val === "pro");
     }
     
     if (prop === "isHalalOnly") {
@@ -126,6 +129,30 @@ async function appendResultItem(res, idx, grid, summaryBody) {
 
 // ── DOMContentLoaded Event Listener ──────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
+    // ── Auth Check for Landing Page ──
+    if (window.SupabaseAuth) {
+        try {
+            const user = await window.SupabaseAuth.getUser();
+            const landing = document.getElementById("landing-page");
+            const sidebar = document.getElementById("sidebar");
+            const mainContent = document.querySelector(".main-content");
+
+            if (user) {
+                if (landing) landing.style.display = "none";
+            } else {
+                if (landing) landing.style.display = "flex";
+                if (sidebar) sidebar.style.display = "none";
+                if (mainContent) mainContent.style.display = "none";
+                
+                // Ayrıca açılış sayfası dışındaki mobil barları gizle
+                const mobBtn = document.getElementById("mobile-menu-btn");
+                if (mobBtn) mobBtn.style.display = "none";
+            }
+        } catch (e) {
+            console.error("Auth status loading error:", e);
+        }
+    }
+
     initTheme();
     setLanguage(currentLang);
     await loadApiKeys();
@@ -158,6 +185,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const profToggle = document.getElementById("prof-mode-toggle");
     if (profToggle) profToggle.addEventListener("change", (e) => AppState.viewMode = e.target.checked ? "pro" : "beginner");
+
+    const uiToggle = document.getElementById("ui-mode-toggle");
+    if (uiToggle) uiToggle.addEventListener("change", (e) => AppState.viewMode = e.target.checked ? "pro" : "beginner");
 
     const halalToggle = document.getElementById("check-islamic-toggle");
     if (halalToggle) halalToggle.addEventListener("change", (e) => AppState.isHalalOnly = e.target.checked);
@@ -218,6 +248,19 @@ setTimeout(() => {
     
     // Yükleme Sonrası Kayıtlı Grafik Çek
     loadEquityCurve();
+
+    // Admin Dashboard Kontrolü
+    initAdminDashboard();
+
+    // ── Global Paywall Interceptor (402 Payment Required) ──
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+        const rs = await originalFetch(...args);
+        if (rs.status === 402) {
+             import('./components/Modals.js').then(m => m.openPaywallModal());
+        }
+        return rs;
+    };
 }, 1000);
 
 function renderResults(data) {

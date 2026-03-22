@@ -330,7 +330,8 @@ class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
                 market=context.get("market"),
                 lang=context.get("lang"),
                 system_errors=system_errors,
-                ml_prediction=result_entry.get("ml_prediction")
+                ml_prediction=result_entry.get("ml_prediction"),
+                user_id=context.get("user_id")
             )
             result_entry["ai_comment"] = ai_comment
         except Exception as e:
@@ -431,7 +432,8 @@ class AnalysisEngine:
                 model: str = "gemini-2.5-flash",
                 check_islamic: bool = False,
                 check_financials: bool = True,
-                lang: str = "tr") -> dict:
+                lang: str = "tr",
+                user_id: Optional[str] = None) -> dict:
         """
         Ticker listesi için tam portföy analizi çalıştırır.
         Paralel analiz ile 3-4x hız artışı sağlar.
@@ -456,6 +458,7 @@ class AnalysisEngine:
                     api_key=api_key,
                     model=model,
                     lang=lang,
+                    user_id=user_id
                 )
                 results.append(result)
         else:
@@ -472,6 +475,7 @@ class AnalysisEngine:
                         api_key=api_key,
                         model=model,
                         lang=lang,
+                        user_id=user_id
                     )
                     future_map[future] = ticker
                 
@@ -492,12 +496,13 @@ class AnalysisEngine:
         return {"results": results}
     
     def _analyze_single(self, ticker: str, *, 
-                        check_islamic: bool,
-                        check_financials: bool,
-                        use_ai: bool,
-                        api_key: Optional[str],
-                        model: str,
-                        lang: str) -> dict:
+                        check_islamic: bool = False,
+                        check_financials: bool = True,
+                        use_ai: bool = False,
+                        api_key: Optional[str] = None,
+                        model: str = "gemini-2.5-flash",
+                        lang: str = "tr",
+                        user_id: Optional[str] = None) -> dict:
         """Tek bir ticker için tüm analiz adımlarını çalıştırır."""
         from backend.data.market_detector import detect_market
         
@@ -529,7 +534,8 @@ class AnalysisEngine:
             "lang": lang,
             "market": market,
             "fetcher_ticker": fetcher_ticker,
-            "is_tefas": is_tefas
+            "is_tefas": is_tefas,
+            "user_id": user_id
         }
         
         # Stratejileri Sırayla Çalıştır
