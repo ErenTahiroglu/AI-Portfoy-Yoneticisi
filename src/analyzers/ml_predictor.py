@@ -1,18 +1,15 @@
 """
-🤖 ML Fiyat Tahmin Modülü — P5 Öncelik Matrisi
-================================================
-Prophet (Meta) tabanlı zaman serisi tahmin stratejisi.
-Tek başına çalışan GET /api/predict/{ticker} endpoint'i için.
+🤖 ML Fiyat Tahmin Modülü — P5 Öncelik Matrisi (Hafif Projeksiyon Sürümü)
+========================================================================
+Pandas ve Numpy tabanlı hareketli ortalama (EMA) ve momentum projeksiyonu.
+Prophet kütüphanesinin ağırlığını (RAM/Depolama) sistemden kaldırmak için tasarlanmıştır.
 
 • Varsayılan KAPALI — ML_PREDICTION_ENABLED=true env var ile açılır.
-• Prophet ~200MB — ana analiz akışından izole tutuldu.
-• 60 günlük tarihsel fiyat → Prophet fit → 7 günlük forecast.
-
-Önemli: Bu strateji ana analysis_engine registry'sine eklenmez.
-Bağımsız /api/predict endpoint'i tarafından çağrılır.
+• Sanayi Standartı Projeksiyon — Son 90 günlük Momentum + Volatilite.
 """
 import logging
 import os
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -21,18 +18,18 @@ ML_ENABLED: bool = os.getenv("ML_PREDICTION_ENABLED", "false").lower() == "true"
 
 def predict_price(ticker: str) -> dict:
     """
-    Ticker için 7 günlük ML fiyat tahmini üretir.
+    Ticker için 7 günlük matematiksel fiyat projeksiyonu üretir.
 
     Returns:
         {
             "ticker": "AAPL",
             "direction": "UP" | "DOWN" | "SIDEWAYS",
-            "confidence": 0.73,
+            "confidence": 75.0,
             "current_price": 182.5,
             "target_7d": 191.2,
             "change_pct": 4.77,
             "plot_data": [{"ds": "2026-03-25", "yhat": 191.2, "yhat_lower": 185.0, "yhat_upper": 197.4}],
-            "model": "Prophet",
+            "model": "EMA-Momentum",
             "error": null
         }
     """
@@ -44,22 +41,19 @@ def predict_price(ticker: str) -> dict:
         }
 
     try:
-        # Lazy import — yalnızca ML etkinleştirildiğinde yüklenir
         import pandas as pd
-        from prophet import Prophet  # type: ignore[import]
-        import yfinance as yf         # type: ignore[import]
+        import yfinance as yf # type: ignore[import]
 
-        logger.info(f"📊 ML tahmin başlatılıyor: {ticker}")
+        logger.info(f"📊 Fiyat Projeksiyonu başlatılıyor: {ticker}")
 
         # ── 1. Tarihsel Veri ──────────────────────────────────────────────
         stock = yf.Ticker(ticker)
-        # Prophet yearly_seasonality için 2 yıla çıkarıldı
-        hist = stock.history(period="2y", interval="1d")
+        hist = stock.history(period="90d", interval="1d")
 
         if hist.empty or len(hist) < 20:
             return {"ticker": ticker, "error": "Yetersiz tarihsel veri (min 20 gün).", "enabled": True}
 
-        # Prophet formatına çevir: ds, y
+        # Tarih ve Kapanış Verilerini Al
         df = pd.DataFrame({
             "ds": hist.index.tz_localize(None),
             "y": hist["Close"].values,
@@ -70,79 +64,91 @@ def predict_price(ticker: str) -> dict:
         if df["ds"].iloc[-1].normalize() == today:
             df = df.iloc[:-1]
 
+        if len(df) < 20:
+            return {"ticker": ticker, "error": "Temizlik sonrası yetersiz veri.", "enabled": True}
+
         current_price = float(df["y"].iloc[-1])
 
-        # ── 2. Prophet Model ──────────────────────────────────────────────
-        model = Prophet(
-            changepoint_prior_scale=0.15,
-            seasonality_mode="multiplicative",
-            daily_seasonality=False,
-            weekly_seasonality=True,
-            yearly_seasonality=True,
-        )
-        model.fit(df)
-
-        # Kriptoysa takvim günü (D), hisse/fonsa iş günü (B)
-        is_crypto = ticker.endswith("-USD")
-        future = model.make_future_dataframe(periods=7, freq="D" if is_crypto else "B")
-        forecast = model.predict(future)
-
-        # Sadece gelecek 7 günü al
-        future_fc = forecast[forecast["ds"] > df["ds"].max()].head(7)
+        # ── 2. İstatistiksel Hesaplamalar ─────────────────────────────────
+        series = df["y"]
         
-        if future_fc.empty:
-            return {"ticker": ticker, "error": "Tahmin ufku boş döndü. (IndexError engellendi)", "enabled": True}
+        # EMA (Üstel Hareketli Ortalama) - Son trendi yakalamak için
+        ema_12 = series.ewm(span=12, adjust=False).mean()
+        curr_ema = ema_12.iloc[-1]
+        
+        # Momentum: Son 10 günlük eğilim (Doğrusal Regresyon Eğimi benzeri basit trend)
+        if len(series) >= 10:
+            momentum = (series.iloc[-1] - series.iloc[-10]) / 10
+        else:
+            momentum = series.diff().mean()
 
-        target_price = float(future_fc["yhat"].iloc[-1])
-        lower_bound = float(future_fc["yhat_lower"].iloc[-1])
-        upper_bound = float(future_fc["yhat_upper"].iloc[-1])
+        # Volatilite (Günlük getiri standart sapması)
+        returns = series.pct_change().dropna()
+        daily_vol = returns.std() # Günlük oynaklık oranı (Örn: 0.02)
+        
+        # ── 3. 7 Günlük Projeksiyon ───────────────────────────────────────
+        proj_days = 7
+        is_crypto = ticker.endswith("-USD")
+        
+        # Gelecekteki Tarihleri Üret (Kripto için Gün, Hisse için İş günü)
+        freq = "D" if is_crypto else "B"
+        future_dates = pd.date_range(start=df["ds"].max() + pd.Timedelta(days=1), periods=proj_days, freq=freq)
+        
+        plot_data = []
+        target_price = current_price
+        
+        # Güven aralığı genişlemesi için katsayı (Hata payı)
+        # Volatilitenin gün sayısı kareköküyle büyümesi kuralı
+        for i in range(1, proj_days + 1):
+            # Ağırlıklı kombinasyon: EMA'ya doğru çekilme + Mevcut Momentum
+            # Basit formül: Fiyat + i*Momentum + (EMA - Fiyat)*0.1
+            step_target = target_price + momentum + (curr_ema - target_price) * 0.1
+            
+            # Volatilite Bantları (Standart Hata)
+            std_error = current_price * daily_vol * np.sqrt(i)
+            
+            plot_data.append({
+                "ds": str(future_dates[i-1].date()),
+                "yhat": round(float(step_target), 2),
+                "yhat_lower": round(float(step_target - std_error), 2),
+                "yhat_upper": round(float(step_target + std_error), 2),
+            })
+            target_price = step_target # Zincirleme
+
+        target_price = plot_data[-1]["yhat"]
+        lower_bound = plot_data[-1]["yhat_lower"]
+        upper_bound = plot_data[-1]["yhat_upper"]
         change_pct = ((target_price - current_price) / current_price) * 100
 
-        # ── 3. Güven Skoru ────────────────────────────────────────────────
-        # Tahmin aralığının genişliğine göre güven hesapla
-        interval_width = (upper_bound - lower_bound) / current_price
-        confidence = max(0.3, min(0.95, 1.0 - interval_width * 2))
+        # ── 4. Güven Skoru (Confidence) ───────────────────────────────────
+        # Volatilite ne kadar düşükse güven o kadar yüksek
+        # Yıllıklaştırılmış volatilite gibi bir rasyoya ters orantı
+        vol_factor = daily_vol * 100 # Yüzde cinsinden (Örn: 2.5)
+        
+        # %1 volatilite -> 90 güven, %5 volatilite -> 30 güven gibi bir ölçeklendirme
+        if vol_factor <= 0: confidence = 95.0
+        else: confidence = max(10, min(95, 100 - (vol_factor * 15)))
 
-        # ── 4. Yön Belirleme ─────────────────────────────────────────────
-        if change_pct > 1.5:
-            direction = "UP"
-        elif change_pct < -1.5:
-            direction = "DOWN"
-        else:
-            direction = "SIDEWAYS"
-
-        # ── 5. Çıktı ─────────────────────────────────────────────────────
-        plot_data = [
-            {
-                "ds": str(row["ds"].date()),
-                "yhat": round(float(row["yhat"]), 2),
-                "yhat_lower": round(float(row["yhat_lower"]), 2),
-                "yhat_upper": round(float(row["yhat_upper"]), 2),
-            }
-            for _, row in future_fc.iterrows()
-        ]
+        # ── 5. Yön Belirleme ─────────────────────────────────────────────
+        if change_pct > 1.0: direction = "UP"
+        elif change_pct < -1.0: direction = "DOWN"
+        else: direction = "SIDEWAYS"
 
         return {
             "ticker": ticker,
             "direction": direction,
-            "confidence": round(confidence, 3),
+            "confidence": round(confidence, 1), # 0-100 ölçeği
             "current_price": round(current_price, 2),
             "target_7d": round(target_price, 2),
             "lower_7d": round(lower_bound, 2),
             "upper_7d": round(upper_bound, 2),
             "change_pct": round(change_pct, 2),
             "plot_data": plot_data,
-            "model": "Prophet",
+            "model": "EMA-Momentum",
             "error": None,
             "enabled": True,
         }
 
-    except ImportError as e:
-        return {
-            "ticker": ticker,
-            "error": f"Gerekli paket eksik: {e}. pip install prophet yfinance",
-            "enabled": True,
-        }
     except Exception as e:
-        logger.error(f"ML tahmin hatası ({ticker}): {e}")
+        logger.error(f"Projeksiyon hatası ({ticker}): {e}")
         return {"ticker": ticker, "error": str(e), "enabled": True}
