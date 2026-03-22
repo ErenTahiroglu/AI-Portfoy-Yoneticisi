@@ -279,6 +279,7 @@ class MLAnalyzerStrategy(BaseAnalyzerStrategy):
     def name(self): return "ml_prediction"
 
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
+        return # <--- ML MOTORUNU GEÇİCİ OLARAK KAPAT
         try:
             from src.analyzers.ml_predictor import predict_price
             def _call():
