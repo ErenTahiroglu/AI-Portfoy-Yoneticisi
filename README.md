@@ -105,6 +105,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Codebase Cleanup & Strict Fault Tolerance [v6.2]:** Kapsamlı temizlik (dead code, unused imports, cache silinmesi) yapılmış, AI agent dinamik prompt hata tolerans mekanizması `ValueError` fırlatmaları üzerinden AI halüsinasyonlarını engelleyecek şekilde entegre edilmiştir.
 *   **💡 Github Actions CI & Cache Fix [v6.3]:** Test paketlerindeki `_CACHE` import referansı güncel `redis_cache` in-memory fallback adresine yönlendirilerek CI testleri onarılmış ve Node.js v20 deprecation uyarıları giderilmiştir.
 *   **💡 Optimizer & ML Engine Hardening [v6.4]:** `optimization_engine.py` için veri temizliği (sanitization) ve Scipy matematiksel çökme korumaları (LinAlgError) eklendi; `ml_predictor.py` için 2 yıllık horizon ufku, piyasa freq="B"/"D" ayrımı ve yarım (unclosed) mum engeli mimarisi uygulandı.
+*   **💡 Vercel Deployment Trigger [v6.5]:** Frontend ve Backend son güncel optimizasyonlarla yayına alındı.
 
 
 #### 2. Frontend (Vercel)
