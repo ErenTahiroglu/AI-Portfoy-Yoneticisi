@@ -55,7 +55,10 @@ async def test_ai_agent_mock_sentiment():
 async def test_api_news_endpoint():
     """Haber filtreleme API Endpoint testi."""
     from backend.api.auth import verify_jwt
+    from backend.api.dependencies import check_llm_quota
+    
     app.dependency_overrides[verify_jwt] = lambda: {"id": "fake_user"}
+    app.dependency_overrides[check_llm_quota] = lambda: True
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         payload = {
@@ -74,4 +77,5 @@ async def test_api_news_endpoint():
             assert "news" in data
 
     del app.dependency_overrides[verify_jwt]
+    del app.dependency_overrides[check_llm_quota]
 
