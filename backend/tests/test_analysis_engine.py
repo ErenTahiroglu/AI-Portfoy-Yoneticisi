@@ -60,7 +60,7 @@ class TestAnalysisEngineRun:
     def engine(self):
         return AnalysisEngine()
 
-    @patch("src.data.market_detector.detect_market")
+    @patch("data.market_detector.detect_market")
     def test_analyze_single_isolated(self, mock_detect, engine):
         """Analyze tekli çağrısının izolasyon testi."""
         mock_detect.return_value = ("TR", "THYAO.IS", False)

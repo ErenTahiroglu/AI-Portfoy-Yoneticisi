@@ -41,7 +41,7 @@ async def test_ai_agent_mock_sentiment():
     """Mock Gemini Sentiment test."""
     from backend.core.ai_agent import analyze_news_sentiment
     
-    with patch("src.core.ai_agent.ChatGoogleGenerativeAI") as MockLLM:
+    with patch("backend.core.ai_agent.ChatGoogleGenerativeAI") as MockLLM:
         mock_instance = MockLLM.return_value
         # Simulate structured JSON response
         mock_instance.invoke.return_value.content = '{"score": 80, "sentiment_label": "Açgözlülük", "islamic_risk_flag": false, "risk_reason": "Sorun yok"}'
@@ -64,7 +64,7 @@ async def test_api_news_endpoint():
             "model": "gemini-2.5-flash",
             "lang": "tr"
         }
-        with patch("src.data.news_fetcher.filter_impactful_news") as mock_filter:
+        with patch("backend.data.news_fetcher.filter_impactful_news") as mock_filter:
             mock_filter.return_value = [{"title": "News Title", "link": "#", "sentiment": "Neutral", "reason": "none"}]
             
             # Send Authorization Header just in case middleware checks it

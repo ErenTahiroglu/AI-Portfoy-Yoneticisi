@@ -30,7 +30,7 @@ class TestProductionIntegrity(unittest.TestCase):
     # Bölüm 1: İslami Analiz ve Matematik Denetimi
     # ══════════════════════════════════════════════════════════════════════
 
-    @patch('src.analyzers.islamic_analyzer.Ticker')
+    @patch('backend.analyzers.islamic_analyzer.Ticker')
     def test_islamic_math_correctness(self, MockTicker):
         """AAOIFI Standartları: Temel oranların doğruluğunu test eder."""
         mock_inc = pd.DataFrame([{
@@ -58,7 +58,7 @@ class TestProductionIntegrity(unittest.TestCase):
         self.assertEqual(res['liquidity_ratio'], 30.0)
         print("✅ Standart Hesaplama: Başarılı")
 
-    @patch('src.analyzers.islamic_analyzer.Ticker')
+    @patch('backend.analyzers.islamic_analyzer.Ticker')
     def test_islamic_zero_division_guard(self, MockTicker):
         """AAOIFI: Sıfıra bölme hatasının engellendiğini test eder (Revenue/Assets = 0)."""
         # Gelir 0 durumu
