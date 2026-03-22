@@ -14,33 +14,51 @@ def optimize_portfolio(returns_df: pd.DataFrame, risk_free_rate: float = 0.0) ->
     tickers = list(returns_df.columns)
     num_assets = len(tickers)
     
-    if num_assets < 2:
-        default_w = {t: 100.0 for t in tickers}
+    def get_default_w():
+        return {t: round(100.0 / max(num_assets, 1), 2) for t in tickers}
+    
+    # 1. Veri Doğrulama (Sanitization)
+    if returns_df.empty:
+        logger.warning("optimize_portfolio: Gelen returns_df tamamen boş! Fallback uygulanıyor.")
+        default_w = get_default_w()
+        return {"max_sharpe": default_w, "min_volatility": default_w, "max_return": default_w}
+        
+    returns_df = returns_df.replace([np.inf, -np.inf], np.nan).dropna()
+    
+    if len(returns_df) < 2 or num_assets < 2:
+        logger.warning(f"optimize_portfolio: Yetersiz veri (Satır: {len(returns_df)}, Varlık: {num_assets}). Fallback uygulanıyor.")
+        default_w = get_default_w()
         return {"max_sharpe": default_w, "min_volatility": default_w, "max_return": default_w}
     
-    mean_returns = returns_df.mean() * 252
-    cov_matrix = returns_df.cov() * 252
+    # Başlangıç durumu için eşit dağılım kopyaları oluşturuluyor
+    default_w = get_default_w()
+    results = {
+        "max_sharpe": default_w.copy(), 
+        "min_volatility": default_w.copy(), 
+        "max_return": default_w.copy()
+    }
     
-    def port_ret(weights):
-        return np.sum(mean_returns * weights)
-    
-    def port_vol(weights):
-        return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
-        
-    results = {}
-    
+    # 2. Matematiksel Hata Yakalama Bloğu
     try:
+        mean_returns = returns_df.mean() * 252
+        cov_matrix = returns_df.cov() * 252
+        
+        def port_ret(weights):
+            return np.sum(mean_returns * weights)
+        
+        def port_vol(weights):
+            return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+            
         import scipy.optimize as sco
         
-        # 1. Max Sharpe
         def min_func_sharpe(weights):
-            return -(port_ret(weights) - risk_free_rate) / port_vol(weights)
+            vol = port_vol(weights)
+            if vol == 0: return 0.0
+            return -(port_ret(weights) - risk_free_rate) / vol
             
-        # 2. Min Volatility
         def min_func_volatility(weights):
             return port_vol(weights)
             
-        # 3. Max Return (with 15% vol constraint if possible)
         def min_func_return(weights):
             return -port_ret(weights)
         
@@ -48,30 +66,37 @@ def optimize_portfolio(returns_df: pd.DataFrame, risk_free_rate: float = 0.0) ->
         bounds = tuple((0.0, 1.0) for _ in range(num_assets))
         init_guess = [1.0 / num_assets] * num_assets
         
-        # Calculate Max Sharpe
-        res_sharpe = sco.minimize(min_func_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        
-        # Calculate Min Volatility
-        res_vol = sco.minimize(min_func_volatility, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        
-        # Calculate Max Return
-        res_ret = sco.minimize(min_func_return, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        
         def format_weights(w_array):
             w_dict = {}
             for i, t in enumerate(tickers):
-                weight_pct = round(float(w_array[i]) * 100, 2)
-                w_dict[t] = weight_pct
+                w_dict[t] = round(float(w_array[i]) * 100, 2)
             return w_dict
+
+        # Calculate Max Sharpe
+        res_sharpe = sco.minimize(min_func_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+        if res_sharpe.success:
+            results["max_sharpe"] = format_weights(res_sharpe.x)
+        else:
+            logger.warning(f"optimize_portfolio: max_sharpe optimizasyonu başarısız: {res_sharpe.message}")
+
+        # Calculate Min Volatility
+        res_vol = sco.minimize(min_func_volatility, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+        if res_vol.success:
+            results["min_volatility"] = format_weights(res_vol.x)
+        else:
+            logger.warning(f"optimize_portfolio: min_volatility optimizasyonu başarısız: {res_vol.message}")
             
-        results["max_sharpe"] = format_weights(res_sharpe.x)
-        results["min_volatility"] = format_weights(res_vol.x)
-        results["max_return"] = format_weights(res_ret.x)
-        
+        # Calculate Max Return
+        res_ret = sco.minimize(min_func_return, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+        if res_ret.success:
+            results["max_return"] = format_weights(res_ret.x)
+        else:
+            logger.warning(f"optimize_portfolio: max_return optimizasyonu başarısız: {res_ret.message}")
+            
     except ImportError:
-        logger.info("scipy not found, using Monte Carlo method for portfolio optimization.")
-        # Fallback to simple logic (just equal weights to avoid slow MC)
-        default_w = {t: round(100.0/num_assets, 2) for t in tickers}
-        results = {"max_sharpe": default_w, "min_volatility": default_w, "max_return": default_w}
+        logger.info("scipy not found, using default equal weights fallback.")
+    except Exception as e:
+        logger.warning(f"optimize_portfolio sırasında kritik hata oluştu (LinAlgError vs): {e}")
+        # Hata durumunda results, fonksiyonun başında eşit ağırlıkla tanımlanmış halleriyle kalır.
         
     return results

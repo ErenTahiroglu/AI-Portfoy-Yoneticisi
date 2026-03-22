@@ -53,16 +53,22 @@ def predict_price(ticker: str) -> dict:
 
         # ── 1. Tarihsel Veri ──────────────────────────────────────────────
         stock = yf.Ticker(ticker)
-        hist = stock.history(period="90d", interval="1d")
+        # Prophet yearly_seasonality için 2 yıla çıkarıldı
+        hist = stock.history(period="2y", interval="1d")
 
         if hist.empty or len(hist) < 20:
-            return {"ticker": ticker, "error": "Yetersiz tarihsel veri (min 20 gün)."}
+            return {"ticker": ticker, "error": "Yetersiz tarihsel veri (min 20 gün).", "enabled": True}
 
         # Prophet formatına çevir: ds, y
         df = pd.DataFrame({
             "ds": hist.index.tz_localize(None),
             "y": hist["Close"].values,
         })
+        
+        # Tamamlanmamış Mum Koruması (Incomplete Candle)
+        today = pd.Timestamp.now().normalize()
+        if df["ds"].iloc[-1].normalize() == today:
+            df = df.iloc[:-1]
 
         current_price = float(df["y"].iloc[-1])
 
@@ -76,12 +82,16 @@ def predict_price(ticker: str) -> dict:
         )
         model.fit(df)
 
-        # 7 günlük gelecek tahmin
-        future = model.make_future_dataframe(periods=7, freq="D")
+        # Kriptoysa takvim günü (D), hisse/fonsa iş günü (B)
+        is_crypto = ticker.endswith("-USD")
+        future = model.make_future_dataframe(periods=7, freq="D" if is_crypto else "B")
         forecast = model.predict(future)
 
         # Sadece gelecek 7 günü al
         future_fc = forecast[forecast["ds"] > df["ds"].max()].head(7)
+        
+        if future_fc.empty:
+            return {"ticker": ticker, "error": "Tahmin ufku boş döndü. (IndexError engellendi)", "enabled": True}
 
         target_price = float(future_fc["yhat"].iloc[-1])
         lower_bound = float(future_fc["yhat_lower"].iloc[-1])

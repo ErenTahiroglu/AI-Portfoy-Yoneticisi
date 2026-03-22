@@ -26,9 +26,15 @@ def run_portfolio_simulation(
         
     df = price_df[active_tickers].copy()
     
-    # NaN değerleri önceki fiyatla doldur
+    # Zaman Hizalaması ve Boşluk Doldurma (Sadece ileriye dönük)
     df.ffill(inplace=True)
-    df.bfill(inplace=True)
+    # Ortak tarih aralığına kırp (En genç varlığın halka arzından itibaren başlar)
+    df.dropna(inplace=True)
+    
+    # 20 Günden az veri varsa simülasyonu iptal et
+    if len(df) < 20:
+        logger.warning(f"run_portfolio_simulation: Yetersiz ortak tarihsel veri ({len(df)} gün). Simülasyon iptal edildi.")
+        return {}
     
     # Normalize weights to sum to 1.0
     total_w = sum(weights_map[t] for t in active_tickers)
@@ -43,6 +49,9 @@ def run_portfolio_simulation(
     
     history = []
     daily_values = []
+    
+    # Başlangıç bakiyesini ilk gün olarak ekle
+    daily_values.append(sum(current_balances.values()))
     
     last_rebalance_month = df.index[0].month
     
