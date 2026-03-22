@@ -103,6 +103,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Üretim Doğrulama & Matematik Kesinliği [v6.0]:** `verify_production.py` ile asenkron logic kesikleri ve finansal oranlar (AAOIFI, CAGR, Sharpe) rigid assert doğrulamasıyla sabitlenmiştir (Faz 9).
 *   **💡 Production Hardening [v6.1]:** Dead code (`desktop_app.py`) silinmiş, `asyncio.run()` bloklayıcıları ThreadPool-safe `new_event_loop` mimarisine taşınmış, kullanılmayan bağımlılıklar (`colorama`, `nest-asyncio`, `pillow`) temizlenmiş, `.gitignore` güçlendirilmiştir.
 *   **💡 Codebase Cleanup & Strict Fault Tolerance [v6.2]:** Kapsamlı temizlik (dead code, unused imports, cache silinmesi) yapılmış, AI agent dinamik prompt hata tolerans mekanizması `ValueError` fırlatmaları üzerinden AI halüsinasyonlarını engelleyecek şekilde entegre edilmiştir.
+*   **💡 Github Actions CI & Cache Fix [v6.3]:** Test paketlerindeki `_CACHE` import referansı güncel `redis_cache` in-memory fallback adresine yönlendirilerek CI testleri onarılmış ve Node.js v20 deprecation uyarıları giderilmiştir.
 
 
 #### 2. Frontend (Vercel)

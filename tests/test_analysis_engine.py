@@ -1,7 +1,8 @@
 """Tests for analysis_engine.py — Analiz motoru modülü."""
 
 import pytest
-from core.analysis_engine import _friendly_error, _cache_key, _get_cached, _set_cache, _CACHE
+from core.analysis_engine import _friendly_error, _cache_key, _get_cached, _set_cache
+from core.redis_cache import _LOCAL as _CACHE
 
 
 class TestFriendlyError:
@@ -85,8 +86,12 @@ class TestRateLimiterAsync:
         mock_request.headers.get.return_value = None
         mock_request.client.host = "127.0.0.1"
         
-        await limiter.check(mock_request)
-        assert len(limiter.history["127.0.0.1"]) == 1
+        try:
+            await limiter.check(mock_request)
+            assert len(limiter.history["ip:127.0.0.1"]) == 1
+        finally:
+            if limiter._cleanup_task:
+                limiter._cleanup_task.cancel()
 
     @pytest.mark.asyncio
     async def test_rate_limiter_blocks(self):
@@ -95,9 +100,13 @@ class TestRateLimiterAsync:
         mock_request.headers.get.return_value = None
         mock_request.client.host = "127.0.0.1"
         
-        await limiter.check(mock_request)
-        
-        from fastapi import HTTPException
-        with pytest.raises(HTTPException) as exc:
+        try:
             await limiter.check(mock_request)
-        assert exc.value.status_code == 429
+            
+            from fastapi import HTTPException
+            with pytest.raises(HTTPException) as exc:
+                await limiter.check(mock_request)
+            assert exc.value.status_code == 429
+        finally:
+            if limiter._cleanup_task:
+                limiter._cleanup_task.cancel()

@@ -47,9 +47,26 @@ export function createCard(res, idx) {
     const chartId = `chart-${idx}`;
 
     if (res.error) {
-        card.innerHTML = `<div class="card-header"><span class="ticker-name">${res.ticker}</span><span class="market-badge">${res.market || "?"}</span></div>
-        <p style="color:var(--danger);font-size:0.85rem;margin-bottom:0.75rem;">${res.error}</p>
-        <button class="btn btn-outline" style="font-size:0.75rem; padding:0.3rem 0.6rem;" onclick="retryAnalysis('${res.ticker}')"><i class="fas fa-redo"></i> Yeniden Dene</button>`;
+        let aiHTML = "";
+        if (res.ai_comment) {
+            const parsedAI = typeof marked !== "undefined" ? marked.parse(res.ai_comment) : res.ai_comment;
+            // t is presumably global or available based on existing code structure
+            const aiTitle = typeof t === "function" ? t("card.ai") : "AI Yorumu";
+            aiHTML = `<div class="collapsible-header open" onclick="toggleCollapsible(this)"><h4><i class="fas fa-robot"></i> ${aiTitle}</h4><i class="fas fa-chevron-down collapse-icon"></i></div><div class="collapsible-body open"><div class="ai-content markdown-body">${parsedAI}</div></div>`;
+        }
+
+        card.innerHTML = `
+            <div class="card-header">
+                <div><span class="ticker-name">${res.ticker}</span></div>
+                <div style="display:flex; align-items:center; gap:0.5rem"><span class="market-badge">${res.market || "?"}</span></div>
+            </div>
+            <div style="margin: 1rem 0; padding: 0.8rem; background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger); border-radius: 4px;">
+                <p style="color:var(--danger); font-size:0.9rem; margin:0; font-weight:600;"><i class="fas fa-exclamation-circle"></i> Sistem Uyarısı</p>
+                <p style="color:var(--text-main); font-size:0.85rem; margin:0.4rem 0 0.8rem 0;">${res.error}</p>
+                <button class="btn btn-outline" style="font-size:0.75rem; padding:0.3rem 0.6rem;" onclick="retryAnalysis('${res.ticker}')"><i class="fas fa-redo"></i> Yeniden Dene</button>
+            </div>
+            ${aiHTML}
+        `;
         return { card, chartId };
     }
 

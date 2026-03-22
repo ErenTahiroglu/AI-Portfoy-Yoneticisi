@@ -78,3 +78,5 @@ out.txt
 # Database files
 *.db
 *.sqlite3
+
+# v6.3: GitHub Actions CI & Core Logic Verified

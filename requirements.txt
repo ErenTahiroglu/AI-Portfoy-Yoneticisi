@@ -84,3 +84,5 @@ yahooquery==2.4.1
 zstandard==0.25.0
 pytest==8.1.1
 pytest-asyncio==0.23.6
+
+# v6.3: GitHub Actions CI & Core Logic Verified
