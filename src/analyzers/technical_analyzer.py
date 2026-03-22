@@ -17,22 +17,28 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
         from yahooquery import Ticker
         t = Ticker(fetcher_ticker)
         hist = t.history(period="1y", adj_ohlc=True)
-        if hist is None or not isinstance(hist, pd.DataFrame) or hist.empty or len(hist) < 30:
-            return
+        if hist is None or not isinstance(hist, pd.DataFrame) or hist.empty:
+            raise ValueError(f"API boş DataFrame döndürdü: {fetcher_ticker}")
+        
+        if len(hist) < 30:
+            raise ValueError(f"30 günden az veri geldi: {fetcher_ticker}")
         
         # Yahooquery returns MultiIndex (symbol, date)
         try:
             hist = hist.loc[fetcher_ticker]
         except KeyError:
-            return
+            raise ValueError(f"Beklenen sembol index'te bulunamadı: {fetcher_ticker}")
             
         if hist.empty or len(hist) < 30:
-            return
+            raise ValueError(f"Sembol filtrelendikten sonra 30 günden az veri kaldı: {fetcher_ticker}")
             
         # Rename columns to match capitalized expectation (Close, Open, High, Low)
         hist.columns = [c.title() for c in hist.columns]
         hist.index = pd.to_datetime(hist.index) # Ensure DatetimeIndex
         
+        if "Close" not in hist.columns:
+            raise ValueError(f"'Close' kolonu eksik: {fetcher_ticker}")
+            
         close = hist["Close"]
         technicals = {}
         
@@ -148,3 +154,4 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
             result_entry["technicals"] = technicals
     except Exception as e:
         logger.debug(f"Technical indicators failed for {fetcher_ticker}: {e}")
+        raise

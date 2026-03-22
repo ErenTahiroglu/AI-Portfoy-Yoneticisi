@@ -7,7 +7,10 @@
   "executionEnvironments": [
     {
       "root": ".",
-      "extraPaths": [".", ".venv/lib/python3.9/site-packages"]
+      "extraPaths": [
+        "/Users/eren/repos/AI-Portfoy-Yoneticisi",
+        "/Users/eren/repos/AI-Portfoy-Yoneticisi/.venv/lib/python3.11/site-packages"
+      ]
     }
   ]
 }

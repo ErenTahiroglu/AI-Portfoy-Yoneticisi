@@ -26,7 +26,7 @@ from datetime import datetime
 from typing import Dict, Optional
 
 from src.data.data_sources import (
-    HAS_CURL, CURL_SESSION, AV_KEY, req_lib,
+    HAS_CURL, AV_KEY, req_lib,
     US_VARSAYILAN_ENF as VARSAYILAN_ENF,
     ANALIZ_YIL_SAYI, AYLIK_DONEMLER, RETRY_SAYISI, RETRY_BEKLEME, FIYAT_TOLERANS
 )
@@ -47,7 +47,7 @@ class HisseAnaliz(BaseAnalyzer):
         self.av_key = av_key or AV_KEY
 
         logger.info(f"\n{'═'*68}")
-        logger.info(f"  ABD PORTFÖY ANALİZ ARACI  –  v6.0")
+        logger.info("  ABD PORTFÖY ANALİZ ARACI  –  v6.0")
         logger.info(f"{'═'*68}")
         logger.info(f"  Tarih         : {self.bugun.strftime('%d.%m.%Y')}")
         logger.info(f"  Analiz yılları: {self.yillar[0]} – {self.yillar[-1]}")
@@ -222,7 +222,7 @@ class HisseAnaliz(BaseAnalyzer):
                 except Exception as e:
                     if str(e) == "ALPHA_VANTAGE_RATE_LIMIT":
                         av_rate_limited = True
-                        logger.warning(f"     ⚠️  Alpha Vantage: RATE LIMIT AŞILDI")
+                        logger.warning("     ⚠️  Alpha Vantage: RATE LIMIT AŞILDI")
                     else:
                         logger.warning(f"     ⚠️  {kaynak_adi} hata: {e}")
 
@@ -310,7 +310,7 @@ class HisseAnaliz(BaseAnalyzer):
         s3 = self._toplam_getiri(fiyatlar, self.yillar[-3], self.yillar[-1])
         sonuc["s5"] = s5
         sonuc["s3"] = s3
-        logger.info(f"\n  📊 Toplam getiri:")
+        logger.info("\n  📊 Toplam getiri:")
         if s5 is not None:
             logger.info(f"     Son 5 yıl ({self.yillar[0]}–{self.yillar[-1]}): {s5:>+8.2f}%")
         if s3 is not None:
@@ -329,7 +329,7 @@ class HisseAnaliz(BaseAnalyzer):
         risk = self._risk_metrikleri(fiyatlar, risksiz_faiz=0.05)  # US risksiz ~%5
         if risk.sharpe_ratio is not None:
             sonuc["risk"] = asdict(risk)
-            logger.info(f"\n  🎯 Risk Metrikleri:")
+            logger.info("\n  🎯 Risk Metrikleri:")
             logger.info(f"     Sharpe Ratio       : {risk.sharpe_ratio:+.3f}")
             logger.info(f"     Max Drawdown       : {risk.max_drawdown:+.2f}% ({risk.max_drawdown_tarih})")
 

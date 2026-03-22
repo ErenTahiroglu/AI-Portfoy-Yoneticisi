@@ -24,9 +24,10 @@ def _extract_user_id(authorization: Optional[str]) -> Optional[str]:
     """JWT'nin payload kısmından user ID'yi decode eder (signature doğrulaması olmadan).
     Güvenlik: Bu yalnızca rate-limit key oluşturma için kullanılır.
     Supabase'in kendi signature doğrulaması zaten client tarafında yapılır."""
-    if not authorization or not authorization.startswith("Bearer "):
+    if not isinstance(authorization, str) or not authorization.startswith("Bearer "):
         return None
-    token = authorization[7:]
+    auth_str: str = authorization
+    token = auth_str[7:]
     try:
         # JWT = header.payload.signature — payload'ı base64 decode et
         parts = token.split(".")
@@ -51,6 +52,7 @@ class RateLimiter:
         self.period = period
         self.history: dict = {}  # {key: [timestamp, ...]}
         self.lock = asyncio.Lock()
+        self._cleanup_task: Optional[asyncio.Task] = None
 
     async def _cleanup_loop(self):
         """Arka plan temizlik döngüsü (eski timestamp'leri ve boş key'leri siler)."""
@@ -68,7 +70,7 @@ class RateLimiter:
 
     async def check(self, request: Request):
         # Arka plan temizlik görevini bir kez başlat
-        if not hasattr(self, "_cleanup_task"):
+        if not self._cleanup_task:
             self._cleanup_task = asyncio.create_task(self._cleanup_loop())
 
         # ── Kimlik Anahtarı Belirleme ──────────────────────────────────────

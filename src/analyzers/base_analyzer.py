@@ -20,7 +20,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from typing import Dict, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,7 @@ class SonFiyat:
     yuksek: float = 0.0
     dusuk: float = 0.0
 
-@dataclass
-class DonemselGetiri:
-    g: Optional[float] = None    # nominal getiri %
-    r: Optional[float] = None    # reel getiri %
-    enf: Optional[float] = None  # dönem enflasyonu %
+
 
 @dataclass
 class GunlukIstatistik:

@@ -9,7 +9,6 @@ göre uygunluk durumunu hesaplar.
 import pandas as pd
 import functools
 from yahooquery import Ticker
-from src.data import data_sources  # SSL Bypass ve diğer ayarlar buradan otomatik yüklenir
 
 def _get_single_stock_data(ticker):
     """Tekil bir hissenin verilerini bulur (Döngü için yardımcı fonksiyon)"""

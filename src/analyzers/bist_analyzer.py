@@ -30,12 +30,12 @@ from datetime import datetime
 from typing import Dict, Optional
 
 from src.data.data_sources import (
-    HAS_CURL, CURL_SESSION, AV_KEY, req_lib,
+    HAS_CURL, AV_KEY, req_lib,
     TR_VARSAYILAN_ENF as VARSAYILAN_ENF,
     ANALIZ_YIL_SAYI, AYLIK_DONEMLER, HAFTALIK_DONEMLER,
     RETRY_SAYISI, RETRY_BEKLEME, FIYAT_TOLERANS
 )
-from .base_analyzer import BaseAnalyzer, get_cached_cpi, RiskMetrikleri
+from .base_analyzer import BaseAnalyzer, get_cached_cpi
 from src.data.tefas_scraper import get_tefas_data_sync
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class HisseAnaliz(BaseAnalyzer):
         self.yillar = list(range(self.bu_yil - ANALIZ_YIL_SAYI, self.bu_yil))
 
         logger.info(f"\n{'═'*68}")
-        logger.info(f"  BIST PORTFÖY ANALİZ ARACI  –  v2.0")
+        logger.info("  BIST PORTFÖY ANALİZ ARACI  –  v2.0")
         logger.info(f"{'═'*68}")
         logger.info(f"  Tarih         : {self.bugun.strftime('%d.%m.%Y')}")
         logger.info(f"  Analiz yılları: {self.yillar[0]} – {self.yillar[-1]}")
@@ -241,7 +241,7 @@ class HisseAnaliz(BaseAnalyzer):
                    ) -> Optional[pd.DataFrame]:
         """TEFAS → Playwright (Sanal Tarayıcı) ile F5 WAF bypass."""
         fon_kodu = fon_kodu.strip().upper()
-        logger.info(f"     ⏳ TEFAS WAF Aşılıyor (Arkaplan Tarayıcısı)...")
+        logger.info("     ⏳ TEFAS WAF Aşılıyor (Arkaplan Tarayıcısı)...")
         try:
             df = get_tefas_data_sync(fon_kodu, baslangic.date(), bitis.date())
             if df is not None and not df.empty:
@@ -421,7 +421,7 @@ class HisseAnaliz(BaseAnalyzer):
         s3 = self._toplam_getiri(fiyatlar, self.yillar[-3], self.yillar[-1])
         sonuc["s5"] = s5
         sonuc["s3"] = s3
-        logger.info(f"\n  📊 Toplam getiri:")
+        logger.info("\n  📊 Toplam getiri:")
         if s5 is not None:
             logger.info(f"     Son 5 yıl ({self.yillar[0]}–{self.yillar[-1]}): {s5:>+8.2f}%")
         if s3 is not None:
@@ -451,7 +451,7 @@ class HisseAnaliz(BaseAnalyzer):
         gist = self._gunluk_istatistik(fiyatlar, 30)
         if gist:
             sonuc["gunluk_ist"] = asdict(gist)
-            logger.info(f"\n  📈 Son 30 Gün İstatistikleri:")
+            logger.info("\n  📈 Son 30 Gün İstatistikleri:")
             logger.info(f"     Ort. günlük getiri : {gist.ort:+.3f}%")
             logger.info(f"     Volatilite (std)   : {gist.std:.3f}%")
             logger.info(f"     Min / Max          : {gist.min:+.2f}% / {gist.max:+.2f}%")
@@ -461,7 +461,7 @@ class HisseAnaliz(BaseAnalyzer):
         risk = self._risk_metrikleri(fiyatlar, risksiz_faiz=0.30)  # TR risksiz faiz ~%30
         if risk.sharpe_ratio is not None:
             sonuc["risk"] = asdict(risk)
-            logger.info(f"\n  🎯 Risk Metrikleri:")
+            logger.info("\n  🎯 Risk Metrikleri:")
             logger.info(f"     Sharpe Ratio       : {risk.sharpe_ratio:+.3f}")
             logger.info(f"     Max Drawdown       : {risk.max_drawdown:+.2f}% ({risk.max_drawdown_tarih})")
 

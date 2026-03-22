@@ -8,7 +8,6 @@ WAF ve Cookie engellerini aşmak için tarayıcıyı taklit eder.
 
 import json
 import logging
-import asyncio
 import pandas as pd
 import datetime
 import gc
@@ -171,5 +170,5 @@ if __name__ == "__main__":
     end = datetime.date.today()
     start = end - datetime.timedelta(days=730) # 2 Years
     df = get_tefas_data_sync("TI1", start, end)
-    print("TI1 Data:")
-    print(df.tail() if not df.empty else "No Data")
+    logger.info("TI1 Data:")
+    logger.info(df.tail() if not df.empty else "No Data")

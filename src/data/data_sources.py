@@ -25,7 +25,10 @@ except ImportError:
 # ══════════════════════════════════════════════════════════════════════════════
 # SSL BYPASS — tüm proje için tek noktadan yönetim
 # ══════════════════════════════════════════════════════════════════════════════
-import os, ssl, warnings, urllib3
+import os
+import ssl
+import warnings
+import urllib3
 from src.api.config import settings
 
 if not settings.SSL_VERIFY:
@@ -46,7 +49,6 @@ except ImportError:
     pass
 
 # ── curl_cffi oturumu (varsa) ─────────────────────────────────────────────
-import requests as req_lib
 
 try:
     from curl_cffi import requests as curl_req

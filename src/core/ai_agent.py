@@ -1,6 +1,6 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr"):
+def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr", system_errors: dict = None):
     """Gemini API'sini kullanarak seçili oranlara göre finansal rapor üretir."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key)
 
@@ -64,12 +64,18 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     if len(requirements) == 0:
         return "Gerekli analiz verisi seçilmediği için yorum üretilemedi."
         
+    system_errors_text = ""
+    if system_errors:
+        errors_list = "\n".join([f"- {k}: {v}" for k, v in system_errors.items()])
+        system_errors_text = f"⚠️ SİSTEM UYARILARI VE EKSİK VERİ BEYANI: Aşağıdaki modüllerde API kesintisi veya veri eksikliği yaşanmıştır:\n{errors_list}\n"
+        
     lang_instruction = "Generate the response entirely in English." if lang == "en" else "Sonuçları daima Türkçe üret."
     prompt = f"""
     Sen teknik ve veriye odaklı konuşan kıdemli bir nicel finansal analistisin.
     Görev: {ticker} {"(ETF/Fon)" if is_etf else "(Hisse)"} sembolü için gereksiz giriş cümleleri KULLANMADAN aşağıdaki özellikleri inceleyip kısa net bir analiz çıkartmak. Piyasası: {"Türk Piyasası (BIST/TEFAS)" if market == "TR" else "ABD Piyasası"}.
     {lang_instruction}
     
+    {system_errors_text}
     MEVCUT SIFILTRENMİŞ VERİLER:
     {islamic_context}
     {financial_context}
@@ -95,6 +101,7 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     2. "Sayın Yatırımcı", "Özetle" tarzı doldurma sözcükler YASAKTIR.
     3. Çıktında KESİNLİKLE "$" (dolar) sembolü kullanma, yerine 'USD' veya 'TL' gibi ifadeler kullan. Markdown formatını bozmamaya dikkat et.
     4. Gereksiz bir övgü yapma.
+    5. HALÜSİNASYON YASAKTIR: Eğer sana verilen verilerde veya 'Sistem Uyarıları' bölümünde bir API çökmesi veya eksik veri raporlanmışsa, kesinlikle değer uydurma. Raporunda 'Şu teknik nedenden ötürü ([Hata Sebebi]) bu metrik değerlendirilememiştir' diyerek şeffaf ol. Zorunlu JSON bloğunda (METRIC_INSIGHTS) eksik kalan metriklerin karşılığına değer olarak 'Veri yetersizliği nedeniyle hesaplanamadı' yaz.
     """
     
     try:

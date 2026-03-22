@@ -178,7 +178,7 @@ def calculate_factor_regression(port_returns: pd.Series, valid_tickers: list) ->
         factors_data_raw = t.history(start=start_date, end=end_date, adj_ohlc=True)
         
         if factors_data_raw is None or not isinstance(factors_data_raw, pd.DataFrame) or factors_data_raw.empty:
-             return {"error": "FAILED", "message": f"Faktör verileri (SPY, IJR, VTV, VUG) indirilemedi."}
+             return {"error": "FAILED", "message": "Faktör verileri (SPY, IJR, VTV, VUG) indirilemedi."}
              
         # Unstack to get Index=Date, Columns=Symbol
         factors_data = factors_data_raw['close'].unstack(level=0)

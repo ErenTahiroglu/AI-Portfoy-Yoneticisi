@@ -22,7 +22,7 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +210,9 @@ class ValuationAnalyzerStrategy(BaseAnalyzerStrategy):
         def _call():
             run_valuation_check(context.get("fetcher_ticker"), result_entry)
             
-        safe_api_call(_call)
+        res = safe_api_call(_call)
+        if isinstance(res, dict) and "error" in res:
+            result_entry["valuation_error"] = res["error"]
 
 class TechnicalAnalyzerStrategy(BaseAnalyzerStrategy):
     @property
@@ -223,7 +225,9 @@ class TechnicalAnalyzerStrategy(BaseAnalyzerStrategy):
         def _call():
             run_technical_indicators(context.get("fetcher_ticker"), result_entry)
             
-        safe_api_call(_call)
+        res = safe_api_call(_call)
+        if isinstance(res, dict) and "error" in res:
+            result_entry["technical_error"] = res["error"]
 
 class SectorAnalyzerStrategy(BaseAnalyzerStrategy):
     @property
@@ -278,6 +282,12 @@ class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
         if not context.get("use_ai"): return
         try:
             from .ai_agent import generate_report
+            
+            system_errors = {}
+            for err_key in ["fin_error", "technical_error", "valuation_error", "islamic_error", "sector_error"]:
+                if err_key in result_entry:
+                    system_errors[err_key] = result_entry[err_key]
+                    
             islamic_dict = context.get("islamic_data") if context.get("islamic_data") is not None else {}
             ai_comment = generate_report(
                 ticker=ticker,
@@ -288,7 +298,8 @@ class AICommentAnalyzerStrategy(BaseAnalyzerStrategy):
                 check_financials=context.get("check_financials"),
                 fin_data=context.get("fin_data"),
                 market=context.get("market"),
-                lang=context.get("lang")
+                lang=context.get("lang"),
+                system_errors=system_errors
             )
             result_entry["ai_comment"] = ai_comment
         except Exception as e:
@@ -393,7 +404,6 @@ class AnalysisEngine:
         Ticker listesi için tam portföy analizi çalıştırır.
         Paralel analiz ile 3-4x hız artışı sağlar.
         """
-        from src.data.market_detector import detect_market
         
         if check_financials:
             self._init_financial_analyzers(av_api_key)
