@@ -1,38 +1,28 @@
 """
-🧩 Puzzle Parça: API Katmanı — v3.0
-============================================
-FastAPI endpoint tanımları, request/response modelleri ve middleware.
-İş mantığı analysis_engine.py'de yaşar.
-
-v3.0 Yenilikler:
-  • Export endpoint'leri (Excel, PDF, DOCX)
-  • Ticker suggestion / autocomplete endpoint'i
-
-Kullanım:
-    uvicorn main:app --host 127.0.0.1 --port 8000
+🧩 Puzzle Parça: API Giriş Noktası (Entrypoint) — v4.0
+======================================================
+FastAPI uygulamasını başlatır, middleware'leri tanımlar ve
+dekuple edilmiş router'ları include eder.
 """
 
+import os
 import logging
-
-from fastapi import FastAPI, HTTPException, Request, Depends
+import asyncio
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.rate_limiter import limiter
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import List, Optional, Dict
-import os
-import asyncio
-import json
-import gc
-
-# ── Modül importları ──────────────────────────────────────────────────────
-# ── Modül importları ──────────────────────────────────────────────────────
-from src.core.analysis_engine import AnalysisEngine
 from contextlib import asynccontextmanager
-from src.core.scheduler import start_alert_scheduler
 
+from src.core.scheduler import start_alert_scheduler
+from src.api.websocket import register_websocket_routes
+from starlette.middleware.base import BaseHTTPMiddleware
+
+# ── Logging Setup ─────────────────────────────────────────────────────────
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+# ── Lifespan (Background Tasks) ───────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # API kalktığında otonom tarayıcıyı ayağa kaldır
@@ -41,30 +31,12 @@ async def lifespan(app: FastAPI):
     # API kapandığında memory leak olmaması için iptal et
     task.cancel()
 
-# ── FastAPI uygulaması ────────────────────────────────────────────────────
-app = FastAPI(title="Portföy Analiz Platformu", version="3.0", lifespan=lifespan)
+# ── FastAPI Uygulaması ────────────────────────────────────────────────────
+app = FastAPI(title="Portföy Analiz Platformu", version="4.0", lifespan=lifespan)
 
-# ── Analiz motoru (singleton) ─────────────────────────────────────────────
-engine = AnalysisEngine()
-
-# ── Statik dosya servisi (Frontend) ───────────────────────────────────────
-base_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_path = os.path.join(os.path.dirname(base_dir), "frontend")
-
-if os.path.exists(frontend_path):
-    app.mount("/ui", StaticFiles(directory=frontend_path, html=True), name="ui")
-
-# ── WebSocket Entegrasyonu ────────────────────────────────────────────────
-from src.api.websocket import register_websocket_routes  # type: ignore[import]
-from src.api.auth import verify_jwt  # Zero Trust IAM
-register_websocket_routes(app)
-
-# ── Cache-Control middleware (tarayıcı eski dosyaları kullanmasın) ─────────
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request as StarletteRequest
-
+# ── Middleware: No-Cache ──────────────────────────────────────────────────
 class NoCacheMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: StarletteRequest, call_next):
+    async def dispatch(self, request, call_next):
         response = await call_next(request)
         if request.url.path.startswith("/ui"):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -74,7 +46,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(NoCacheMiddleware)
 
-# ── CORS middleware ───────────────────────────────────────────────────────
+# ── Middleware: CORS ──────────────────────────────────────────────────────
 origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5500,http://127.0.0.1:5500,https://ai-destekli-portfoy-yoneticisi.vercel.app")
 origins = [o.strip() for o in origins_str.split(",") if o.strip()]
 
@@ -86,566 +58,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logger = logging.getLogger(__name__)
+# ── WebSocket Entegrasyonu ────────────────────────────────────────────────
+register_websocket_routes(app)
 
+# ── Sub-Routers Include ───────────────────────────────────────────────────
+from src.api.routers import analysis, chat, user
+
+app.include_router(analysis.router)
+app.include_router(chat.router)
+app.include_router(user.router)
+
+# ── Root Redirect & Static Files (Frontend) ───────────────────────────────
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "Portföy Analiz API aktif"}
-
-# ══════════════════════════════════════════════════════════════════════════
-# REQUEST / RESPONSE MODELLERİ
-# ══════════════════════════════════════════════════════════════════════════
-
-class AnalysisRequest(BaseModel):
-    tickers: List[str]
-    use_ai: bool = False
-    api_key: Optional[str] = None
-    av_api_key: Optional[str] = None
-    model: str = "gemini-2.5-flash"
-    check_islamic: bool = False
-    check_financials: bool = True
-    lang: str = "tr"
-    initial_balance: float = 10000.0
-    monthly_contribution: float = 0.0
-    rebalancing_freq: str = "none"
-
-class UserSettingsRequest(BaseModel):
-    telegram_chat_id: Optional[str] = None
-    risk_tolerance: Optional[str] = "Orta"
-
-class PortfolioOptimizeRequest(BaseModel):
-    tickers: List[str]
-    weights: Optional[Dict[str, float]] = None
-    risk_free_rate: float = 0.02
-
-class PortfolioRiskRequest(BaseModel):
-    tickers: List[str]
-    weights: Dict[str, float]
-
-# TextAnalysisRequest kaldırıldı (Kullanılmıyor)
-
-# ══════════════════════════════════════════════════════════════════════════
-# TICKER SUGGESTION DATA
-# ══════════════════════════════════════════════════════════════════════════
-
-from src.data.constants import POPULAR_TICKERS
-
-
-# ══════════════════════════════════════════════════════════════════════════
-# API ENDPOINT'LERİ
-# ══════════════════════════════════════════════════════════════════════════
 
 @app.get("/")
 def read_root():
     return RedirectResponse(url="/ui")
 
-def process_tickers_with_weights(raw_tickers: List[str]):
-    parsed = []
-    weights_map = {}
-    for rt in raw_tickers:
-        parts = rt.split(":")
-        ticker = parts[0].strip().upper()
-        if not ticker: continue
-        weight = 1.0
-        if len(parts) > 1:
-            try:
-                weight = float(parts[1])
-            except ValueError:
-                pass
-        parsed.append(ticker)
-        weights_map[ticker] = weight
-    return parsed, weights_map
+base_dir = os.path.dirname(os.path.abspath(__file__))
+frontend_path = os.path.join(os.path.dirname(base_dir), "frontend")
 
-@app.post("/api/analyze", dependencies=[Depends(limiter.check)])
-async def analyze_portfolio(request: AnalysisRequest, req: Request):
-    """Ticker listesiyle portföy analizi (SSE / Streaming)."""
-    if not request.tickers:
-        raise HTTPException(status_code=400, detail="No tickers provided")
-    if request.use_ai and not request.api_key:
-        raise HTTPException(status_code=400, detail="API key is required for AI analysis")
-    
-    parsed_tickers, weights_map = process_tickers_with_weights(request.tickers)
-    if not parsed_tickers:
-        raise HTTPException(status_code=400, detail="No valid tickers provided")
-
-    async def event_generator():
-        semaphore = asyncio.Semaphore(2)  # Render 512MB limit için eşzamanlılık limiti
-
-        async def analyze_with_semaphore(ticker):
-            async with semaphore:
-                try:
-                    res = await asyncio.to_thread(
-                        engine._analyze_single,
-                        ticker,
-                        check_islamic=request.check_islamic,
-                        check_financials=request.check_financials,
-                        use_ai=request.use_ai,
-                        api_key=request.api_key,
-                        model=request.model,
-                        lang=request.lang
-                    )
-                    return ticker, res, None
-                except Exception as e:
-                    return ticker, None, e
-
-        # Görevleri oluştur
-        tasks = [asyncio.create_task(analyze_with_semaphore(t)) for t in parsed_tickers]
-
-        try:
-            for coro in asyncio.as_completed(tasks):
-                # Her adımda bağlantı kesilmesi kontrol edilir
-                if await req.is_disconnected():
-                    logger.warning("🚫 SSE istemci bağlantısı koptu. Çalışan analizler iptal ediliyor.")
-                    for t in tasks:
-                        if not t.done():
-                            t.cancel()
-                    break
-
-                ticker, res, err = await coro
-                if err:
-                    yield f"data: {json.dumps({'ticker': ticker, 'error': str(err)})}\n\n"
-                else:
-                    res["weight"] = weights_map.get(ticker, 1.0)
-                    yield f"data: {json.dumps(res)}\n\n"
-
-        except Exception as e:
-            logger.error(f"SSE Hatası: {e}")
-        finally:
-            # Stream bitince bellek temizliği
-            gc.collect()
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
-
-
-
-@app.get("/api/portfolio-signals")
-async def get_portfolio_signals(tickers: str = ""):
-    """Kullanıcı portföyündeki hisseler için teknik sinyalleri tarar."""
-    tickers = tickers.strip()
-    if not tickers:
-        return []
-    
-    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
-    if not ticker_list:
-        return []
-
-    from src.analyzers.technical_analyzer import run_technical_indicators
-    import asyncio
-
-    async def fetch_signal(ticker):
-        res_entry = {"ticker": ticker}
-        try:
-            await asyncio.to_thread(run_technical_indicators, ticker, res_entry)
-            tech = res_entry.get("technicals", {})
-            return {
-                "ticker": ticker,
-                "signals": tech.get("signals", []),
-                "gauge_score": tech.get("gauge_score", 50)
-            }
-        except Exception as e:
-            return {"ticker": ticker, "signals": [], "error": str(e)}
-
-    tasks = [asyncio.create_task(fetch_signal(t)) for t in ticker_list]
-    results = await asyncio.gather(*tasks)
-    
-    # Sadece sinyal üreten hisseleri filtrele
-    triggered = [r for r in results if r.get("signals") and len(r["signals"]) > 0]
-    return triggered
-
-# ══════════════════════════════════════════════════════════════════════════
-# TICKER SUGGESTION ENDPOINT
-# ══════════════════════════════════════════════════════════════════════════
-
-@app.get("/api/search")
-async def search_tickers(q: str = ""):
-    """Yahoo Finance Arama API'sine hafif bir proxy sağlar."""
-    q = q.strip()
-    if not q:
-        return []
-    
-    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=6&newsCount=0"
-    
-    import httpx
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            resp = await client.get(url, headers=headers)
-            if resp.status_code != 200:
-                logger.error(f"Yahoo Search API Hatası: {resp.status_code}")
-                return []
-            
-            data = resp.json()
-            quotes = data.get("quotes", [])
-            
-            results = []
-            for item in quotes:
-                # Sadece hisse, ETF veya fonları al (opsiyonel filtreleme istersen)
-                results.append({
-                    "symbol": item.get("symbol"),
-                    "name": item.get("shortname") or item.get("longname") or "",
-                    "exchDisp": item.get("exchDisp") or ""
-                })
-            return results
-    except Exception as e:
-        logger.error(f"Arama Hatası: {e}")
-        return []
-
-# ── Yardımcı Fonksiyonlar ────────────────────────────────────────────────
-def tr_lower(text: str) -> str:
-    """Türkçe karakter duyarlı küçük harfe çevirme."""
-    return text.replace('İ', 'i').replace('I', 'ı').lower()
-
-def tr_upper(text: str) -> str:
-    """Türkçe karakter duyarlı büyük harfe çevirme."""
-    return text.replace('i', 'İ').replace('ı', 'I').upper()
-
-@app.get("/api/suggest")
-async def suggest_tickers(q: str = ""):
-    """Ticker autocomplete önerileri döndürür."""
-    q = q.strip()
-    if not q:
-        return {"suggestions": []}
-    
-    q_norm = tr_lower(q)
-    matches = []
-    
-    # 1. Ticker üzerinden arama (Sembol)
-    for ticker, name in POPULAR_TICKERS.items():
-        ticker_norm = tr_lower(ticker)
-        if ticker_norm.startswith(q_norm) or q_norm in ticker_norm:
-            matches.append({"ticker": ticker, "name": name})
-            if len(matches) >= 15: break
-
-    # 2. İsim üzerinden arama (Eğer liste dolmadıysa)
-    if len(matches) < 10:
-        for ticker, name in POPULAR_TICKERS.items():
-            if any(m["ticker"] == ticker for m in matches): continue
-            name_norm = tr_lower(name)
-            if q_norm in name_norm:
-                matches.append({"ticker": ticker, "name": name})
-                if len(matches) >= 15: break
-    
-    return {"suggestions": matches[:15]}
-
-
-# ══════════════════════════════════════════════════════════════════════════
-# AI WIZARD & NEWS ENDPOINTS
-# ══════════════════════════════════════════════════════════════════════════
-
-class WizardRequest(BaseModel):
-    prompt: str
-    api_key: str
-    model: str = "gemini-2.5-flash"
-    lang: str = "tr"
-
-class NewsRequest(BaseModel):
-    tickers: List[str]
-    api_key: Optional[str] = None
-    model: str = "gemini-2.5-flash"
-    lang: str = "tr"
-
-class ChatRequest(BaseModel):
-    messages: List[dict]
-    portfolio_context: dict
-    api_key: str
-    model: str = "gemini-2.5-flash"
-    lang: str = "tr"
-
-class MacroRequest(BaseModel):
-    portfolio: dict
-    api_key: Optional[str] = None
-    model: str = "gemini-2.5-flash"
-    lang: str = "tr"
-
-@app.post("/api/analyze-macro", dependencies=[Depends(limiter.check), Depends(verify_jwt)])
-async def analyze_macro_endpoint(request: MacroRequest):
-    """
-    Tüm portföyün makro AI analizi için StreamingResponse (SSE) akışı sağlar.
-    """
-    api_key = request.api_key
-    if not api_key:
-        raise HTTPException(status_code=400, detail="Gemini API Key is required for Macro Analysis")
-
-    from src.core.ai_agent import generate_macro_advice
-
-    def event_generator():
-        try:
-            for chunk in generate_macro_advice(request.portfolio, api_key, request.model, request.lang):
-                yield f"data: {json.dumps({'chunk': chunk}, ensure_ascii=False)}\n\n"
-            yield "data: [DONE]\n\n"
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
-            yield "data: [DONE]\n\n"
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
-
-@app.post("/api/wizard", dependencies=[Depends(verify_jwt)])
-async def wizard_api(request: WizardRequest):
-    """Metinsel komuttan portföy üretir."""
-    if not request.api_key:
-        raise HTTPException(status_code=400, detail="API key is required for AI Wizard")
-    try:
-        from src.core.ai_agent import generate_wizard_portfolio
-        portfolio = generate_wizard_portfolio(request.prompt, request.api_key, request.model, request.lang)
-        return {"portfolio": portfolio}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/news", dependencies=[Depends(verify_jwt)])
-async def news_api(request: NewsRequest):
-    """Ticker listesi için önemli haberleri çeker ve AI ile filtreler."""
-    if not request.tickers: return {"news": []}
-    try:
-        from src.data.news_fetcher import fetch_and_filter_news
-        data = fetch_and_filter_news(request.tickers, request.api_key, request.model, request.lang)
-        return data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/chat", dependencies=[Depends(verify_jwt)])
-async def chat_api(request: ChatRequest):
-    """Floating Copilot Chatbot Endpoint."""
-    if not request.api_key:
-        raise HTTPException(status_code=400, detail="API key is required for AI Copilot")
-    try:
-        from src.core.ai_agent import generate_chat_response
-        reply = await generate_chat_response(request.messages, request.portfolio_context, request.api_key, request.model, request.lang)
-        return {"reply": reply}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ══════════════════════════════════════════════════════════════════════════
-# ML PREDICTION & OPTIONS ENDPOINTS — P5/P6
-# ══════════════════════════════════════════════════════════════════════════
-
-@app.get("/api/predict/{ticker}", dependencies=[Depends(limiter.check)])
-async def predict_api(ticker: str):
-    """
-    7 günlük ML fiyat tahmini üretir (Prophet).
-    ML_PREDICTION_ENABLED=true env var ile aktifleşir.
-    """
-    from src.analyzers.ml_predictor import predict_price  # type: ignore[import]
-    # Ağır hesaplama — thread pool'a devret
-    res = await asyncio.to_thread(predict_price, ticker.upper())
-    if "error" in res and res["error"] and not res.get("enabled", True):
-        raise HTTPException(status_code=400, detail=res["error"])
-    return res
-
-
-@app.get("/api/options/{ticker}", dependencies=[Depends(limiter.check)])
-async def options_api(ticker: str, expiration: Optional[str] = None):
-    """
-    US Market hisseleri için opsiyon zinciri verisi döndürür.
-    """
-    from src.analyzers.options_analyzer import get_options_chain  # type: ignore[import]
-    res = await asyncio.to_thread(get_options_chain, ticker.upper(), expiration)
-    if "error" in res and res["error"]:
-        raise HTTPException(status_code=404, detail=res["error"])
-    return res
-
-
-# ══════════════════════════════════════════════════════════════════════════
-# ALERTS ENDPOINTS (Phase 4)
-# ══════════════════════════════════════════════════════════════════════════
-import httpx
-
-@app.get("/api/alerts", dependencies=[Depends(verify_jwt)])
-async def get_alerts(request: Request):
-    """Kullanıcının Supabase alerts tablosundaki okunmamış son 10 bildirimini getir (Zero Trust)."""
-    user = getattr(request.state, "user", None)
-    if not user or "sub" not in user:
-        raise HTTPException(status_code=401, detail="User Identity Not Found")
-
-    user_id = user["sub"]
-    supa_url = os.getenv('SUPABASE_URL', '')
-    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    
-    url = f"{supa_url}/rest/v1/alerts?user_id=eq.{user_id}&is_read=eq.false&order=created_at.desc&limit=10"
-    headers = {
-        "apikey": supa_key,
-        "Authorization": f"Bearer {supa_key}"
-    }
-
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        resp = await client.get(url, headers=headers)
-        if resp.status_code == 200:
-            return resp.json()
-        return []
-
-@app.post("/api/alerts/read", dependencies=[Depends(verify_jwt)])
-async def mark_alerts_read(request: Request):
-    """Kullanıcının tüm okunmamış bildirimlerini okundu (is_read=true) olarak işaretler."""
-    user = getattr(request.state, "user", None)
-    if not user or "sub" not in user:
-        raise HTTPException(status_code=401, detail="User Identity Not Found")
-
-    user_id = user["sub"]
-    supa_url = os.getenv('SUPABASE_URL', '')
-    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    
-    url = f"{supa_url}/rest/v1/alerts?user_id=eq.{user_id}&is_read=eq.false"
-    headers = {
-        "apikey": supa_key,
-        "Authorization": f"Bearer {supa_key}",
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal"
-    }
-    payload = {"is_read": True}
-
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        await client.patch(url, headers=headers, json=payload)
-    return {"status": "success"}
-
-# ══════════════════════════════════════════════════════════════════════════
-# USER SETTINGS ENDPOINTS
-# ══════════════════════════════════════════════════════════════════════════
-
-@app.get("/api/user-settings", dependencies=[Depends(verify_jwt)])
-async def get_user_settings(request: Request):
-    """Kullanıcının telegram_chat_id ve risk_tolerance ayarlarını getirir."""
-    user = getattr(request.state, "user", None)
-    if not user or "sub" not in user:
-        raise HTTPException(status_code=401, detail="User Identity Not Found")
-
-    user_id = user["sub"]
-    supa_url = os.getenv('SUPABASE_URL', '')
-    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    
-    url = f"{supa_url}/rest/v1/user_settings?user_id=eq.{user_id}"
-    headers = {
-        "apikey": supa_key,
-        "Authorization": f"Bearer {supa_key}"
-    }
-
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        resp = await client.get(url, headers=headers)
-        if resp.status_code == 200:
-            data = resp.json()
-            if data and len(data) > 0:
-                return data[0]
-        return {"telegram_chat_id": "", "risk_tolerance": "Orta"}
-
-@app.post("/api/user-settings", dependencies=[Depends(verify_jwt)])
-async def update_user_settings(settings: UserSettingsRequest, request: Request):
-    """Kullanıcının telegram_chat_id ve risk_tolerance ayarlarını kaydeder."""
-    user = getattr(request.state, "user", None)
-    if not user or "sub" not in user:
-        raise HTTPException(status_code=401, detail="User Identity Not Found")
-
-    user_id = user["sub"]
-    supa_url = os.getenv('SUPABASE_URL', '')
-    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    
-    url = f"{supa_url}/rest/v1/user_settings"
-    headers = {
-        "apikey": supa_key,
-        "Authorization": f"Bearer {supa_key}",
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates"
-    }
-    
-    payload = {
-        "user_id": user_id,
-        "telegram_chat_id": settings.telegram_chat_id,
-        "risk_tolerance": settings.risk_tolerance
-    }
-
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        resp = await client.post(url, headers=headers, json=payload)
-        if resp.status_code not in [200, 201]:
-            raise HTTPException(status_code=500, detail=f"DB Error: {resp.text}")
-            
-    return {"status": "success"}
-
-# ══════════════════════════════════════════════════════════════════════════
-# PORTFOLIO OPTIMIZATION ENDPOINT
-# ══════════════════════════════════════════════════════════════════════════
-
-@app.post("/api/optimize-portfolio", dependencies=[Depends(verify_jwt)])
-async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest):
-    """Portföyü simülasyon (Monte Carlo) ile optimize eder."""
-    if not req_body.tickers:
-        raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
-        
-    try:
-        from yahooquery import Ticker
-        from src.core.optimization_engine import optimize_portfolio
-        
-        # Download prices
-        t = Ticker(req_body.tickers)
-        hist = t.history(period="1y", adj_ohlc=True)
-        
-        if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty):
-             raise HTTPException(status_code=500, detail="Fiyat verileri indirilemedi.")
-             
-        if not isinstance(hist, pd.DataFrame):
-             # Bazen hata mesajı dönebiliyor yahooquery
-             raise HTTPException(status_code=500, detail=str(hist))
-
-        # Unstack to get Returns
-        price_df = hist['close'].unstack(level=0)
-        # Clean tickers
-        price_df.columns = [c.upper() for c in price_df.columns]
-        price_df.ffill(inplace=True)
-        price_df.dropna(inplace=True)
-        
-        returns_df = price_df.pct_change().dropna()
-        
-        if returns_df.empty or len(returns_df) < 20:
-             raise HTTPException(status_code=400, detail="Simülasyon için yetersiz tarihsel veri.")
-             
-        opt_results = optimize_portfolio(returns_df, risk_free_rate=req_body.risk_free_rate)
-        
-        return {
-             "status": "success",
-             "current_weights": req_body.weights or {t: 100.0 / len(req_body.tickers) for t in req_body.tickers},
-             "optimal_weights": opt_results.get("max_sharpe", {}),
-             "min_volatility_weights": opt_results.get("min_volatility", {})
-        }
-    except Exception as e:
-         logger.error(f"Optimize Endpoint Hatası: {e}")
-         raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/risk-analysis", dependencies=[Depends(verify_jwt)])
-async def risk_analysis_endpoint(req_body: PortfolioRiskRequest):
-    """Portföy için VaR, MaxDD ve Stres Testi hesaplar."""
-    if not req_body.tickers:
-        raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
-        
-    try:
-        from yahooquery import Ticker
-        from src.analyzers.risk_analyzer import calculate_portfolio_risk
-        
-        t = Ticker(req_body.tickers)
-        hist = t.history(period="1y", adj_ohlc=True)
-        
-        if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty):
-             raise HTTPException(status_code=500, detail="Fiyat verileri indirilemedi.")
-             
-        if not isinstance(hist, pd.DataFrame):
-             raise HTTPException(status_code=500, detail=str(hist))
-
-        price_df = hist['close'].unstack(level=0)
-        price_df.columns = [c.upper() for c in price_df.columns]
-        price_df.ffill(inplace=True)
-        price_df.dropna(inplace=True)
-        
-        returns_df = price_df.pct_change().dropna()
-        
-        if returns_df.empty or len(returns_df) < 20:
-             raise HTTPException(status_code=400, detail="Simülasyon için yetersiz tarihsel veri.")
-             
-        risk_results = calculate_portfolio_risk(returns_df, req_body.weights)
-        
-        return risk_results
-        
-    except Exception as e:
-         logger.error(f"Risk Endpoint Hatası: {e}")
-         raise HTTPException(status_code=500, detail=str(e))
-
-# ══════════════════════════════════════════════════════════════════════════
-# EXPORT ENDPOINTS
-# ══════════════════════════════════════════════════════════════════════════
-
+if os.path.exists(frontend_path):
+    app.mount("/ui", StaticFiles(directory=frontend_path, html=True), name="ui")
+else:
+    logger.warning(f"Frontend Static path not found at {frontend_path}")

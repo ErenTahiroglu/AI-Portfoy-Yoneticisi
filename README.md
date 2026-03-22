@@ -3,7 +3,7 @@
 # 📊 Portföy Analiz Platformu — AI Destekli
 ### (AI-Powered Portfolio Analysis Platform)
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
 [![Gemini AI](https://img.shields.io/badge/Google_Gemini-AI-orange.svg)](https://ai.google.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -14,24 +14,21 @@
 
 ## Türkçe (Turkish)
 
-**Portföy Analiz Platformu (v5.0)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri ve TEFAS fonlarını aynı anda analiz edebilen, yapay zeka destekli yerel bir web uygulamasıdır. 
-Finansal verileri hesaplar, opsiyonel olarak İslami uygunluk (AAOIFI) denetimi yapar, sonuçları Google Gemini AI modeli ile yorumlar ve modern, mobil uyumlu, logolu bir arayüz sunar.
+**Portföy Analiz Platformu (v8.0)**, ABD hisseleri, Borsa İstanbul (BIST) hisseleri, Kripto Paralar ve TEFAS fonlarını aynı anda analiz edebilen, çoklu-ajan (Multi-Agent) yapay zeka destekli yerel bir web uygulamasıdır. 
+Finansal verileri hesaplar, risk analizleri (VaR, MaxDD) yapar, sanal emirlerle (Paper Trading) strateji takibi sağlar, sonuçları Google Gemini AI CIO modülü ile yorumlar ve modern, mobil uyumlu, logolu bir arayüz sunar.
 
 ### ✨ Temel Özellikler
 
 | Özellik | Açıklama |
 |---------|----------|
-| 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
-| 🛡️ **TEFAS Entegrasyonu** | `curl_cffi` tabanlı scraper ile WAF engellerini aşan, 180 günlük akıllı chunk'larla hızlı veri çekimi |
-| 🌟 **Portfolio Visualizer (PV)** | Kompakt Profesyonel Mod, Dinamik Nakit Akışı & Yeniden Dengeleme Simülatörü ve Drawdown Sualtı Grafikleri |
-| 🤖 **AI Portföy Sihirbazı & Copilot** | Metin girişiyle portföy kurdurma ve yüzen **AI Copilot** widget'ı ile anında portföy sorgulama |
-| 📊 **Premium UX Grafikleri** | Fintables stili **Finansal Sağlık Radarı**, TradingView stili **Teknik Kadran (Gauge)** ve Koyfin stili **Göreli Performans** |
-| 🕌 **İslami Finans (Zoya Stili)** | Hisse bazında detaylı Haram Gelir ve Faizli Borç ilerleme çubukları |
-| 🗺️ **Dinamik Isı Haritası** | Finviz stili anlık F/K, Temettü ve Günlük Değişim filtreli interaktif Treemap |
-| 🔍 **Gelişmiş Metrikler** | Sortino, Calmar, Max Drawdown hesaplamaları ve ABD pazarı için Fama-French proxy Faktör Regresyonu |
-| 🛡️ **Stres Testleri** | Tech Crash, 2008 Krizi, Covid-19 simülasyonları ile modern **Market Shock Gauge** kadranı |
-| 📈 **Teknik Göstergeler** | RSI, MACD, EMA/SMA hareketli ortalamalar ve trend analizi |
-| 🎲 **Monte Carlo** | 200 simülasyon × 1 yıl — portföy risk/getiri fan grafiği |
+| 🌍 **Çoklu Piyasa** | ABD (NYSE/NASDAQ), BIST, Kripto (Binance) ve TEFAS hisselerini karışık girin — pazar **otomatik algılanır** |
+| 🤖 **Çoklu-Ajan Mimari (CIO)** | Analist ve Araştırmacı alt ajanlarının raporlarını derleyen **Chief Investment Officer (CIO)** orkestrasyonu |
+| 🛡️ **Gelişmiş Risk Motoru** | %95 Güven Aralığı `VaR (Value at Risk)`, Maksimum Düşüş (`Max Drawdown`) ve Ayarlanabilir **Stres Testleri** |
+| 📉 **Sanal Emir Sistemi** | Optimize edilen dağılımları `Supabase` üzerinden AL/SAT emirlerine (Paper Trading) dönüştürerek test etme |
+| 🔔 **Otonom Alarm Sistemi** | Kritik piyasa seviyelerinde arka planda çalışan ve anında panoya/Telegram'a düşen uyarılar |
+| 📊 **Premium UX Grafikleri** | Fintables stili **Finansal Sağlık Radarı**, TV stili **Teknik Kadran** ve Koyfin stili **Göreli Performans** |
+| 🕌 **İslami Finans (Zoya Stili)** | Hisse bazında detaylı Haram Gelir ve Faizli Borç ilerleme çubukları (AAOIFI) |
+| 🧪 **DCA Backtest** | TradingView lightweight-charts destekli aylık düzenli alım (DCA) ve bakiye büyüme senaryoları |
 | 🪄 **Autocomplete** | Türkçe/İngilizce harf duyarlı, 1-2 harften itibaren akıllı öneriler |
 | 📥 **Dışa Aktarım** | Excel, PDF, Word formatlarında profesyonel rapor indirme |
 
@@ -43,7 +40,7 @@ git clone https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi.git
 cd AI-Portfoy-Yoneticisi
 
 # Sanal ortam oluşturun ve aktif edin
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # Bağımlılıkları yükleyin
@@ -54,68 +51,49 @@ uvicorn src.api.main:app --reload
 ```
 Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 
-### 🧩 Modüler Mimari (Puzzle Modeli)
+### 🧩 Temiz Mimari (Clean Architecture)
 
-*   `src/api/`: FastAPI endpointleri ve yönlendirmeler (Routing).
-*   `src/core/`: Analiz orkestratörü (`analysis_engine.py`), Monte Carlo ve AI motoru.
-*   `src/analyzers/`: Temel Değerleme (`valuation_analyzer`), Teknik Analiz (`technical_analyzer`), BIST, US ve İslami izole modüller.
-*   `src/data/`: Data sağlayıcılar, `constants.py` (hisse listeleri) ve Market Detector.
-*   `src/frontend/`: Glassmorphism tasarımlı modern arayüz.
-*   `src/utils/`: Dosya işleme ve rapor dışa aktarma araçları.
+*   `src/api/routers/`: Dekuple edilmiş FastAPI endpointleri (Analysis, Chat, User).
+*   `src/api/models.py`: Pydantic Request/Response şemaları.
+*   `src/core/`: Analiz orkestratörü (`analysis_engine.py`), Multi-Agent Motoru (`ai_agent.py`) ve Emir Motoru (`execution_engine.py`).
+*   `src/frontend/js/components/`: ES6 Modülleri halinde parçalanmış Frontend arayüz kodları.
 
 ---
 
 ## English
 
-**Portfolio Analysis Platform (v6.0)** is a locally-hosted, AI-powered web application for analyzing US stocks, Borsa Istanbul (BIST) equities, and TEFAS mutual funds simultaneously. It features a modern, mobile-responsive interface with professional branding.
+**Portfolio Analysis Platform (v8.0)** is a locally-hosted, Multi-Agent AI web application for analyzing US stocks, BIST equities, Cryptocurrencies, and TEFAS mutual funds. It offers modular codebases, advanced risk calculation algorithms, paper trading verification, and rich modern dashboards.
 
 ### ✨ Key Features
 
 | Feature | Description |
 |---------|-------------|
-| 🌍 **Multi-Market** | Mix US, BIST and TEFAS tickers — market is **auto-detected** |
-| 🪄 **AI Wizard & Copilot** | Create tailored portfolios instantly from natural language prompts, plus a floating **AI Chat Widget** |
+| 🌍 **Multi-Market** | Mix US, BIST, Crypto and TEFAS tickers — market is **auto-detected** |
+| 🤖 **Multi-Agent Orchestration** | Chief Investment Officer (CIO) agent aggregating reports from Analyst and Researcher agents |
+| 🛡️ **Risk Analytics** | Historical %95 confidence `Value at Risk (VaR)`, `Max Drawdown`, and stress tests |
+| 📉 **Paper Trading** | Calculates delta difference between current & optimal weights and records virtual market orders |
 | 📊 **Premium Dashboards** | Financial Health **Radar**, Technical **Gauge** indicators, and Relative Performance charts |
 | 🗺️ **Dynamic Heatmap** | Interactive Treemap with P/E, Dividend Yield, and Daily Change filters |
-| 🕌 **Shariah Compliance** | Zoya-style detailed purification and debt ratio progress bars |
-| 🔍 **Interactive Metrics** | AI-powered custom insights for financial ratios |
-| 🌟 **Portfolio Visualizer (PV)** | Compact Professional Mode, Cash Flow Simulation, Max Drawdown Charts and US Factor Regression |
-| 🧪 **Premium Stress Tests** | Realistic simulations with modern **Market Shock Gauge** |
-| 📈 **Advanced Optimization** | Markowitz Max Sharpe, Min Volatility, and Max Return optimizer options |
+| 🕌 **Shariah Compliance** | Detailed Shariah (Zoya-style) bars and analysis |
+| 📈 **Advanced Optimization** | Markowitz Max Sharpe and Min Volatility optimizer strategies |
 | 📥 **Export** | Download reports as Excel, PDF, or Word |
-| 🛡️ **Privacy** | 100% local — your data never leaves your machine |
 
 ---
 
-### ☁️ Canlı Ortamda Yayınlama (Vercel + Render Çift Mimari)
+### ☁️ Canlı Ortamda Yayınlama (Vercel + Render)
 
 #### 1. Backend (Render.com)
 *   **Build Command:** `pip install -r requirements.txt`
 *   **Start Command:** `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
-*   **💡 Güvenlik & Hız Sınırı [v4.8]:** DDoS ve aşırı API kota tüketimini önlemek için yerel **IP Tabanlı Rate Limiter** (`FastAPI` Sliding Window) entegre edilmiştir. Kritik analiz endpoint'leri dakikada 3 istek ile sınırlıdır. CORS kuralları `.env` tabanlı dinamik `ALLOWED_ORIGINS` listesiyle sıkılaştırılmıştır.
-*   **💡 Free Tier Optimizasyonu [v4.7]:** SSE (Streaming), IndexedDB Önbellekleme, Dosya Ayrıştırma ve İleri Analiz Hesaplamaları (Monte Carlo vb.) Render'ın 512MB RAM sınırına takılmamak için **İstemci Tarafına (Client-Side)** taşınmıştır. Yoğun hesaplamalar sırasında tarayıcı akıcılığını korumak için **Web Worker** mimarisi kullanılmaktadır.
-*   **💡 Modüler Mimari & Test Kapsamı [v5.0]:** Tüm HTML Template üretimi `CardComponent.js` altına izole edilmiş; dairesel içe aktarma sızıntıları giderilmiş ve `pytest-asyncio` ile test kapsamı 30/30 (tam yeşil) seviyeye çıkarılmıştır.
-*   **💡 Service Worker Cache [v5.1]:** PWA önbelleklemesinde static query file sürüm çakışmaları temizlenmiş; modern `activate` loop with clean hooks ile garanti altına alınmıştır.
-*   **💡 Supabase Entegrasyonu [v5.2]:** Google Sign-In ile güvenli oturum açma, portföy kaydetme ve otomatik veri yükleme (Client-Side Auth & DB) aktif edilmiştir.
-*   **💡 Duyarlılık & İslami Haber Analizi [v5.3]:** Gemini AI destekli haber duyarlılığı (Korku/Açgözlülük) hesaplaması ve İslami Risk uyarı barları (Pulse barlar) komponentlere kazandırılmıştır.
-*   **💡 DCA Backtest Simülatörü [v5.4]:** TradingView lightweight-charts destekli aylık düzenli alım (DCA) ve bakiye büyüme senaryoları frontend Web Worker'ları üzerinde asenkron canlandırılabilir seviyeye çıkarılmıştır.
-*   **💡 Swing Trade Sinyalizasyonu [v5.5]:** RSI < 30 (Aşırı Satım) ve MACD Golden Cross kesişimlerini dinamik yakalayan asenkron `/api/portfolio-signals` radarı devreye alınmıştır (Faz 4).
-*   **💡 Üretim Doğrulama & Matematik Kesinliği [v6.0]:** `verify_production.py` ile asenkron logic kesikleri ve finansal oranlar (AAOIFI, CAGR, Sharpe) rigid assert doğrulamasıyla sabitlenmiştir (Faz 9).
-*   **💡 Production Hardening [v6.1]:** Dead code (`desktop_app.py`) silinmiş, `asyncio.run()` bloklayıcıları ThreadPool-safe `new_event_loop` mimarisine taşınmış, kullanılmayan bağımlılıklar (`colorama`, `nest-asyncio`, `pillow`) temizlenmiş, `.gitignore` güçlendirilmiştir.
-*   **💡 Codebase Cleanup & Strict Fault Tolerance [v6.2]:** Kapsamlı temizlik (dead code, unused imports, cache silinmesi) yapılmış, AI agent dinamik prompt hata tolerans mekanizması `ValueError` fırlatmaları üzerinden AI halüsinasyonlarını engelleyecek şekilde entegre edilmiştir.
-*   **💡 Github Actions CI & Cache Fix [v6.3]:** Test paketlerindeki `_CACHE` import referansı güncel `redis_cache` in-memory fallback adresine yönlendirilerek CI testleri onarılmış ve Node.js v20 deprecation uyarıları giderilmiştir.
-*   **💡 Optimizer & ML Engine Hardening [v6.4]:** `optimization_engine.py` için veri temizliği (sanitization) ve Scipy matematiksel çökme korumaları (LinAlgError) eklendi; `ml_predictor.py` için 2 yıllık horizon ufku, piyasa freq="B"/"D" ayrımı ve yarım (unclosed) mum engeli mimarisi uygulandı.
-*   **💡 Vercel Deployment Trigger [v6.5]:** Frontend ve Backend son güncel optimizasyonlarla yayına alındı.
-*   **💡 Analyzer Data Sanity & UTC fixes [v7.0]:** `CryptoAnalyzerStrategy` saat dilimi (UTC) ve yarım mum kısıtlamaları dökümante edildi; `TechnicalAnalyzerStrategy` için RSI divide-by-zero hatası ve `ValuationAnalyzerStrategy` finansal radar skorlama veri yokluğu (not missing) cezalandırma bariyerleri devreye alındı. NaN/Inf sızıntıları tamamen izole edildi.
-*   **💡 Networkless Market Detection [v7.0]:** `market_detector.py` içerisindeki tüm harici Yahooquery (ağ/network) istekleri temizlendi. Timeout ve API bekleme çökmesi riski sıfırlanarak pazar algılama tamamen kural-tabanlı (string analysis) hale getirildi.
-*   **💡 Telegram Bildirimleri & Hafıza [v7.2]:** Arka plan alert döngüsüne Telegram Push desteği ve AI Chatbot'a 5 mesajlık kısa süreli bağlamsal hafıza eklendi (Faz 5).
-*   **💡 Portföy Optimizasyonu (Monte Carlo) [v7.3]:** scipy bağımlılığı olmadan %100 numpy tabanlı 5,000 iterasyonlu Monte Carlo optimizasyonu ve Ön yüzde karşılaştırmalı Visualizer/Rebalance Canvas entegrasyonu (Faz 6).
-*   **💡 Risk Analizörü & Stres Testi [v7.4]:** %95 Güven Aralığında Günlük VaR, Max Drawdown ve %20 Endeks Şoku kurgusu backend hesaplamalarına ve AI Inspector uyarı barlarına bağlandı (Faz 7).
-
+*   **💡 Multi-Agent Architecture [v7.5]:** `ai_agent.py` birden fazla alt-ajanın (Analist, Araştırmacı) paralelde çalıştıran asenkron CIO yapısına taşındı.
+*   **💡 Risk Analyzer & Stress Testing [v7.6]:** %95 Güven Aralığında Günlük VaR, Max Drawdown ve %20 Endeks Şoku kurgusu backend hesaplamalarına bağlandı.
+*   **💡 Sanal Emir İletim Sistemi [v7.7]:** Fark Delta hesabı ile paper trade virtual market orders logging and Supabase write flow devrede.
+*   **💡 Otonom Bildirim Döngüsü [v7.8]:** Arka planda eşik kontrolü yapıp telegram/panoya alert yazan döngü Lifespan'a entegre edildi.
+*   **💡 SOLID & Clean Architecture [v8.0]:** FastAPI Router'ları (`src/api/routers/`) ve Frontend dosyaları ES6 Modüllerine kırılarak high-level decoupling sağlandı.
 
 #### 2. Frontend (Vercel)
-*   `src/frontend/js/utils.js` dosyasındaki `API_BASE` değişkenini Render URL'iniz ile güncelleyin.
-*   Vercel üzerinde projenizi yayına alın.
+*   `src/frontend/js/components/` ve `app.js` ES6 Modülleri üzerinden çalışmaktadır.
+*   Vercel Proxy ayarlarını `vercel.json` dosyasından takip edebilirsiniz.
 
 ---
 Geliştirici: [Eren Tahiroğlu](https://github.com/ErenTahiroglu)

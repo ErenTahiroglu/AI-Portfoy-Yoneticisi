@@ -97,3 +97,10 @@ yfinance
 pandas
 numpy
 PyJWT
+
+# v7.5: Multi-Agent Architecture (Analyst/Researcher/CIO)
+# v7.6: Advanced Risk Metrics (VaR & MaxDD)
+# v7.7: Paper Trading Execution Logging Engine
+# v7.8: Autonomous Background Alerting System
+# v8.0: SOLID FastAPI Routers & ES6 Modular Frontend
+

@@ -624,6 +624,41 @@
                         </div>
                     </div>
 
+                    <!-- Paper Trading Execution Logs Card -->
+                    <div class="scenario-card premium-card" style="grid-column: 1 / -1; margin-bottom: 2rem;" id="paper-trades-card">
+                        <div class="card-glow"></div>
+                        <div class="card-inner">
+                            <div class="card-head" style="display:flex; align-items:center;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="card-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+                                    <div class="card-titles">
+                                        <h4>Sanal İşlem Geçmişi (Execution Logs)</h4>
+                                        <span>Dengeleme (Rebalance) Sonrası Oluşturulan Sanal Emirler</span>
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline" id="btn-refresh-trades" style="margin-left:auto; width:auto; padding:0.4rem 0.8rem; font-size:0.75rem; border-radius:8px; background:rgba(255,255,255,0.05);">
+                                    <i class="fas fa-sync-alt"></i> Yenile
+                                </button>
+                            </div>
+
+                            <div class="trades-content" style="margin-top: 1.2rem; max-height: 250px; overflow-y: auto;">
+                                <table class="trading-table" style="width:100%; border-collapse: collapse; font-size:0.85rem; text-align:left;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid var(--glass-border); color:var(--text-muted); font-size:0.75rem;">
+                                            <th style="padding: 0.8rem;">Tarih</th>
+                                            <th style="padding: 0.8rem;">Varlık</th>
+                                            <th style="padding: 0.8rem;">Tip</th>
+                                            <th style="padding: 0.8rem;">Hedef Ağırlık</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paper-trades-tbody">
+                                        <tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Henüz işlem yapılmadı veya yükleniyor...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Backtest & Simulation Card -->
                     <div class="scenario-card premium-card" style="grid-column: 1 / -1;">
                         <div class="card-glow"></div>
