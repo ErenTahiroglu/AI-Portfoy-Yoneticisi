@@ -54,6 +54,9 @@ async def test_ai_agent_mock_sentiment():
 @pytest.mark.asyncio
 async def test_api_news_endpoint():
     """Haber filtreleme API Endpoint testi."""
+    from src.api.auth import verify_jwt
+    app.dependency_overrides[verify_jwt] = lambda: {"id": "fake_user"}
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         payload = {
             "tickers": ["AAPL"],
@@ -64,7 +67,11 @@ async def test_api_news_endpoint():
         with patch("src.data.news_fetcher.filter_impactful_news") as mock_filter:
             mock_filter.return_value = [{"title": "News Title", "link": "#", "sentiment": "Neutral", "reason": "none"}]
             
-            response = await ac.post("/api/news", json=payload)
+            # Send Authorization Header just in case middleware checks it
+            response = await ac.post("/api/news", json=payload, headers={"Authorization": "Bearer fake_token"})
             assert response.status_code == 200
             data = response.json()
             assert "news" in data
+
+    del app.dependency_overrides[verify_jwt]
+
