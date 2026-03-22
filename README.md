@@ -110,6 +110,7 @@ Uygulamaya `http://127.0.0.1:8000/ui` adresinden erişebilirsiniz.
 *   **💡 Networkless Market Detection [v7.0]:** `market_detector.py` içerisindeki tüm harici Yahooquery (ağ/network) istekleri temizlendi. Timeout ve API bekleme çökmesi riski sıfırlanarak pazar algılama tamamen kural-tabanlı (string analysis) hale getirildi.
 *   **💡 Telegram Bildirimleri & Hafıza [v7.2]:** Arka plan alert döngüsüne Telegram Push desteği ve AI Chatbot'a 5 mesajlık kısa süreli bağlamsal hafıza eklendi (Faz 5).
 *   **💡 Portföy Optimizasyonu (Monte Carlo) [v7.3]:** scipy bağımlılığı olmadan %100 numpy tabanlı 5,000 iterasyonlu Monte Carlo optimizasyonu ve Ön yüzde karşılaştırmalı Visualizer/Rebalance Canvas entegrasyonu (Faz 6).
+*   **💡 Risk Analizörü & Stres Testi [v7.4]:** %95 Güven Aralığında Günlük VaR, Max Drawdown ve %20 Endeks Şoku kurgusu backend hesaplamalarına ve AI Inspector uyarı barlarına bağlandı (Faz 7).
 
 
 #### 2. Frontend (Vercel)

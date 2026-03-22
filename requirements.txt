@@ -91,6 +91,8 @@ pytest-asyncio==0.23.6
 
 # v7.3: Telegram Push & Portfolio Optimization
 
+# v7.4: Risk Analyzer & Stress Testing
+
 yfinance
 pandas
 numpy

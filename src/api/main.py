@@ -118,6 +118,10 @@ class PortfolioOptimizeRequest(BaseModel):
     weights: Optional[Dict[str, float]] = None
     risk_free_rate: float = 0.02
 
+class PortfolioRiskRequest(BaseModel):
+    tickers: List[str]
+    weights: Dict[str, float]
+
 # TextAnalysisRequest kaldırıldı (Kullanılmıyor)
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -602,6 +606,43 @@ async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest):
         }
     except Exception as e:
          logger.error(f"Optimize Endpoint Hatası: {e}")
+         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/risk-analysis", dependencies=[Depends(verify_jwt)])
+async def risk_analysis_endpoint(req_body: PortfolioRiskRequest):
+    """Portföy için VaR, MaxDD ve Stres Testi hesaplar."""
+    if not req_body.tickers:
+        raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
+        
+    try:
+        from yahooquery import Ticker
+        from src.analyzers.risk_analyzer import calculate_portfolio_risk
+        
+        t = Ticker(req_body.tickers)
+        hist = t.history(period="1y", adj_ohlc=True)
+        
+        if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty):
+             raise HTTPException(status_code=500, detail="Fiyat verileri indirilemedi.")
+             
+        if not isinstance(hist, pd.DataFrame):
+             raise HTTPException(status_code=500, detail=str(hist))
+
+        price_df = hist['close'].unstack(level=0)
+        price_df.columns = [c.upper() for c in price_df.columns]
+        price_df.ffill(inplace=True)
+        price_df.dropna(inplace=True)
+        
+        returns_df = price_df.pct_change().dropna()
+        
+        if returns_df.empty or len(returns_df) < 20:
+             raise HTTPException(status_code=400, detail="Simülasyon için yetersiz tarihsel veri.")
+             
+        risk_results = calculate_portfolio_risk(returns_df, req_body.weights)
+        
+        return risk_results
+        
+    except Exception as e:
+         logger.error(f"Risk Endpoint Hatası: {e}")
          raise HTTPException(status_code=500, detail=str(e))
 
 # ══════════════════════════════════════════════════════════════════════════

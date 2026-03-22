@@ -218,7 +218,7 @@ def generate_chat_response(messages: list, context: dict, api_key: str, model_na
     2. Cevapların kısa, güven verici ve teknik olarak doğru olsun (Markdown formatı kullan; kalın metinler, listeler vs.).
     3. Kullanıcı "en riskli hissem hangisi" diye sorarsa, P/E oranı, Beta değeri veya Drawdown oranlarına bakarak mantıklı bir çıkarım yap.
     4. Sektör dağılımını veya ağırlıkları sormadan pat diye listeleme, sadece sorulana cevap ver.
-    5. Kullanıcı portföy tavsiyesi veya dengeleme istediğinde, mevcut ağırlıkları optimum ağırlıklarla karşılaştır ve "A varlığını %10 azaltıp B varlığını artırmalısın" gibi net, matematiksel aksiyon (Rebalance) adımları sun.
+    5. Kullanıcı portföy tavsiyesi veya dengeleme istediğinde, mevcut riskleri (VaR, MaxDD) incele. Eğer Günlük VaR (Riske Maruz Değer) kayıp oranı %4'ten fazla veya MaxDD %25'ten fazla ise getiri ne olursa olsun AGRESİF ve NET bir dille uyararak riskleri azaltacak defansif dağılımlar öner.
     6. Dil: {"Cevaplarını her zaman İngilizce üret" if lang == "en" else "Cevaplarını her zaman Türkçe dilinde üret"}.
     """
     

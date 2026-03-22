@@ -577,6 +577,53 @@
                         </div>
                     </div>
 
+                    <!-- Risk & Stress Test Card -->
+                    <div class="scenario-card premium-card" style="grid-column: 1 / -1; margin-bottom: 2rem;" id="risk-analysis-card">
+                        <div class="card-glow"></div>
+                        <div class="card-inner">
+                            <div class="card-head" style="display:flex; align-items:center;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="card-icon"><i class="fas fa-shield-alt"></i></span>
+                                    <div class="card-titles">
+                                        <h4>Risk & Stres Testi Analizi</h4>
+                                        <span>Riske Maruz Değer (VaR) ve Maksimum Kayıp Tahminleri</span>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" id="btn-run-risk-analysis" style="margin-left:auto; width:auto; padding:0.5rem 1rem; font-size:0.8rem; border-radius:8px;">
+                                    <i class="fas fa-search-dollar"></i> Riski Hesapla
+                                </button>
+                            </div>
+
+                            <div class="risk-content hidden" id="risk-content" style="margin-top: 1.5rem;">
+                                <div class="risk-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="metric-box risk-box" id="box-var" style="background:rgba(255,255,255,0.02); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                                        <div class="metric-label" style="font-size:0.75rem; color:var(--text-muted);">Günlük VaR (%95) <i class="fas fa-info-circle" title="Normal şartlar altında 1 günde yaşanabilecek maksimum tahmini kayıp oranı" style="font-size:0.65rem;"></i></div>
+                                        <div class="metric-value" id="risk-var-val" style="font-size:1.5rem; font-weight:700; margin-top:0.3rem;">-%0.0</div>
+                                        <div class="risk-indicator-bar" style="height:4px; background:rgba(0,0,0,0.1); border-radius:2px; margin-top:0.5rem; overflow:hidden;"><div id="bar-var" style="height:100%; width:0%; border-radius:2px;"></div></div>
+                                    </div>
+                                    <div class="metric-box risk-box" id="box-maxdd" style="background:rgba(255,255,255,0.02); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                                        <div class="metric-label" style="font-size:0.75rem; color:var(--text-muted);">Maksimum Düşüş (MaxDD)</div>
+                                        <div class="metric-value" id="risk-maxdd-val" style="font-size:1.5rem; font-weight:700; margin-top:0.3rem;">-%0.0</div>
+                                        <div class="risk-indicator-bar" style="height:4px; background:rgba(0,0,0,0.1); border-radius:2px; margin-top:0.5rem; overflow:hidden;"><div id="bar-maxdd" style="height:100%; width:0%; border-radius:2px;"></div></div>
+                                    </div>
+                                    <div class="metric-box risk-box" style="background:rgba(255,255,255,0.02); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                                        <div class="metric-label" style="font-size:0.75rem; color:var(--text-muted);">Portföy Betası</div>
+                                        <div class="metric-value" id="risk-beta-val" style="font-size:1.5rem; font-weight:700; margin-top:0.3rem;">1.00</div>
+                                    </div>
+                                    <div class="metric-box risk-box" style="background:rgba(255,255,255,0.02); padding:1rem; border-radius:8px; border:1px solid var(--glass-border);">
+                                        <div class="metric-label" style="font-size:0.75rem; color:var(--text-muted);">-%20 Piyasa Şoku Etkisi</div>
+                                        <div class="metric-value" id="risk-stress-val" style="font-size:1.5rem; font-weight:700; margin-top:0.3rem;">-%0.0</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ai-insight-box alert-box" id="risk-ai-suggestion" style="padding:1.2rem; background:rgba(239, 68, 68, 0.05); border-radius:8px; border:1px solid rgba(239,68,68,0.2); display:none; margin-top:1rem;">
+                                    <label style="color:var(--danger); font-weight:700; display:flex; align-items:center; gap:5px; margin-bottom:0.5rem;"><i class="fas fa-exclamation-triangle"></i> AI Risk Müfettişi Uyarısı</label>
+                                    <p style="font-size:0.85rem; color:var(--text-main); line-height:1.6;" id="risk-ai-text">Yükleniyor...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Backtest & Simulation Card -->
                     <div class="scenario-card premium-card" style="grid-column: 1 / -1;">
                         <div class="card-glow"></div>
@@ -786,6 +833,15 @@
 
             <!-- Individual Result Cards -->
             <div class="results-grid" id="results-grid"></div>
+
+            <!-- Sponsor Section -->
+            <div class="sponsors-footer" style="margin-top: 3rem; text-align: center; padding: 2rem; background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
+                <h4 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-heart"></i> Destek Olun</h4>
+                <div style="display: flex; justify-content: center; position: relative; width: 600px; margin: 0 auto;">
+                    <iframe src="https://github.com/sponsors/ErenTahiroglu/card" title="Sponsor ErenTahiroglu" height="225" width="600" style="border: 0; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);"></iframe>
+                    <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer;" title="Sponsor Ol"></a>
+                </div>
+            </div>
         </section>
     </main>
 

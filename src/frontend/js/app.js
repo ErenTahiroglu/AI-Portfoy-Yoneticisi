@@ -1102,3 +1102,110 @@ Lütfen bu iki dağılımı karşılaştır. Hangilerini satıp hangilerini alma
     });
 }
 setTimeout(setupOptimization, 1000);
+
+// ═══════════════════════════════════════
+// PORTFOLIO RISK ANALYSIS (Phase 7)
+// ═══════════════════════════════════════
+function setupRiskAnalysis() {
+    const riskBtn = document.getElementById("btn-run-risk-analysis");
+    const content = document.getElementById("risk-content");
+    const varVal = document.getElementById("risk-var-val");
+    const maxddVal = document.getElementById("risk-maxdd-val");
+    const betaVal = document.getElementById("risk-beta-val");
+    const stressVal = document.getElementById("risk-stress-val");
+    const aiText = document.getElementById("risk-ai-text");
+    const aiBox = document.getElementById("risk-ai-suggestion");
+    const barVar = document.getElementById("bar-var");
+    const barMaxdd = document.getElementById("bar-maxdd");
+    
+    if (!riskBtn) return;
+    
+    riskBtn.addEventListener("click", async () => {
+         const currentResults = (typeof AppState !== "undefined" && AppState.results) || window.lastResults || [];
+         if (currentResults.length === 0) {
+              return showToast("Önce bir analiz çalıştırın veya portföy ekleyin.", "warning");
+         }
+
+         const tickers = currentResults.map(r => r.ticker);
+         const totalWeight = currentResults.reduce((sum, r) => sum + (r.weight || 1), 0);
+         const weights = {};
+         currentResults.forEach(r => {
+              weights[r.ticker] = ((r.weight || 1) / totalWeight) * 100;
+         });
+
+         const origText = riskBtn.innerHTML;
+         riskBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Hesaplanıyor...';
+         riskBtn.disabled = true;
+         
+         try {
+              const session = await window.SupabaseAuth.getValidSession();
+              if (!session) return showToast("Lütfen giriş yapın.", "warning");
+
+              const res = await fetch(`${API_BASE}/api/risk-analysis`, {
+                   method: "POST",
+                   headers: {
+                        "Authorization": `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json"
+                   },
+                   body: JSON.stringify({ tickers, weights })
+              });
+              
+              if (!res.ok) throw new Error("Ağ hatası");
+              const rx = await res.json();
+              
+              content.classList.remove("hidden");
+              
+              varVal.innerText = `%${rx.var_95}`;
+              maxddVal.innerText = `%${rx.max_drawdown}`;
+              betaVal.innerText = rx.weighted_beta;
+              stressVal.innerText = `%${rx.stress_test_shock_drop}`;
+
+              // Progress bars & Colors
+              const absVar = Math.abs(rx.var_95);
+              barVar.style.width = `${Math.min(absVar * 10, 100)}%`;
+              barVar.style.backgroundColor = absVar > 4 ? '#ef4444' : absVar > 2 ? '#f59e0b' : '#22c55e';
+
+              const absMaxdd = Math.abs(rx.max_drawdown);
+              barMaxdd.style.width = `${Math.min(absMaxdd, 100)}%`;
+              barMaxdd.style.backgroundColor = absMaxdd > 25 ? '#ef4444' : absMaxdd > 15 ? '#f59e0b' : '#22c55e';
+
+              // AI Inspector Box
+              aiBox.style.display = "block";
+              aiText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI Müfettişi analiz ediyor...';
+              
+              const prompt = `Aşağıdaki Portföy Risk İncelemesini değerlendir:
+- Günlük VaR (%95 Güven): %${rx.var_95}
+- Tarihsel Maksimum Düşüş (MaxDD): %${rx.max_drawdown}
+- Portföy Betası: ${rx.weighted_beta}
+- -%20 Piyasa Şoku Efektifi: %${rx.stress_test_shock_drop}
+
+TALİMAT: Günlük VaR kaybı %4'ten fazla ise ya da MaxDD %25'i geçmişse yatırımcıyı AGRESİF bir uyarı tonuyla (Kayıp Riski Yüksek!) uyar. Risk dağıtıcı defansif tavsiyeler ver.`;
+
+              const aiRes = await fetch(`${API_BASE}/api/chat`, {
+                   method: "POST",
+                   headers: { 
+                       "Authorization": `Bearer ${session.access_token}`,
+                       "Content-Type": "application/json" 
+                   },
+                   body: JSON.stringify({
+                        messages: [{ role: "user", content: prompt }]
+                   })
+              });
+              
+              if (aiRes.ok) {
+                   const aiData = await aiRes.json();
+                   aiText.innerHTML = aiData.reply || aiData.response || "Analiz tamamlandı."; 
+              } else {
+                   aiText.innerText = "Riskler hesaplandı. Detayları Copilot'a sorarak inceleyebilirsiniz.";
+              }
+
+         } catch (e) {
+              console.error(e);
+              showToast("Risk analizi başarısız oldu: " + e.message, "danger");
+         } finally {
+              riskBtn.innerHTML = origText;
+              riskBtn.disabled = false;
+         }
+    });
+}
+setTimeout(setupRiskAnalysis, 1200);
