@@ -1,7 +1,7 @@
 import os
 import httpx
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ async def execute_paper_trades(current_weights: dict, optimal_weights: dict, use
             "order_type": order_type,
             "target_weight": round(opt, 2),
             "execution_price": 0.0,  # Sanal fiyat placeholder
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         orders.append(order_obj)
         log_messages.append(f"- **{ticker.upper()}**: {'ALIM' if order_type == 'BUY' else 'SATIŞ'} (Hedef Ağırlık: %{round(opt, 1)})")
