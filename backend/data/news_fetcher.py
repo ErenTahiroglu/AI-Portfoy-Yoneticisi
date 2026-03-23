@@ -89,12 +89,16 @@ def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini
         except:
             return []
             
+    from concurrent.futures import TimeoutError
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(get_news, t) for t in valid_tickers]
-        for future in as_completed(futures):
-            res = future.result()
-            if res:
-                all_news.extend(res)
+        try:
+            for future in as_completed(futures, timeout=10.0):
+                res = future.result()
+                if res:
+                    all_news.extend(res)
+        except TimeoutError:
+            logger.warning("News fetch ThreadPool timeout (10s) hit. Continuing with partial data.")
                 
     if not all_news:
         return {"news": []}

@@ -37,45 +37,50 @@ class TefasScraper:
             logger.error(f"Failed to initialize TEFAS session: {e}")
 
     def _fetch_chunk(self, fonkod: str, start_date: str, end_date: str, fontip: str = "YAT"):
-        try:
-            payload = {
-                "fontip": fontip,
-                "sfonkod": fonkod,
-                "bastarih": start_date,
-                "bittarih": end_date
-            }
-            
-            response = self.session.post(
-                self.url_api, 
-                data=payload,
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Accept": "application/json, text/javascript, */*; q=0.01",
-                    "Referer": self.url_base,
-                    "Origin": "https://www.tefas.gov.tr"
-                },
-                timeout=(15, 60) # Connect: 15s, Read: 60s
-            )
-            
-            if response.status_code != 200:
-                logger.error(f"HTTP Error {response.status_code} for {fonkod}")
-                return []
-                
+        payload = {
+            "fontip": fontip,
+            "sfonkod": fonkod,
+            "bastarih": start_date,
+            "bittarih": end_date
+        }
+        
+        for attempt in range(3):
             try:
-                json_data = response.json()
-                return json_data.get("data", [])
-            except json.JSONDecodeError:
-                # WAF Block veya HTML döndü
-                soup = BeautifulSoup(response.text, "html.parser")
-                clean_text = soup.get_text(separator=' ', strip=True)
-                if "WAF" in clean_text or "Cloudflare" in clean_text:
-                    logger.warning(f"TEFAS WAF Block detected for {fonkod}")
-                return []
+                response = self.session.post(
+                    self.url_api, 
+                    data=payload,
+                    headers={
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Accept": "application/json, text/javascript, */*; q=0.01",
+                        "Referer": self.url_base,
+                        "Origin": "https://www.tefas.gov.tr"
+                    },
+                    timeout=(15, 60) # Connect: 15s, Read: 60s
+                )
                 
-        except Exception as e:
-            logger.error(f"Chunk fetch failed for {fonkod}: {e}")
-            return []
+                if response.status_code == 200:
+                    try:
+                        json_data = response.json()
+                        return json_data.get("data", [])
+                    except json.JSONDecodeError:
+                        # WAF Block veya HTML döndü
+                        soup = BeautifulSoup(response.text, "html.parser")
+                        clean_text = soup.get_text(separator=' ', strip=True)
+                        if "WAF" in clean_text or "Cloudflare" in clean_text:
+                            logger.warning(f"TEFAS WAF Block detected for {fonkod} (Attempt {attempt+1}/3)")
+                        if attempt == 2: return []
+                else:
+                    logger.warning(f"HTTP Error {response.status_code} for {fonkod} (Attempt {attempt+1}/3)")
+                    if attempt == 2: return []
+                    
+            except Exception as e:
+                logger.error(f"Chunk fetch error for {fonkod} (Attempt {attempt+1}/3): {e}")
+                if attempt == 2: return []
+            
+            # Geri çekilme (Backoff)
+            time.sleep(1 * (attempt+1))
+        return []
 
     def fetch_sync(self, fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
         logger.info(f"[{fonkod}] TEFAS Optimized curl_cffi Fetching from {start_date} to {end_date}...")

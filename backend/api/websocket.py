@@ -25,32 +25,28 @@ _polygon_connected = False
 async def _polygon_reader(send_fn):
     """Polygon.io'ya bağlanır ve gelen fiyat tick'lerini broadcast eder."""
     global _polygon_connected
-    try:
-        import websockets  # lazy import
+    import websockets  # lazy import
 
-        async with websockets.connect(_POLYGON_WS_URL) as ws:
-            # Auth
-            await ws.send(json.dumps({"action": "auth", "params": POLYGON_API_KEY}))
-            _polygon_connected = True
-            logger.info("✅ Polygon.io WebSocket bağlantısı kuruldu.")
+    retry_delay = 1
+    while True:
+        try:
+            async with websockets.connect(_POLYGON_WS_URL) as ws:
+                retry_delay = 1 # Reset on success
+                await ws.send(json.dumps({"action": "auth", "params": POLYGON_API_KEY}))
+                _polygon_connected = True
+                logger.info("✅ Polygon.io WebSocket bağlantısı kuruldu.")
 
-            async for raw in ws:
-                messages = json.loads(raw)
-                for msg in messages:
-                    ev = msg.get("ev")
-                    if ev in ("T", "Q"):  # Trade / Quote events
-                        await send_fn(json.dumps(msg))
-    except Exception as e:
-        _polygon_connected = False
-        logger.error(f"Polygon WS hatası: {e}. Mevcut client'lar kapatılıyor (Graceful Shutdown)...")
-        for client in _clients.copy():
-            try:
-                # 1011: Internal error (Upstream lost)
-                # Client, kodu yakalayıp exponential backoff ile tekrar bağlanacaktır.
-                await client.close(code=1011, reason="Upstream Polygon connection lost.")
-            except Exception:
-                pass
-        _clients.clear()
+                async for raw in ws:
+                    messages = json.loads(raw)
+                    for msg in messages:
+                        ev = msg.get("ev")
+                        if ev in ("T", "Q"):  # Trade / Quote events
+                            await send_fn(json.dumps(msg))
+        except Exception as e:
+            _polygon_connected = False
+            logger.warning(f"Polygon WS Upstream bağlantısı kesildi: {e}. {retry_delay}s sonra yeniden bağlanmaya çalışılacak.")
+            await asyncio.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, 60) # Max 1 m backoff
 
 
 def register_websocket_routes(app, router=None):

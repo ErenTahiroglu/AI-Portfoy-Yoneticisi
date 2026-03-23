@@ -22,17 +22,20 @@ logger = logging.getLogger(__name__)
 _LOCAL: dict = {}
 
 # ── Upstash REST Client ───────────────────────────────────────────────────
+import httpx
+
 _UPSTASH_URL: Optional[str] = os.getenv("UPSTASH_REDIS_REST_URL")
 _UPSTASH_TOKEN: Optional[str] = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 _redis_available: bool = False
+_SESSION: Optional[httpx.Client] = None
 
 if _UPSTASH_URL and _UPSTASH_TOKEN:
     try:
-        import httpx as _httpx
         _redis_available = True
-        logger.info("✅ Upstash Redis bağlantısı hazır.")
-    except ImportError:
-        logger.warning("⚠️ httpx bulunamadı — Redis devre dışı, in-memory fallback aktif.")
+        _SESSION = httpx.Client(timeout=2.0) # Connection Pool setup
+        logger.info("✅ Upstash Redis bağlantısı (Connection Pool) hazır.")
+    except Exception as e:
+        logger.warning(f"⚠️ Redis setup error: {e} — in-memory fallback aktif.")
 else:
     logger.info("ℹ️ UPSTASH_REDIS_REST_URL tanımlı değil — in-memory cache kullanılıyor.")
 
@@ -46,13 +49,11 @@ def _upstash_headers() -> dict:
 
 def cache_get(key: str) -> Optional[dict]:
     """Cache'den veri okur. Redis varsa Redis'i, yoksa in-memory'yi kullanır."""
-    if _redis_available and _UPSTASH_URL:
+    if _redis_available and _UPSTASH_URL and _SESSION:
         try:
-            import httpx
-            resp = httpx.get(
+            resp = _SESSION.get(
                 f"{_UPSTASH_URL}/get/{key}",
-                headers=_upstash_headers(),
-                timeout=2.0,
+                headers=_upstash_headers()
             )
             if resp.status_code == 200:
                 result = resp.json().get("result")
@@ -76,14 +77,12 @@ def cache_set(key: str, data: dict, ttl: int = 300) -> None:
     """Cache'e veri yazar. Redis varsa Redis'e, her durumda in-memory'ye de yazar."""
     serialized = json.dumps(data, ensure_ascii=False)
 
-    if _redis_available and _UPSTASH_URL:
+    if _redis_available and _UPSTASH_URL and _SESSION:
         try:
-            import httpx
-            httpx.post(
+            _SESSION.post(
                 f"{_UPSTASH_URL}/set/{key}",
                 headers=_upstash_headers(),
-                content=json.dumps([serialized, "EX", ttl]),
-                timeout=2.0,
+                content=json.dumps([serialized, "EX", ttl])
             )
             logger.debug(f"✍️ Redis cache set: {key} (TTL={ttl}s)")
         except Exception as e:
@@ -104,10 +103,9 @@ def cache_set(key: str, data: dict, ttl: int = 300) -> None:
 def cache_delete(key: str) -> None:
     """Belirli bir cache entry'sini geçersiz kılar."""
     _LOCAL.pop(key, None)
-    if _redis_available and _UPSTASH_URL:
+    if _redis_available and _UPSTASH_URL and _SESSION:
         try:
-            import httpx
-            httpx.get(f"{_UPSTASH_URL}/del/{key}", headers=_upstash_headers(), timeout=2.0)
+            _SESSION.get(f"{_UPSTASH_URL}/del/{key}", headers=_upstash_headers())
         except Exception:
             pass
 
