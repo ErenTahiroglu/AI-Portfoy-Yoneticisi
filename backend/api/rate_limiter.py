@@ -45,78 +45,53 @@ class RateLimiter:
     """
     Bellek dostu asenkron Rate Limiter (Sliding Window Algorithm).
     JWT user ID bazlı (authenticated) + IP bazlı (anonymous) hibrit.
+    Redis destekli (Cluster ve Multi-Worker uyumlu).
     """
 
     def __init__(self, requests_limit: int = 3, period: int = 60):
         self.limit = requests_limit
         self.period = period
-        self.history: dict = {}  # {key: [timestamp, ...]}
         self.lock = asyncio.Lock()
-        self._cleanup_task: Optional[asyncio.Task] = None
-
-    async def _cleanup_loop(self):
-        """Arka plan temizlik döngüsü (eski timestamp'leri ve boş key'leri siler)."""
-        while True:
-            await asyncio.sleep(60)
-            now = time.time()
-            async with self.lock:
-                to_remove = []
-                for k, timestamps in self.history.items():
-                    self.history[k] = [t for t in timestamps if now - t < self.period]
-                    if not self.history[k]:
-                        to_remove.append(k)
-                for k in to_remove:
-                    self.history.pop(k, None)
 
     async def check(self, request: Request):
-        # Arka plan temizlik görevini bir kez başlat (Race condition korumalı)
-        if not self._cleanup_task:
-            async with self.lock:
-                if not self._cleanup_task:
-                    self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+        from backend.core import redis_cache
 
         # ── Kimlik Anahtarı Belirleme ──────────────────────────────────────
         auth_header = request.headers.get("Authorization")
         user_id = _extract_user_id(auth_header)
 
         if user_id:
-            # Authenticated: user UUID bazlı limit (Vercel IP bypass problemi çözüldü)
-            limit_key = f"user:{user_id}"
+            limit_key = f"rate_limit:user:{user_id}"
             identifier_type = "user"
         else:
-            # Anonymous: IP bazlı fallback
             forwarded = request.headers.get("X-Forwarded-For")
-            client_ip = (
-                forwarded.split(",")[0].strip()
-                if forwarded
-                else (request.client.host if request.client else "unknown")
-            )
+            client_ip = (forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown"))
             if client_ip == "unknown":
-                return  # IP tespit edilemezse limiti atla
-            limit_key = f"ip:{client_ip}"
+                return
+            limit_key = f"rate_limit:ip:{client_ip}"
             identifier_type = "ip"
 
         now = time.time()
 
         async with self.lock:
-            if limit_key not in self.history:
-                self.history[limit_key] = []
+            # 1. Cache'den geçmişi oku (Redis veya In-memory L1 Fallback)
+            history_data = await asyncio.to_thread(redis_cache.cache_get, limit_key)
+            timestamps = history_data if isinstance(history_data, list) else []
 
-            # Süresi dolmuş timestamp'leri temizle
-            self.history[limit_key] = [
-                t for t in self.history[limit_key] if now - t < self.period
-            ]
+            # 2. Süresi dolmuş timestamp'leri temizle
+            timestamps = [t for t in timestamps if now - t < self.period]
 
-            if len(self.history[limit_key]) >= self.limit:
-                logger.warning(
-                    f"Rate Limit aşıldı [{identifier_type}]: {limit_key}"
-                )
+            # 3. Limit Kontrolü
+            if len(timestamps) >= self.limit:
+                logger.warning(f"Rate Limit aşıldı [{identifier_type}]: {limit_key}")
                 raise HTTPException(
                     status_code=429,
                     detail="API Kotasını aştınız, lütfen 1 dakika bekleyin",
                 )
 
-            self.history[limit_key].append(now)
+            # 4. Yeni isteği ekle ve kaydet
+            timestamps.append(now)
+            await asyncio.to_thread(redis_cache.cache_set, limit_key, timestamps, ttl=self.period)
 
 
 # Varsayılan limit: 1 dakikada 3 analiz isteği

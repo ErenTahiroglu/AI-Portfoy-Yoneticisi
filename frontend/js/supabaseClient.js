@@ -66,20 +66,31 @@ export async function savePortfolio(tickersArray) {
     const user = await getUser();
     if (!user) throw new Error("Giriş yapmalısınız!");
 
-    // user_id unique olduğu için upsert yapabiliriz
-    const { data, error } = await supabase
-        .from('portfolios')
-        .upsert({
-            user_id: user.id,
-            tickers: tickersArray,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
+    try {
+        const { data, error } = await supabase
+            .from('portfolios')
+            .upsert({
+                user_id: user.id,
+                tickers: tickersArray,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
 
-    if (error) {
-        console.error("Save Error:", error);
-        throw error;
+        if (error) throw error;
+        if (typeof localStorage !== "undefined") {
+            localStorage.removeItem(`offline_portfolio_${user.id}`); // Başarılıysa offline cache'i sil
+        }
+        return data;
+    } catch (err) {
+        console.warn("Save failed, saving to offline cache fallback:", err);
+        if (typeof localStorage !== "undefined") {
+            localStorage.setItem(`offline_portfolio_${user.id}`, JSON.stringify({
+                tickers: tickersArray,
+                timestamp: Date.now()
+            }));
+        }
+        // Hata fırlatma ki offline iken de UI kaydedildi saysın ama uyarsın (Opsiyonel: feedback toast)
+        throw new Error("Çevrimdışı kaydedildi. Ağ bağlantısı geldiğinde otomatik eşitlenecektir.");
     }
-    return data;
 }
 
 export async function loadPortfolio() {
@@ -87,17 +98,47 @@ export async function loadPortfolio() {
     const user = await getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase
-        .from('portfolios')
-        .select('tickers')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-    if (error) {
-        console.error("Load Error:", error);
-        throw error;
+    let offlineData = null;
+    if (typeof localStorage !== "undefined") {
+        const cached = localStorage.getItem(`offline_portfolio_${user.id}`);
+        if (cached) {
+            try { offlineData = JSON.parse(cached); } catch (e) {}
+        }
     }
-    return data ? data.tickers : [];
+
+    try {
+        const { data, error } = await supabase
+            .from('portfolios')
+            .select('tickers, updated_at')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        // ÇEVRİMDIŞI SENKRONİZASYON (Timestamp wins)
+        if (offlineData && data && data.updated_at) {
+             const dbTime = new Date(data.updated_at).getTime();
+             if (offlineData.timestamp > dbTime) {
+                 console.log("Offline veri daha yeni, Supabase'e geri senkronize ediliyor...");
+                 savePortfolio(offlineData.tickers).catch(console.error);
+                 return offlineData.tickers;
+             }
+        } 
+        else if (offlineData && !data) {
+             console.log("Yeni offline portföy Supabase'e yükleniyor...");
+             savePortfolio(offlineData.tickers).catch(console.error);
+             return offlineData.tickers;
+        }
+
+        if (offlineData) {
+            localStorage.removeItem(`offline_portfolio_${user.id}`); // Senkronize edildi veya eskidi
+        }
+
+        return data ? data.tickers : [];
+    } catch (err) {
+        console.warn("Portföy yüklenemedi (Offline olabilir), local cache kullanılıyor:", err);
+        return offlineData ? offlineData.tickers : [];
+    }
 }
 
 // Vanilla JS Fallback (expose to window if required by standard scripts)
