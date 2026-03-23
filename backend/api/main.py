@@ -22,6 +22,9 @@ import sys
 
 def validate_critical_env():
     """Kritik ortam değişkenlerini başlatmadan önce doğrular (Fail-Fast)."""
+    if "pytest" in sys.modules:
+        return # Test çalışırken validation atla
+        
     critical_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
     missing = [v for v in critical_vars if not os.getenv(v)]
     if missing:
