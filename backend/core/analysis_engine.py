@@ -237,16 +237,34 @@ class SectorAnalyzerStrategy(BaseAnalyzerStrategy):
     def run(self, ticker: str, result_entry: dict, context: dict) -> None:
         if context.get("is_tefas"): return
         fetcher_ticker = context.get("fetcher_ticker")
+        
+        # 1. Önceden Çekilmiş Batch Veriyi Kullan (N+1 Optimizasyonu)
+        batch_data = context.get("batch_ticker_data")
+        if batch_data:
+            profile = batch_data.get("asset_profile")
+            prices = batch_data.get("price")
+            
+            if isinstance(prices, dict) and fetcher_ticker in prices:
+                p_price = prices[fetcher_ticker]
+                if isinstance(p_price, dict):
+                    full_name = p_price.get("longName") or p_price.get("shortName")
+                    if full_name: result_entry["full_name"] = full_name
+
+            if isinstance(profile, dict) and fetcher_ticker in profile:
+                p = profile[fetcher_ticker]
+                if isinstance(p, dict):
+                    if p.get("sector"): result_entry["sector"] = p.get("sector")
+                    if p.get("industry"): result_entry["industry"] = p.get("industry")
+                    return # Veriler batch'ten alındı, tekil API isteğine gerek yok.
+                    
         try:
             from yahooquery import Ticker
-            
             def _call():
                 stock = Ticker(fetcher_ticker)
                 return {
                     "asset_profile": stock.asset_profile,
                     "price": stock.price
                 }
-                
             res = safe_api_call(_call)
             
             if isinstance(res, dict) and "error" in res:
@@ -445,6 +463,27 @@ class AnalysisEngine:
         # Ticker'ları temizle
         clean_tickers = [t.upper().strip() for t in tickers if t.strip()]
         
+        # 1. Batch Pre-Fetch (N+1 Optimizasyonu)
+        batch_ticker_data = {}
+        try:
+            from yahooquery import Ticker
+            from backend.data.market_detector import detect_market
+            
+            stocks_to_batch = []
+            for t in clean_tickers:
+                m_type, f_ticker, is_t = detect_market(t)
+                if m_type != "CRYPTO" and not is_t:
+                    stocks_to_batch.append(f_ticker)
+                    
+            if stocks_to_batch:
+                batch_stock = Ticker(" ".join(stocks_to_batch))
+                batch_ticker_data = {
+                    "asset_profile": batch_stock.asset_profile,
+                    "price": batch_stock.price
+                }
+        except Exception as e:
+            logger.debug(f"Batch pre-fetch failed: {e}")
+        
         # Paralel analiz (max 5 worker)
         results = []
         if len(clean_tickers) <= 1:
@@ -458,7 +497,8 @@ class AnalysisEngine:
                     api_key=api_key,
                     model=model,
                     lang=lang,
-                    user_id=user_id
+                    user_id=user_id,
+                    batch_ticker_data=batch_ticker_data
                 )
                 results.append(result)
         else:
@@ -475,7 +515,8 @@ class AnalysisEngine:
                         api_key=api_key,
                         model=model,
                         lang=lang,
-                        user_id=user_id
+                        user_id=user_id,
+                        batch_ticker_data=batch_ticker_data
                     )
                     future_map[future] = ticker
                 
@@ -502,7 +543,8 @@ class AnalysisEngine:
                         api_key: Optional[str] = None,
                         model: str = "gemini-2.5-flash",
                         lang: str = "tr",
-                        user_id: Optional[str] = None) -> dict:
+                        user_id: Optional[str] = None,
+                        batch_ticker_data: Optional[dict] = None) -> dict:
         """Tek bir ticker için tüm analiz adımlarını çalıştırır."""
         from backend.data.market_detector import detect_market
         
@@ -535,7 +577,8 @@ class AnalysisEngine:
             "market": market,
             "fetcher_ticker": fetcher_ticker,
             "is_tefas": is_tefas,
-            "user_id": user_id
+            "user_id": user_id,
+            "batch_ticker_data": batch_ticker_data
         }
         
         # Stratejileri Sırayla Çalıştır

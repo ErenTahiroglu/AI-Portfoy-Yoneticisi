@@ -47,8 +47,11 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
             response.headers["Expires"] = "0"
         return response
 
+from fastapi.middleware.gzip import GZipMiddleware
+
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(NoCacheMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # ── Middleware: CORS ──────────────────────────────────────────────────────
