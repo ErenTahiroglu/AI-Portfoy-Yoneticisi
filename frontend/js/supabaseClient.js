@@ -46,13 +46,11 @@ export async function getValidSession() {
     if (!supabase) return null;
     const { data, error } = await supabase.auth.getSession();
     
-    if (error || !data.session) {
-        // Oturum süresi dolmuş veya token bozuk (Zero Trust Drop)
-        console.warn("Zero Trust: Geçersiz oturum, çıkış yapılıyor...");
-        await signOut(); // Refresh the DOM automatically
-        throw new Error("Oturum süreniz doldu. Lütfen tekrar giriş yapın (Zero Trust).");
+    if (error) {
+        console.error("Session fetch error:", error);
+        return null;
     }
-    return data.session;
+    return data?.session || null;
 }
 
 // ── Database İşlemleri ───────────────────────────────────────────────
