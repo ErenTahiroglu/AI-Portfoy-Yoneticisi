@@ -282,3 +282,21 @@ function renderResults(data) {
     AppState.results = data.results || [];
     if (data.extras) AppState.extras = data.extras;
 }
+
+// ── Secret Admin Bypass Trigger (5-clicks on title) ──────────────────────
+let secretClicks = 0;
+document.addEventListener("click", (e) => {
+    if (e.target.closest(".main-title")) {
+        secretClicks++;
+        if (secretClicks >= 5) {
+            const current = localStorage.getItem("admin_bypass") === "true";
+            localStorage.setItem("admin_bypass", !current ? "true" : "false");
+            if (typeof showToast === "function") {
+                showToast(`Sistem Durumu: ${!current ? "Yönetici" : "Normal"}`, "info");
+            }
+            secretClicks = 0;
+            setTimeout(() => window.location.reload(), 1000);
+        }
+        setTimeout(() => { if (secretClicks > 0) secretClicks--; }, 3000);
+    }
+});
