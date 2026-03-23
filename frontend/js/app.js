@@ -183,11 +183,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("api-key").addEventListener("blur", saveApiKeys);
     document.getElementById("av-api-key").addEventListener("blur", saveApiKeys);
 
+    const handleModeToggle = async (e) => {
+        if (e.target.checked) {
+            const user = await window.SupabaseAuth.getUser();
+            if (!user) {
+                e.target.checked = false;
+                document.getElementById("login-modal").classList.remove("hidden");
+                if (typeof showToast === "function") showToast("Profesyonel mod için giriş yapmalısınız.", "warning");
+                return;
+            }
+        }
+        AppState.viewMode = e.target.checked ? "pro" : "beginner";
+    };
+
     const profToggle = document.getElementById("prof-mode-toggle");
-    if (profToggle) profToggle.addEventListener("change", (e) => AppState.viewMode = e.target.checked ? "pro" : "beginner");
+    if (profToggle) profToggle.addEventListener("change", handleModeToggle);
 
     const uiToggle = document.getElementById("ui-mode-toggle");
-    if (uiToggle) uiToggle.addEventListener("change", (e) => AppState.viewMode = e.target.checked ? "pro" : "beginner");
+    if (uiToggle) uiToggle.addEventListener("change", handleModeToggle);
 
     const halalToggle = document.getElementById("check-islamic-toggle");
     if (halalToggle) halalToggle.addEventListener("change", (e) => AppState.isHalalOnly = e.target.checked);
