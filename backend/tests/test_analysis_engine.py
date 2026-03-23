@@ -77,36 +77,39 @@ class TestAnalysisEngineRun:
 
 
 class TestRateLimiterAsync:
-    """Rate Limiter asenkron testleri."""
+    """Rate Limiter asenkron testleri (Redis Mocklu)."""
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_allows(self):
+    @patch("backend.core.redis_cache.cache_get")
+    @patch("backend.core.redis_cache.cache_set")
+    async def test_rate_limiter_allows(self, mock_set, mock_get):
         limiter = RateLimiter(requests_limit=1, period=60)
         mock_request = MagicMock()
         mock_request.headers.get.return_value = None
         mock_request.client.host = "127.0.0.1"
         
-        try:
-            await limiter.check(mock_request)
-            assert len(limiter.history["ip:127.0.0.1"]) == 1
-        finally:
-            if limiter._cleanup_task:
-                limiter._cleanup_task.cancel()
+        # Mock Redis empty history
+        mock_get.return_value = []
+        
+        await limiter.check(mock_request)
+        # Verify it writes state update
+        assert mock_set.called
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_blocks(self):
+    @patch("backend.core.redis_cache.cache_get")
+    @patch("backend.core.redis_cache.cache_set")
+    async def test_rate_limiter_blocks(self, mock_set, mock_get):
         limiter = RateLimiter(requests_limit=1, period=60)
         mock_request = MagicMock()
         mock_request.headers.get.return_value = None
         mock_request.client.host = "127.0.0.1"
         
-        try:
+        # Mock Redis gives FULL history
+        import time
+        mock_get.return_value = [time.time()]
+        
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
             await limiter.check(mock_request)
             
-            from fastapi import HTTPException
-            with pytest.raises(HTTPException) as exc:
-                await limiter.check(mock_request)
-            assert exc.value.status_code == 429
-        finally:
-            if limiter._cleanup_task:
-                limiter._cleanup_task.cancel()
+        assert exc.value.status_code == 429
