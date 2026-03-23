@@ -108,7 +108,7 @@ async def update_user_settings(settings: UserSettingsRequest, request: Request):
 @router.get("/paper-trades", dependencies=[Depends(verify_jwt)])
 async def get_paper_trades(request: Request):
     user = getattr(request.state, "user", None)
-    if not user: raise HTTPException(status_code=401, detail="Unauthorized")
+    if not user or "sub" not in user: raise HTTPException(status_code=401, detail="Unauthorized")
     user_id = user["sub"]
     supa_url = os.getenv('SUPABASE_URL', '')
     supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
@@ -130,7 +130,7 @@ async def get_paper_trades(request: Request):
 async def get_portfolio_history(request: Request):
     """Kullanıcının geçmiş portföy snapshot verilerini (son 30 gün) getirir."""
     user = getattr(request.state, "user", None)
-    if not user: raise HTTPException(status_code=401, detail="Unauthorized")
+    if not user or "sub" not in user: raise HTTPException(status_code=401, detail="Unauthorized")
     user_id = user["sub"]
     supa_url = os.getenv('SUPABASE_URL', '')
     supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
