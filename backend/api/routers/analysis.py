@@ -113,18 +113,61 @@ async def get_portfolio_signals(tickers: str = ""):
 
 @router.get("/search")
 async def search_tickers(q: str = ""):
-    q = q.strip()
+    q = q.strip().upper()
     if not q: return []
-    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=6&newsCount=0"
+    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=10&newsCount=0"
     import httpx
+    from backend.data.constants import POPULAR_TICKERS
+
+    local_matches = []
+    # 1. Local Lookup
+    for ticker, name in POPULAR_TICKERS.items():
+        if q in ticker.upper() or q in name.upper():
+            local_matches.append({
+                "symbol": ticker,
+                "name": name,
+                "exchDisp": "TEFAS" if len(ticker) == 3 or ticker in ["TP2", "AKB", "ZP8", "IPB", "AFA", "YAY", "TI2"] else ("BIST" if len(ticker) == 5 else "Popular")
+            })
+
+    # 2. Speculative TEFAS match (3-char alphanumeric)
+    if len(q) == 3 and q.isalnum():
+        if not any(m["symbol"] == q for m in local_matches):
+            local_matches.append({
+                "symbol": q,
+                "name": f"{q} TEFAS Fonu",
+                "exchDisp": "TEFAS"
+            })
+
+    # 3. Yahoo Finance Search
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             headers = {"User-Agent": "Mozilla/5.0"}
             resp = await client.get(url, headers=headers)
-            if resp.status_code != 200: return []
+            if resp.status_code != 200: return local_matches[:10]
             quotes = resp.json().get("quotes", [])
-            return [{"symbol": i.get("symbol"), "name": i.get("shortname") or i.get("longname") or "", "exchDisp": i.get("exchDisp") or ""} for i in quotes]
-    except Exception: return []
+            
+            yahoo_matches = []
+            for i in quotes:
+                symbol = i.get("symbol", "").upper()
+                exch = i.get("exchDisp", "").upper()
+                
+                # TR Filter
+                if symbol.endswith(".IS"):
+                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "BIST"})
+                # US Filter
+                elif any(u in exch for u in ["NYSE", "NASDAQ", "BATS"]):
+                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": exch})
+            
+            seen = set()
+            combined = []
+            for m in local_matches + yahoo_matches:
+                if m["symbol"] not in seen:
+                    seen.add(m["symbol"])
+                    combined.append(m)
+            
+            return combined[:12]
+    except Exception:
+        return local_matches[:10]
 
 @router.get("/suggest")
 async def suggest_tickers(q: str = ""):

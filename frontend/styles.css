@@ -696,14 +696,15 @@ body {
     top: 100%;
     left: 0;
     right: 0;
-    background: var(--card-bg);
-    border: 1px solid var(--primary);
+    background: rgba(11, 12, 16, 0.98); /* Solid Core */
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(14, 165, 233, 0.4); /* Primary Border Glow */
     border-radius: 8px;
     margin-top: 4px;
-    max-height: 200px;
+    max-height: 240px;
     overflow-y: auto;
     z-index: 1000;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
 
 .autocomplete-item {
