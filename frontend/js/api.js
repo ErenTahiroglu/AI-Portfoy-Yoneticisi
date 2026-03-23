@@ -1,3 +1,21 @@
+// ── Global Correlation ID Tracer (Tracing) ──
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+        let [resource, config] = args;
+        // Sadece kendi API'mize giden istekleri yakala
+        if (typeof resource === "string" && resource.includes("/api/")) {
+            config = config || {};
+            config.headers = config.headers || {};
+            if (!config.headers["X-Correlation-ID"]) {
+                config.headers["X-Correlation-ID"] = crypto.randomUUID();
+            }
+            args[1] = config;
+        }
+        return originalFetch.apply(this, args);
+    };
+})();
+
 // ═══════════════════════════════════════
 // AI WIZARD
 // ═══════════════════════════════════════

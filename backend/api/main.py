@@ -55,7 +55,15 @@ async def lifespan(app: FastAPI):
          logger.warning(f"Error during Redis close: {e}")
 
 # ── FastAPI Uygulaması ────────────────────────────────────────────────────
-app = FastAPI(title="Portföy Analiz Platformu", version="4.0", lifespan=lifespan)
+is_prod = os.getenv("ENVIRONMENT", "production").lower() == "production"
+
+app = FastAPI(
+    title="Portföy Analiz Platformu", 
+    version="4.0", 
+    lifespan=lifespan,
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc"
+)
 
 # ── Middleware: No-Cache ──────────────────────────────────────────────────
 class NoCacheMiddleware(BaseHTTPMiddleware):
