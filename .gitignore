@@ -49,7 +49,6 @@ playwright-browsers/
 backend/data/*.json
 !backend/data/market_metadata.json
 py-yfinance/
-LineNumber:47
 
 
 # Platform & Deployment
