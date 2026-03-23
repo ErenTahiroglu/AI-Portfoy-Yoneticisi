@@ -24,7 +24,12 @@ function createTVChart(containerId, res) {
 
     // Önceki içeriği temizle (Bellek sızıntısı önlemi: instance'ı güvenle .remove() ile yok et)
     if (tvChartInstances[containerId]) {
-        try { tvChartInstances[containerId].remove(); } catch (e) {}
+        try { 
+            if (tvChartInstances[containerId]._resizeObserver) {
+                tvChartInstances[containerId]._resizeObserver.disconnect();
+            }
+            tvChartInstances[containerId].remove(); 
+        } catch (e) {}
         delete tvChartInstances[containerId];
     }
     container.innerHTML = "";
@@ -64,6 +69,7 @@ function createTVChart(containerId, res) {
         }
     });
     resizeObserver.observe(container);
+    chart._resizeObserver = resizeObserver;
 
     // 1. Mum Grafiği (Kripto veya Zengin Veri)
     if (res.klines && res.klines.length > 0) {
@@ -122,7 +128,12 @@ function createBacktestChart(containerId, simData) {
 
     // Önceki içeriği temizle (Bellek sızıntısı önlemi: instance'ı güvenle .remove() ile yok et)
     if (tvChartInstances[containerId]) {
-        try { tvChartInstances[containerId].remove(); } catch (e) {}
+        try { 
+            if (tvChartInstances[containerId]._resizeObserver) {
+                tvChartInstances[containerId]._resizeObserver.disconnect();
+            }
+            tvChartInstances[containerId].remove(); 
+        } catch (e) {}
         delete tvChartInstances[containerId];
     }
     container.innerHTML = "";
@@ -154,6 +165,7 @@ function createBacktestChart(containerId, simData) {
         }
     });
     resizeObserver.observe(container);
+    chart._resizeObserver = resizeObserver;
 
     // 1. Portföy Büyümesi (Alan)
     const portfolioSeries = chart.addAreaSeries({

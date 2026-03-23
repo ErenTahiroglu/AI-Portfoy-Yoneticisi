@@ -200,7 +200,7 @@ async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest):
         price_df.ffill(inplace=True); price_df.dropna(inplace=True)
         returns_df = price_df.pct_change().dropna()
         if returns_df.empty or len(returns_df) < 20: raise HTTPException(status_code=400, detail="Yetersiz veri.")
-        opt_results = optimize_portfolio(returns_df, risk_free_rate=req_body.risk_free_rate)
+        opt_results = await asyncio.to_thread(optimize_portfolio, returns_df, req_body.risk_free_rate)
         return {"status": "success", "current_weights": req_body.weights or {t: 100.0 / len(req_body.tickers) for t in req_body.tickers}, "optimal_weights": opt_results.get("max_sharpe", {}), "min_volatility_weights": opt_results.get("min_volatility", {})}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
@@ -216,7 +216,7 @@ async def risk_analysis_endpoint(req_body: PortfolioRiskRequest):
         price_df.columns = [c.upper() for c in price_df.columns]
         price_df.ffill(inplace=True); price_df.dropna(inplace=True)
         returns_df = price_df.pct_change().dropna()
-        return calculate_portfolio_risk(returns_df, req_body.weights)
+        return await asyncio.to_thread(calculate_portfolio_risk, returns_df, req_body.weights)
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/predict/{ticker}", dependencies=[Depends(limiter.check)])

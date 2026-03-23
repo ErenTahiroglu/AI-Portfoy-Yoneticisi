@@ -3,44 +3,48 @@
 // ═══════════════════════════════════════
 
 self.onmessage = function(e) {
-    const { results, payload } = e.data;
-    const extras = {
-        correlation: { tickers: [], matrix: [] },
-        monte_carlo: null,
-        pv_simulation: null
-    };
+    try {
+        const { results, payload } = e.data;
+        const extras = {
+            correlation: { tickers: [], matrix: [] },
+            monte_carlo: null,
+            pv_simulation: null
+        };
 
-    if (!results || results.length === 0) {
-        self.postMessage(extras);
-        return;
-    }
-
-    const validResults = results;
-
-    // 1. Correlation Matrix
-    const tickers = validResults.map(r => r.ticker);
-    extras.correlation.tickers = tickers;
-
-    for (let i = 0; i < tickers.length; i++) {
-        const row = [];
-        const historyI = validResults[i].technicals?.relative_performance?.stock_history || [];
-        for (let j = 0; j < tickers.length; j++) {
-            if (i === j) { row.push(1.0); continue; }
-            const historyJ = validResults[j].technicals?.relative_performance?.stock_history || [];
-            row.push(calculateCorrelation(historyI, historyJ));
+        if (!results || results.length === 0) {
+            self.postMessage(extras);
+            return;
         }
-        extras.correlation.matrix.push(row);
+
+        const validResults = results;
+
+        // 1. Correlation Matrix
+        const tickers = validResults.map(r => r.ticker);
+        extras.correlation.tickers = tickers;
+
+        for (let i = 0; i < tickers.length; i++) {
+            const row = [];
+            const historyI = validResults[i].technicals?.relative_performance?.stock_history || [];
+            for (let j = 0; j < tickers.length; j++) {
+                if (i === j) { row.push(1.0); continue; }
+                const historyJ = validResults[j].technicals?.relative_performance?.stock_history || [];
+                row.push(calculateCorrelation(historyI, historyJ));
+            }
+            extras.correlation.matrix.push(row);
+        }
+
+        // 2. Monte Carlo
+        extras.monte_carlo = runMonteCarloJS(validResults);
+
+        // 3. PV Simulation
+        if (payload) {
+             extras.pv_simulation = runPVSimulationJS(validResults, payload);
+        }
+
+        self.postMessage(extras);
+    } catch (err) {
+        self.postMessage({ error: err.message, correlation: { tickers: [], matrix: [] }, monte_carlo: null, pv_simulation: null });
     }
-
-    // 2. Monte Carlo
-    extras.monte_carlo = runMonteCarloJS(validResults);
-
-    // 3. PV Simulation
-    if (payload) {
-         extras.pv_simulation = runPVSimulationJS(validResults, payload);
-    }
-
-    self.postMessage(extras);
 };
 
 function calculateCorrelation(seriesA, seriesB) {
