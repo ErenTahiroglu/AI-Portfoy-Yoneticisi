@@ -3,6 +3,7 @@ import logging
 import json
 import gc
 import os
+import hashlib
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
@@ -19,6 +20,25 @@ from backend.data.constants import POPULAR_TICKERS
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["Analysis"])
+
+async def check_double_submit(request: Request, payload_dict: dict, name: str):
+    """Mükerrer istekleri engellemek için 5 saniyelik idempotens süzgeci."""
+    from backend.core import redis_cache
+    from backend.api.rate_limiter import _extract_user_id
+    
+    auth = request.headers.get("Authorization")
+    user_id = _extract_user_id(auth) or (request.client.host if request.client else "unknown")
+    
+    # Payload'u normalize edip hashle
+    payload_str = json.dumps(payload_dict, sort_keys=True)
+    p_hash = hashlib.md5(payload_str.encode("utf-8")).hexdigest()
+    key = f"idem:{name}:{user_id}:{p_hash}"
+    
+    existing = await asyncio.to_thread(redis_cache.cache_get, key)
+    if existing:
+        raise HTTPException(status_code=429, detail="Mükerrer işlem engellendi. Lütfen birkaç saniye bekleyin.")
+        
+    await asyncio.to_thread(redis_cache.cache_set, key, 1, ttl=5) # 5 sny kilit
 
 @router.post("/analyze", dependencies=[Depends(limiter.check)])
 async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depends(get_engine)):
@@ -187,8 +207,12 @@ async def suggest_tickers(q: str = ""):
     return {"suggestions": matches[:15]}
 
 @router.post("/optimize-portfolio", dependencies=[Depends(verify_jwt)])
-async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest):
+async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest, request: Request):
     if not req_body.tickers: raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
+    
+    # Double-submit koruması
+    await check_double_submit(request, req_body.model_dump(), "optimize")
+    
     try:
         from yahooquery import Ticker
         from backend.core.optimization_engine import optimize_portfolio
@@ -205,8 +229,12 @@ async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest):
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/risk-analysis", dependencies=[Depends(verify_jwt)])
-async def risk_analysis_endpoint(req_body: PortfolioRiskRequest):
+async def risk_analysis_endpoint(req_body: PortfolioRiskRequest, request: Request):
     if not req_body.tickers: raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
+    
+    # Double-submit koruması
+    await check_double_submit(request, req_body.model_dump(), "risk")
+    
     try:
         from yahooquery import Ticker
         from backend.analyzers.risk_analyzer import calculate_portfolio_risk
