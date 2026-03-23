@@ -270,6 +270,14 @@ async function loadEquityCurve() {
         }
     } catch (e) {
         console.error("Equity Curve load failed:", e);
+        const widget = document.getElementById("equity-curve-widget");
+        if (widget) {
+            widget.classList.remove("hidden");
+            const container = document.getElementById("equity-chart-container");
+            if (container) {
+                container.innerHTML = `<div style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.85rem;"><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> Geçmiş bakiye grafiği yüklenemedi.</div>`;
+            }
+        }
     }
 }
 

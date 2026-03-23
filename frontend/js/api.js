@@ -809,3 +809,27 @@ async function runMacroAnalysis(onChunk) {
         if (onChunk) onChunk(`⚠️ **Hata:** ${err.message}`, true);
     }
 }
+
+// ═══════════════════════════════════════
+// RETRY HANDLER
+// ═══════════════════════════════════════
+window.retryAnalysis = function(ticker) {
+    if (!ticker) return;
+    if (typeof showToast === "function") showToast(`${ticker} için analiz tekrarlanıyor...`, "info");
+    
+    const checkIslamic = document.getElementById("check-islamic-toggle")?.checked || false;
+    const checkFinancials = document.getElementById("check-financials-toggle")?.checked || false;
+    const aiToggle = document.getElementById("use-ai-toggle");
+    const useAI = aiToggle ? aiToggle.checked : false;
+    const apiKey = document.getElementById("api-key")?.value || "";
+    const model = localStorage.getItem("ai_model") || "gemini-2.5-flash";
+
+    runAnalysis({ 
+        tickers: [ticker], 
+        use_ai: useAI, 
+        api_key: apiKey, 
+        check_islamic: checkIslamic, 
+        check_financials: checkFinancials,
+        model: model 
+    }, "/api/analyze");
+};
