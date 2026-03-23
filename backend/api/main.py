@@ -18,6 +18,18 @@ from backend.core.scheduler import start_alert_scheduler
 from backend.api.websocket import register_websocket_routes
 from backend.utils.logger import setup_logging, CorrelationIdMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+import sys
+
+def validate_critical_env():
+    """Kritik ortam değişkenlerini başlatmadan önce doğrular (Fail-Fast)."""
+    critical_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
+    missing = [v for v in critical_vars if not os.getenv(v)]
+    if missing:
+        print(f"❌ KRİTİK HATA: Aşağıdaki ortam değişkenleri eksik: {', '.join(missing)}")
+        print("Sistem Fail-Fast prensibiyle başlatmayı reddediyor.")
+        sys.exit(1)
+
+validate_critical_env()
 
 
 # ── Logging Setup ─────────────────────────────────────────────────────────
@@ -26,6 +38,8 @@ logger = logging.getLogger(__name__)
 
 
 # ── Lifespan (Background Tasks) ───────────────────────────────────────────
+from backend.core.redis_cache import cache_close
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # API kalktığında otonom tarayıcıyı ayağa kaldır
@@ -33,6 +47,12 @@ async def lifespan(app: FastAPI):
     yield
     # API kapandığında memory leak olmaması için iptal et
     task.cancel()
+    # Redis kapat (Graceful Shutdown)
+    try:
+        cache_close()
+        logger.info("✅ Redis session safely closed.")
+    except Exception as e:
+         logger.warning(f"Error during Redis close: {e}")
 
 # ── FastAPI Uygulaması ────────────────────────────────────────────────────
 app = FastAPI(title="Portföy Analiz Platformu", version="4.0", lifespan=lifespan)

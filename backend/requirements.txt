@@ -93,10 +93,10 @@ pytest-asyncio==0.23.6
 
 # v7.4: Risk Analyzer & Stress Testing
 
-yfinance
-pandas
-numpy
-PyJWT
+yfinance==0.2.40
+pandas==2.2.1
+numpy==1.26.4
+PyJWT==2.8.0
 
 # v7.5: Multi-Agent Architecture (Analyst/Researcher/CIO)
 # v7.6: Advanced Risk Metrics (VaR & MaxDD)

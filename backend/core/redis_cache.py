@@ -113,3 +113,12 @@ def cache_delete(key: str) -> None:
 def cache_is_redis_active() -> bool:
     """Redis'in aktif olup olmadığını döndürür (health check için)."""
     return _redis_available
+
+def cache_close() -> None:
+    """Modül sonlanırken açık HTTP Client oturumunu kapatır (Graceful Shutdown)."""
+    global _SESSION
+    if _SESSION:
+        try:
+            _SESSION.close()
+        except Exception:
+            pass
