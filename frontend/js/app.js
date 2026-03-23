@@ -138,9 +138,29 @@ document.addEventListener("DOMContentLoaded", async () => {
             const mainContent = document.querySelector(".main-content");
 
             if (user) {
-                if (landing) landing.style.display = "none";
+                // landing.style.display = "none"; // Her zaman landing page gösterilsin
                 const guestLogoutBtn = document.getElementById("guest-logout-btn");
                 if (guestLogoutBtn) guestLogoutBtn.style.display = "none";
+
+                // Giriş yapmış kullanıcılar için butonları "Uygulamaya Git" olarak güncelle
+                const actionBtn = document.getElementById("landing-action-btn");
+                if (actionBtn) {
+                    actionBtn.innerHTML = 'Uygulamaya Git <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>';
+                    actionBtn.onclick = () => {
+                        if (landing) landing.style.display = "none";
+                        if (sidebar) sidebar.style.display = "flex";
+                        if (mainContent) mainContent.style.display = "block";
+                    };
+                }
+                const navBtn = document.getElementById("landing-nav-login-btn");
+                if (navBtn) {
+                    navBtn.innerText = "Uygulamaya Git";
+                    navBtn.onclick = () => {
+                        if (landing) landing.style.display = "none";
+                        if (sidebar) sidebar.style.display = "flex";
+                        if (mainContent) mainContent.style.display = "block";
+                    };
+                }
             } else {
                 if (landing) landing.style.display = "flex";
                 if (sidebar) sidebar.style.display = "none";
