@@ -129,10 +129,11 @@ async def search_tickers(q: str = ""):
                 "exchDisp": "TEFAS" if len(ticker) == 3 or ticker in ["TP2", "AKB", "ZP8", "IPB", "AFA", "YAY", "TI2"] else ("BIST" if len(ticker) == 5 else "Popular")
             })
 
+    speculative_matches = []
     # 2. Speculative TEFAS match (3-char alphanumeric)
     if len(q) == 3 and q.isalnum():
         if not any(m["symbol"] == q for m in local_matches):
-            local_matches.append({
+            speculative_matches.append({
                 "symbol": q,
                 "name": f"{q} TEFAS Fonu",
                 "exchDisp": "TEFAS"
@@ -143,31 +144,35 @@ async def search_tickers(q: str = ""):
         async with httpx.AsyncClient(timeout=5.0) as client:
             headers = {"User-Agent": "Mozilla/5.0"}
             resp = await client.get(url, headers=headers)
-            if resp.status_code != 200: return local_matches[:10]
+            if resp.status_code != 200: return (local_matches + speculative_matches)[:10]
             quotes = resp.json().get("quotes", [])
             
             yahoo_matches = []
             for i in quotes:
                 symbol = i.get("symbol", "").upper()
                 exch = i.get("exchDisp", "").upper()
+                quote_type = i.get("quoteType", "").upper()
                 
                 # TR Filter
                 if symbol.endswith(".IS"):
                     yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "BIST"})
+                # Crypto Filter
+                elif quote_type == "CRYPTOCURRENCY" or i.get("typeDisp") == "cryptocurrency":
+                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "Crypto"})
                 # US Filter
                 elif any(u in exch for u in ["NYSE", "NASDAQ", "BATS"]):
                     yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": exch})
             
             seen = set()
             combined = []
-            for m in local_matches + yahoo_matches:
+            for m in local_matches + yahoo_matches + speculative_matches:
                 if m["symbol"] not in seen:
                     seen.add(m["symbol"])
                     combined.append(m)
             
             return combined[:12]
     except Exception:
-        return local_matches[:10]
+        return (local_matches + speculative_matches)[:10]
 
 @router.get("/suggest")
 async def suggest_tickers(q: str = ""):
