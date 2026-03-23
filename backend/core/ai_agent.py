@@ -414,6 +414,7 @@ def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = 
 
 def analyze_news_sentiment(news_data: list, check_islamic: bool, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> dict:
     """Haber başlıkları ve özetlerini analiz edip Duyarlılık Skoru ve İslami Risk döner."""
+    from langchain_google_genai import ChatGoogleGenerativeAI
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key)
     
     news_context = []

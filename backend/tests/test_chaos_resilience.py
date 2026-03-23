@@ -47,11 +47,14 @@ async def test_rate_limiter_concurrency_spam(mock_set, mock_get):
 
 # ── 2. Scraper HTTP Retry/Exp-Backoff Chaos Test ─────────────────────────────
 
-@pytest.mark.asyncio
-@patch("backend.data.tefas_scraper.httpx.AsyncClient.post")
-async def test_tefas_scraper_retry_chaos(mock_post):
+def test_tefas_scraper_retry_chaos():
     """Tefas scraper'ın üst üste çökmelerde Retry loop döngüsünü test eder."""
-    from backend.data.tefas_scraper import _fetch_chunk
+    from backend.data.tefas_scraper import TefasScraper
+    scraper = TefasScraper()
+    
+    # Mock session.post
+    mock_post = MagicMock()
+    scraper.session.post = mock_post
     
     # Başarısız mock yanıtlar
     mock_resp_fail = MagicMock()
@@ -65,9 +68,9 @@ async def test_tefas_scraper_retry_chaos(mock_post):
         MagicMock(status_code=200, json=lambda: {"data": []})
     ]
     
-    # Testleri bekletmemek için asyncio.sleep'i mockluyoruz.
-    with patch("backend.data.tefas_scraper.asyncio.sleep", return_value=None):
-        res = await _fetch_chunk("2024-01-01", "2024-01-01", chunk_idx=1)
+    # Testleri bekletmemek için time.sleep'i mockluyoruz.
+    with patch("time.sleep", return_value=None):
+        res = scraper._fetch_chunk("TP2", "2024-01-01", "2024-01-01")
         
     assert res == [] # Success patika dönüşü
     assert mock_post.call_count == 3 # 3 kez tetiklendiği doğrulaması
