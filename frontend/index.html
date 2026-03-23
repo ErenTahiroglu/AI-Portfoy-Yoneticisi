@@ -174,7 +174,7 @@
             
             <div style="display: flex; gap: 1rem; margin-bottom: 4rem;">
                 <button onclick="document.getElementById('login-modal').classList.remove('hidden')" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); transition: transform 0.2s;">Giriş Yap / Üye Ol <i class="fas fa-sign-in-alt" style="margin-left: 8px; font-size: 0.85rem;"></i></button>
-                <button onclick="document.getElementById('landing-page').style.display='none'; document.getElementById('sidebar').style.display='flex'; document.querySelector('.main-content').style.display='block'; if(typeof showToast==='function') showToast('Misafir modunda temel analiz yapabilirsiniz. Profesyonel araçlar için giriş yapın.', 'info');" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 14px 28px; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s;">Misafir Olarak Dene</button>
+                <button onclick="document.getElementById('landing-page').style.display='none'; document.getElementById('sidebar').style.display='flex'; document.querySelector('.main-content').style.display='block'; document.getElementById('guest-logout-btn').style.display='flex'; if(typeof showToast==='function') showToast('Misafir modunda temel analiz yapabilirsiniz. Profesyonel araçlar için giriş yapın.', 'info');" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 14px 28px; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s;">Misafir Olarak Dene</button>
             </div>
 
             <!-- Features Grid -->
@@ -440,6 +440,11 @@
 
                 <button class="btn btn-secondary" id="user-settings-btn" title="Hesap Ayarları" style="margin-right:15px; padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); color:var(--text-main); cursor:pointer; display:none;">
                     <i class="fas fa-cog"></i>
+                </button>
+
+                <!-- Guest Logout Button -->
+                <button class="btn btn-secondary" id="guest-logout-btn" onclick="document.getElementById('landing-page').style.display='flex'; document.getElementById('sidebar').style.display='none'; document.querySelector('.main-content').style.display='none'; this.style.display='none';" style="margin-right:12px; padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); color:#f87171; cursor:pointer; display:none;">
+                    <i class="fas fa-arrow-left"></i> <span>Geri Dön</span>
                 </button>
 
                 <button class="btn btn-secondary" id="google-login-btn" style="padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); color:var(--text-main); cursor:pointer;">

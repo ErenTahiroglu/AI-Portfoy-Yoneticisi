@@ -139,6 +139,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (user) {
                 if (landing) landing.style.display = "none";
+                const guestLogoutBtn = document.getElementById("guest-logout-btn");
+                if (guestLogoutBtn) guestLogoutBtn.style.display = "none";
             } else {
                 if (landing) landing.style.display = "flex";
                 if (sidebar) sidebar.style.display = "none";
