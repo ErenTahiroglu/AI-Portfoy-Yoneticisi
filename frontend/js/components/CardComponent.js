@@ -236,7 +236,7 @@ export function createCard(res, idx) {
         <div class="beginner-only">
              ${fundHTML}${errHTML}
              <div style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-main); line-height:1.4;">
-                 <i class="fas fa-robot text-primary"></i> <span style="font-weight:600">Özet:</span> ${res.ai_comment ? res.ai_comment.split('.')[0] + '.' : 'Analiz bulunamadı.'}
+                 <i class="fas fa-robot" style="color:var(--primary)"></i> <span style="font-weight:600">Özet:</span> ${res.ai_comment ? res.ai_comment.split('.')[0] + '.' : 'Analiz bulunamadı.'}
              </div>
         </div>
         <div class="pro-only">

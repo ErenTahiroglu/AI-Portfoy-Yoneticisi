@@ -306,7 +306,7 @@ export function setupPaperTrades() {
 
               tbody.innerHTML = trades.map(t => {
                    const date = new Date(t.timestamp).toLocaleDateString("tr-TR", { hour: '2-digit', minute: '2-digit' });
-                   return `<tr><td>${date}</td><td><strong>${t.symbol}</strong></td><td class="${t.order_type === 'BUY' ? 'text-success' : 'text-danger'}">${t.order_type === 'BUY' ? 'ALIM' : 'SATIŞ'}</td><td>%${t.target_weight}</td></tr>`;
+                   return `<tr><td>${date}</td><td><strong>${t.symbol}</strong></td><td class="${t.order_type === 'BUY' ? 'positive' : 'negative'}">${t.order_type === 'BUY' ? 'ALIM' : 'SATIŞ'}</td><td>%${t.target_weight}</td></tr>`;
               }).join("");
          } catch (e) {}
     }
