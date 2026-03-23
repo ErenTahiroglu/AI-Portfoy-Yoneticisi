@@ -61,7 +61,10 @@ async def wizard_api(request: Request):
         portfolio = generate_wizard_portfolio(prompt, api_key, model, lang, user_id=user_id)
         return {"portfolio": portfolio}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower() or "limit" in error_msg.lower():
+             raise HTTPException(status_code=429, detail="Yapay Zeka (LLM) kota veya limit sınırına ulaşıldı. Lütfen birkaç dakika sonra tekrar deneyin.")
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/news", dependencies=[Depends(check_llm_quota)])
 async def news_api(request: NewsRequest):
@@ -72,7 +75,10 @@ async def news_api(request: NewsRequest):
         data = fetch_and_filter_news(request.tickers, request.api_key, request.model, request.lang)
         return data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower() or "limit" in error_msg.lower():
+             raise HTTPException(status_code=429, detail="Haber analiz servisi limit sınırına takıldı. Lütfen biraz bekleyin.")
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/chat", dependencies=[Depends(check_llm_quota)])
 async def chat_api(request: Request, body: ChatRequest):
@@ -110,4 +116,7 @@ async def chat_api(request: Request, body: ChatRequest):
         return {"reply": reply}
     except Exception as e:
         logger.error(f"Chat API Hatası: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower() or "limit" in error_msg.lower():
+             raise HTTPException(status_code=429, detail="Yapay Zeka (CIO) geçici olarak kullanım sınırına takıldı. Lütfen birazdan tekrar deneyin.")
+        raise HTTPException(status_code=500, detail=error_msg)
