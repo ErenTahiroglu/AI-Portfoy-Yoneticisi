@@ -56,7 +56,7 @@ class RateLimiter:
     async def check(self, request: Request):
         from backend.core import redis_cache
 
-        # ── Kimlik Anahtarı Belirleme ──────────────────────────────────────
+        # ── Kimlik Anahtarı Belirleme (Proxy Trust Hardening) ──────────────
         auth_header = request.headers.get("Authorization")
         user_id = _extract_user_id(auth_header)
 
@@ -64,8 +64,12 @@ class RateLimiter:
             limit_key = f"rate_limit:user:{user_id}"
             identifier_type = "user"
         else:
-            forwarded = request.headers.get("X-Forwarded-For")
-            client_ip = (forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown"))
+            # X-Real-IP Render ve Vercel'de güvenilirdir.
+            client_ip = request.headers.get("X-Real-IP")
+            if not client_ip:
+                 forwarded = request.headers.get("X-Forwarded-For")
+                 client_ip = forwarded.split(",")[-1].strip() if forwarded else (request.client.host if request.client else "unknown")
+            
             if client_ip == "unknown":
                 return
             limit_key = f"rate_limit:ip:{client_ip}"

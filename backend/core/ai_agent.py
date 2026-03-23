@@ -42,19 +42,17 @@ async def _log_usage_async(user_id: str, response, prompt_text: str = None):
             }
             await client.post(f"{url}/rest/v1/llm_usage_logs", json=payload, headers=headers)
             
-        # ── LOCAL AUDIT TRAIL LAYER ──
+        # ── LOCAL AUDIT TRAIL LAYER (Rotating File) ──
         try:
-            log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
-            os.makedirs(log_dir, exist_ok=True)
-            log_file = os.path.join(log_dir, "ai_audit_trail.log")
+            from backend.utils.logger import audit_logger
             
             prompt_hash = hashlib.sha256(prompt_text.encode("utf-8")).hexdigest() if prompt_text else "N/A"
             res_content = str(response.content) if hasattr(response, "content") else str(response)
-            clean_res = res_content.replace("\n", " ").strip()[:300] # Kompakt log
+            clean_res = res_content.replace("\n", " ").strip()[:300]
             
-            with open(log_file, "a", encoding="utf-8") as f:
-                ts = datetime.now(timezone.utc).isoformat()
-                f.write(f"[{ts}] USER:{user_id} | PROMPT_HASH:{prompt_hash} | RESP:{clean_res}...\n")
+            ts = datetime.now(timezone.utc).isoformat()
+            # RotatingFileHandler ile güvenli log
+            audit_logger.info(f"[{ts}] USER:{user_id} | PROMPT_HASH:{prompt_hash} | RESP:{clean_res}...")
         except Exception as audit_err:
             logger.error(f"Audit Log failed: {audit_err}")
             
