@@ -1,13 +1,8 @@
-import asyncio
-from langchain_google_genai import ChatGoogleGenerativeAI
-import os
-import httpx
-import logging
+import hashlib
+from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
-
-async def _log_usage_async(user_id: str, response):
-    """Token kullanımlarını asenkron (fire-and-forget) olarak veri tabanına loglar."""
+async def _log_usage_async(user_id: str, response, prompt_text: str = None):
+    """Token kullanımlarını ve AI karar izini (Audit Trail) loglar."""
     if not user_id:
         return
     try:
@@ -46,6 +41,23 @@ async def _log_usage_async(user_id: str, response):
                 "cost_usd": cost
             }
             await client.post(f"{url}/rest/v1/llm_usage_logs", json=payload, headers=headers)
+            
+        # ── LOCAL AUDIT TRAIL LAYER ──
+        try:
+            log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            log_file = os.path.join(log_dir, "ai_audit_trail.log")
+            
+            prompt_hash = hashlib.sha256(prompt_text.encode("utf-8")).hexdigest() if prompt_text else "N/A"
+            res_content = str(response.content) if hasattr(response, "content") else str(response)
+            clean_res = res_content.replace("\n", " ").strip()[:300] # Kompakt log
+            
+            with open(log_file, "a", encoding="utf-8") as f:
+                ts = datetime.now(timezone.utc).isoformat()
+                f.write(f"[{ts}] USER:{user_id} | PROMPT_HASH:{prompt_hash} | RESP:{clean_res}...\n")
+        except Exception as audit_err:
+            logger.error(f"Audit Log failed: {audit_err}")
+            
     except Exception as e:
         logger.error(f"Failed to log LLM usage: {e}")
         
@@ -178,9 +190,9 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     
     try:
         response = llm.invoke(prompt)
-        # Asenkron loglama
+        # Asenkron loglama + Prompt içeriğini audit için pasla
         if user_id:
-             asyncio.create_task(_log_usage_async(user_id, response))
+             asyncio.create_task(_log_usage_async(user_id, response, prompt_text=prompt))
         return str(response.content)
     except Exception as e:
         error_msg = str(e)
@@ -219,7 +231,7 @@ def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = 
     try:
         response = llm.invoke(sys_prompt)
         if user_id:
-             asyncio.create_task(_log_usage_async(user_id, response))
+             asyncio.create_task(_log_usage_async(user_id, response, prompt_text=sys_prompt))
         content = str(response.content).strip()
         
         # Temizle (markdown backticks bazen sızabiliyor)
@@ -348,7 +360,7 @@ async def generate_chat_response(messages: list, context: dict, api_key: str, mo
     try:
         response = await llm.ainvoke(langchain_msgs)
         if user_id:
-             asyncio.create_task(_log_usage_async(user_id, response))
+             asyncio.create_task(_log_usage_async(user_id, response, prompt_text=portfolio_summary))
         return str(response.content)
     except Exception as e:
         error_msg = str(e)

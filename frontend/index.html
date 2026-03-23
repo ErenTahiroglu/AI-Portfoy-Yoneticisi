@@ -40,14 +40,14 @@
     <div id="toast-container"></div>
 
     <!-- MOBILE MENU BUTTON -->
-    <button class="mobile-menu-btn" id="mobile-menu-btn">
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menüyü Aç">
         <i class="fas fa-bars"></i>
     </button>
 
     <!-- Metric Detail Modal -->
     <div id="metric-modal" class="modal-overlay hidden">
         <div class="modal-content premium-card">
-            <button class="modal-close" id="metric-modal-close"><i class="fas fa-times"></i></button>
+            <button class="modal-close" id="metric-modal-close" aria-label="Kapat"><i class="fas fa-times"></i></button>
             <div class="card-glow"></div>
             <div class="card-inner">
                 <div class="card-head">
@@ -79,7 +79,7 @@
     <!-- User Settings Modal -->
     <div id="settings-modal" class="modal-overlay hidden">
         <div class="modal-content premium-card">
-            <button class="modal-close" id="settings-modal-close"><i class="fas fa-times"></i></button>
+            <button class="modal-close" id="settings-modal-close" aria-label="Kapat"><i class="fas fa-times"></i></button>
             <div class="card-glow"></div>
             <div class="card-inner">
                 <div class="card-head">
@@ -127,7 +127,7 @@
     <!-- Login Modal -->
     <div id="login-modal" class="modal-overlay hidden">
         <div class="modal-content premium-card">
-            <button class="modal-close" onclick="document.getElementById('login-modal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+            <button class="modal-close" aria-label="Kapat" onclick="document.getElementById('login-modal').classList.add('hidden')"><i class="fas fa-times"></i></button>
             <div class="card-glow"></div>
             <div class="card-inner">
                 <div class="card-head">
@@ -212,7 +212,7 @@
         <div class="modal-content glass-panel" style="max-width: 900px; width: 95%; max-height: 85vh; overflow-y: auto; padding: 2rem; border: 1px solid rgba(231, 76, 60, 0.3);">
             <div class="modal-header" style="justify-content: space-between; display: flex; align-items: center; margin-bottom: 1.5rem;">
                 <h2 style="color: #e74c3c; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 0;"><i class="fas fa-user-shield"></i> Süper Yönetici Paneli (Admin)</h2>
-                <button id="admin-modal-close" class="modal-close" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;"><i class="fas fa-times"></i></button>
+                <button id="admin-modal-close" class="modal-close" aria-label="Kapat" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="admin-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
@@ -398,7 +398,7 @@
 
         <!-- Theme & Language toggles at bottom -->
         <div class="sidebar-footer">
-            <button class="footer-btn" id="theme-toggle-btn" title="Tema Değiştir">
+            <button class="footer-btn" id="theme-toggle-btn" title="Tema Değiştir" aria-label="Tema Değiştir">
                 <i class="fas fa-moon" id="theme-icon"></i> <span data-i18n="theme.toggle">Tema</span>
             </button>
             <button class="footer-btn" id="lang-toggle-btn" onclick="toggleLanguage()">

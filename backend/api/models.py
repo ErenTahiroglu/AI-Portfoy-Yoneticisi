@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional, Dict
 
 class AnalysisRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
     tickers: List[str]
     use_ai: bool = False
     api_key: Optional[str] = None
@@ -15,26 +16,31 @@ class AnalysisRequest(BaseModel):
     rebalancing_freq: str = "none"
 
 class UserSettingsRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
     telegram_chat_id: Optional[str] = None
     risk_tolerance: Optional[str] = "Orta"
 
 class PortfolioOptimizeRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
     tickers: List[str]
     weights: Optional[Dict[str, float]] = None
     risk_free_rate: float = 0.02
 
 class PortfolioRiskRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
     tickers: List[str]
     weights: Dict[str, float]
 
 # Chat ve News Modelleri
 class NewsRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
     tickers: List[str]
     lang: str = "tr"
     api_key: Optional[str] = None
     model: str = "gemini-2.5-flash"
 
 class ChatRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
     messages: List[Dict[str, str]]
     portfolio_context: Optional[dict] = None
     api_key: Optional[str] = None
