@@ -27,12 +27,23 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         correlation_id = correlation_id_ctx.get()
+        message = record.getMessage()
         
+        # Hassas Veri Maskeleme (PII / Secret Masking)
+        import re
+        sensitive_patterns = [
+            (r'(?i)(bearer\s+)[a-zA-Z0-9\.\-_]+', r'\1********'),
+            (r'(?i)(password["\']?\s*[:=]\s*["\']?)[^"\'\s,]+', r'\1********'),
+            (r'(?i)(api[_-]?key["\']?\s*[:=]\s*["\']?)[^"\'\s,]+', r'\1********'),
+        ]
+        for pattern, repl in sensitive_patterns:
+            message = re.sub(pattern, repl, message)
+
         log_entry = {
             "timestamp": datetime.fromtimestamp(record.created).isoformat(),
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": message,
             "correlation_id": correlation_id
         }
         

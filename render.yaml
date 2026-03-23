@@ -2,6 +2,7 @@ services:
   - type: web
     name: ai-portfolio-assistant
     env: python
+    healthCheckPath: "/docs"
     rootDir: backend
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
