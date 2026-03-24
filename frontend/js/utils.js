@@ -1,5 +1,4 @@
 const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-const API_BASE = IS_LOCAL ? "" : "https://ai-portfoy-yoneticisi.onrender.com";
 let lastResults = null;
 let lastExtras = null;
 let chartInstances = {};
@@ -196,7 +195,7 @@ function setupAutocomplete() {
 
         autocompleteTimeout = setTimeout(async () => {
             try {
-                const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(lastWord)}`);
+                const res = await fetch(`${window.API_BASE}/api/search?q=${encodeURIComponent(lastWord)}`);
                 if (!res.ok) throw new Error("API error");
                 const data = await res.json();
                 
@@ -401,7 +400,7 @@ async function showTickerQuickModal(ticker) {
             check_financials: true,
             lang: getLang()
         };
-        const res = await fetch(`${API_BASE}/api/analyze`, {
+        const res = await fetch(`${window.API_BASE}/api/analyze`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
