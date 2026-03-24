@@ -165,18 +165,18 @@
     </div>
 
     <!-- LANDING PAGE OVERLAY (Visible when Not Authenticated) -->
-    <div id="landing-page" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 10%, #15161e 0%, #0b0c10 80%); z-index: 1200; overflow-y: auto; display: flex; flex-direction: column; font-family: 'Inter', sans-serif;">
+    <div id="landing-page" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 10%, var(--primary-glow) 0%, var(--bg-color) 80%); z-index: 1200; overflow-y: auto; display: flex; flex-direction: column; font-family: 'Inter', sans-serif;">
         <!-- Landing Navbar -->
-        <nav style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 3rem; background: rgba(0,0,0,0.2); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.03);">
+        <nav style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 3rem; background: var(--glass-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass-border);">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <img src="logo.png" alt="Logo" style="height: 32px; filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));">
-                <span style="font-weight: 800; font-size: 1.25rem; color: #fff; letter-spacing: -0.5px;">Portföy <span style="background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Analiz</span></span>
+                <span style="font-weight: 800; font-size: 1.25rem; color: var(--text-main); letter-spacing: -0.5px;">Portföy <span style="background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Analiz</span></span>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" style="display: flex; align-items: center; gap: 8px; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.85rem; transition: all 0.2s; box-shadow: 0 0 15px rgba(236, 72, 153, 0.2);">
+                <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" style="display: flex; align-items: center; gap: 8px; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: var(--text-main); padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.85rem; transition: all 0.2s; box-shadow: 0 0 15px rgba(236, 72, 153, 0.2);">
                     <i class="fas fa-heart" style="color: #ec4899;"></i> <span style="font-weight: 600;">Sponsor</span>
                 </a>
-                <button id="landing-nav-login-btn" onclick="document.getElementById('login-modal').classList.remove('hidden')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">Giriş Yap / Kayıt Ol</button>
+                <button id="landing-nav-login-btn" onclick="document.getElementById('login-modal').classList.remove('hidden')" style="background: var(--glass-item-hover); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">Giriş Yap / Kayıt Ol</button>
             </div>
         </nav>
 
@@ -185,34 +185,34 @@
             <div class="pulsing-glow" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; background: rgba(99, 102, 241, 0.06); filter: blur(100px); border-radius: 50%; z-index: -1;"></div>
             
             
-            <h1 style="color: #fff; font-size: 3.5rem; font-weight: 800; max-width: 850px; line-height: 1.1; letter-spacing: -1px; margin-bottom: 1rem;">Varlıklarınızı <span style="background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Otonom</span> Olarak Optimize Edin</h1>
+            <h1 style="color: var(--text-main); font-size: 3.5rem; font-weight: 800; max-width: 850px; line-height: 1.1; letter-spacing: -1px; margin-bottom: 1rem;">Varlıklarınızı <span style="background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Otonom</span> Olarak Optimize Edin</h1>
             <p style="color: #9ca3af; font-size: 1.1rem; max-width: 600px; line-height: 1.6; margin-bottom: 2.5rem;">Sanal Trading (Paper), Monte Carlo Risk analizleri ve Kurumsal yapay zeka ajanları ile portföyünüzü akıllı kontrol edin.</p>
             
             <div style="display: flex; gap: 1rem; margin-bottom: 4rem;">
-                <button id="landing-action-btn" onclick="document.getElementById('login-modal').classList.remove('hidden')" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); transition: transform 0.2s;">Giriş Yap / Kayıt Ol <i class="fas fa-sign-in-alt" style="margin-left: 8px; font-size: 0.85rem;"></i></button>
-                <button onclick="document.getElementById('landing-page').style.display='none'; document.getElementById('sidebar').style.display='flex'; document.querySelector('.main-content').style.display='block'; document.getElementById('guest-logout-btn').style.display='flex'; document.getElementById('dashboard-sponsor-btn').style.display='flex'; if(typeof window.AppState==='object') window.AppState.viewMode='beginner'; if(typeof showToast==='function') showToast('Misafir modunda temel analiz yapabilirsiniz. Profesyonel araçlar için giriş yapın.', 'info');" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 14px 28px; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s;">Misafir Olarak Dene</button>
+                <button id="landing-action-btn" onclick="document.getElementById('login-modal').classList.remove('hidden')" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: var(--text-main); padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); transition: transform 0.2s;">Giriş Yap / Kayıt Ol <i class="fas fa-sign-in-alt" style="margin-left: 8px; font-size: 0.85rem;"></i></button>
+                <button onclick="document.getElementById('landing-page').style.display='none'; document.getElementById('sidebar').style.display='flex'; document.querySelector('.main-content').style.display='block'; document.getElementById('guest-logout-btn').style.display='flex'; document.getElementById('dashboard-sponsor-btn').style.display='flex'; if(typeof window.AppState==='object') window.AppState.viewMode='beginner'; if(typeof showToast==='function') showToast('Misafir modunda temel analiz yapabilirsiniz. Profesyonel araçlar için giriş yapın.', 'info');" style="background: var(--glass-item-hover); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); padding: 14px 28px; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s;">Misafir Olarak Dene</button>
             </div>
 
             <!-- Features Grid -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; max-width: 1000px; width: 100%; padding: 0 2rem;">
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px); transition: transform 0.2s;">
+                <div style="background: var(--glass-item); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px); transition: transform 0.2s;">
                     <div style="font-size: 1.5rem; color: #6366f1; margin-bottom: 8px;"><i class="fas fa-robot"></i></div>
-                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Multi-Agent CIO</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 6px;">Multi-Agent CIO</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Yapay zeka ajanları piyasa trendlerini tek tek tarayarak kurumsal raporlar üretir.</p>
                 </div>
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
+                <div style="background: var(--glass-item); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
                     <div style="font-size: 1.5rem; color: #10b981; margin-bottom: 8px;"><i class="fas fa-chart-pie"></i></div>
-                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Portföy Optimizasyonu</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 6px;">Portföy Optimizasyonu</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Sharpe ve Markowitz algoritmalarıyla matematiksel olarak karlı dağılımlar hesaplar.</p>
                 </div>
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
+                <div style="background: var(--glass-item); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
                     <div style="font-size: 1.5rem; color: #ef4444; margin-bottom: 8px;"><i class="fas fa-shield-halved"></i></div>
-                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Uçtan Uca Risk Motoru</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 6px;">Uçtan Uca Risk Motoru</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Value at Risk (VaR) ve Max Drawdown modellerini kullanarak kayıp toleransları çizer.</p>
                 </div>
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
+                <div style="background: var(--glass-item); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; text-align: left; backdrop-filter: blur(5px);">
                     <div style="font-size: 1.5rem; color: #f59e0b; margin-bottom: 8px;"><i class="fas fa-receipt"></i></div>
-                    <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Sanal Paper Trading</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 6px;">Sanal Paper Trading</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Hiçbir gerçek bakiye riske atmadan piyasada anlık alım/satım simülasyonları yapın.</p>
                 </div>
             </div>
@@ -229,38 +229,38 @@
             <!-- Başlangıç Planı -->
             <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 16px; padding: 2rem; text-align: center; backdrop-filter: blur(10px); transition: transform 0.3s;">
                 <div style="font-size: 0.75rem; color: #10b981; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Ücretsiz Deneyim</div>
-                <h3 style="color: #fff; font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem;">Başlangıç</h3>
-                <div style="font-size: 1.75rem; font-weight: 800; color: #fff; margin-bottom: 1.5rem;">Kullanıma Açık</div>
+                <h3 style="color: var(--text-main); font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem;">Başlangıç</h3>
+                <div style="font-size: 1.75rem; font-weight: 800; color: var(--text-main); margin-bottom: 1.5rem;">Kullanıma Açık</div>
                 <ul style="text-align: left; list-style: none; padding: 0; margin-bottom: 2rem; font-size: 0.88rem; color: #d1d5db; display: flex; flex-direction: column; gap: 0.75rem;">
                     <li><i class="fas fa-check-circle" style="color: #10b981; margin-right: 8px;"></i> Canlı Portföy Özeti</li>
                     <li><i class="fas fa-check-circle" style="color: #10b981; margin-right: 8px;"></i> Varlık Dağılım Grafiği</li>
                     <li><i class="fas fa-check-circle" style="color: #10b981; margin-right: 8px;"></i> Temel Performans Metrikleri</li>
                     <li><i class="fas fa-times-circle" style="color: #ef4444; margin-right: 8px; opacity: 0.5;"></i> <span style="opacity: 0.5;">Gelişmiş AI Sihirbazı</span></li>
                 </ul>
-                <button onclick="const misafirBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('Misafir')); if(misafirBtn) misafirBtn.click();" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #fff; font-weight: 600; cursor: pointer; transition: all 0.2s;">Hemen Dene</button>
+                <button onclick="const misafirBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('Misafir')); if(misafirBtn) misafirBtn.click();" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-main); font-weight: 600; cursor: pointer; transition: all 0.2s;">Hemen Dene</button>
             </div>
 
             <!-- Profesyonel Planı -->
             <div style="background: linear-gradient(145deg, rgba(99, 102, 241, 0.04), rgba(168, 85, 247, 0.02)); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 16px; padding: 2rem; text-align: center; backdrop-filter: blur(10px); position: relative; overflow: hidden; transform: scale(1.02); box-shadow: 0 15px 40px rgba(99, 102, 241, 0.1);">
-                <div style="position: absolute; top: 15px; right: -30px; background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; font-size: 0.6rem; font-weight: 800; padding: 4px 30px; transform: rotate(45deg);">BETA</div>
+                <div style="position: absolute; top: 15px; right: -30px; background: linear-gradient(135deg, #6366f1, #a855f7); color: var(--text-main); font-size: 0.6rem; font-weight: 800; padding: 4px 30px; transform: rotate(45deg);">BETA</div>
                 <div style="font-size: 0.75rem; color: #818cf8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Tam Donanım</div>
-                <h3 style="color: #fff; font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem;">Profesyonel</h3>
-                <div style="font-size: 1.75rem; font-weight: 800; color: #fff; margin-bottom: 1.5rem;">Açık <span style="font-size: 0.8rem; font-weight: 400; color: #9ca3af; text-decoration: line-through;">(Beta)</span></div>
+                <h3 style="color: var(--text-main); font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem;">Profesyonel</h3>
+                <div style="font-size: 1.75rem; font-weight: 800; color: var(--text-main); margin-bottom: 1.5rem;">Açık <span style="font-size: 0.8rem; font-weight: 400; color: #9ca3af; text-decoration: line-through;">(Beta)</span></div>
                 <ul style="text-align: left; list-style: none; padding: 0; margin-bottom: 2rem; font-size: 0.88rem; color: #d1d5db; display: flex; flex-direction: column; gap: 0.75rem;">
                     <li><i class="fas fa-check-circle" style="color: #6366f1; margin-right: 8px;"></i> <strong>AI Sihirbazı & CIO Raporları</strong></li>
                     <li><i class="fas fa-check-circle" style="color: #6366f1; margin-right: 8px;"></i> Monte Carlo & VaR Risk Analizleri</li>
                     <li><i class="fas fa-check-circle" style="color: #6366f1; margin-right: 8px;"></i> Korelasyon & Portföy Optimizasyonu</li>
                     <li><i class="fas fa-check-circle" style="color: #6366f1; margin-right: 8px;"></i> Sanal Trading (Paper)</li>
                 </ul>
-                <button onclick="document.getElementById('landing-action-btn').click()" style="width: 100%; padding: 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; font-weight: 700; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);">Profesyonel Ol</button>
+                <button onclick="document.getElementById('landing-action-btn').click()" style="width: 100%; padding: 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #6366f1, #a855f7); color: var(--text-main); font-weight: 700; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);">Profesyonel Ol</button>
             </div>
         </div>
 
         <!-- Comparison Table Section -->
         <div style="margin-top: 2rem; max-width: 900px; width: 100%; padding: 0 2rem; margin-bottom: 4rem; align-self: center;">
-            <h2 style="color: #fff; font-size: 1.75rem; font-weight: 800; margin-bottom: 1.5rem; text-align: center;">Hangi Paket Size Uygun?</h2>
+            <h2 style="color: var(--text-main); font-size: 1.75rem; font-weight: 800; margin-bottom: 1.5rem; text-align: center;">Hangi Paket Size Uygun?</h2>
             <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; backdrop-filter: blur(10px);">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; color: #fff; font-size: 0.9rem;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; color: var(--text-main); font-size: 0.9rem;">
                     <thead>
                         <tr style="background: rgba(255, 255, 255, 0.04); border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
                             <th style="padding: 1.25rem; font-weight: 700; width: 40%; color: #9ca3af;">Gelişmiş Özellikler</th>
@@ -270,42 +270,42 @@
                     </thead>
                     <tbody>
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02); transition: background 0.2s;">
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Canlı Portföy Özeti</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Canlı Portföy Özeti</td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Varlık Dağılım Grafiği</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Varlık Dağılım Grafiği</td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Temel Performans Metrikleri</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Temel Performans Metrikleri</td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Otomatik AI Sihirbazı</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Otomatik AI Sihirbazı</td>
                             <td style="padding: 1rem; text-align: center; color: #ef4444;"><i class="fas fa-times-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Gelişmiş Risk (VaR, MaxDD)</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Gelişmiş Risk (VaR, MaxDD)</td>
                             <td style="padding: 1rem; text-align: center; color: #ef4444;"><i class="fas fa-times-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Monte Carlo Simülasyonu</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Monte Carlo Simülasyonu</td>
                             <td style="padding: 1rem; text-align: center; color: #ef4444;"><i class="fas fa-times-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Korelasyon Matrisi</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Korelasyon Matrisi</td>
                             <td style="padding: 1rem; text-align: center; color: #ef4444;"><i class="fas fa-times-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
                         <tr>
-                            <td style="padding: 1rem 1.25rem; color: #e5e7eb;">Backtest Performans Analizi</td>
+                            <td style="padding: 1rem 1.25rem; color: var(--text-main);">Backtest Performans Analizi</td>
                             <td style="padding: 1rem; text-align: center; color: #ef4444;"><i class="fas fa-times-circle"></i></td>
                             <td style="padding: 1rem; text-align: center; color: #10b981;"><i class="fas fa-check-circle"></i></td>
                         </tr>
@@ -554,7 +554,7 @@
                 </button>
 
                 <!-- Sponsor Button next to Geri Don -->
-                <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" id="dashboard-sponsor-btn" style="display: none; align-items: center; gap: 6px; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: #fff; padding: 0.5rem 0.85rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; margin-right: 12px; height: 32px; box-sizing: border-box;">
+                <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" id="dashboard-sponsor-btn" style="display: none; align-items: center; gap: 6px; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: var(--text-main); padding: 0.5rem 0.85rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; margin-right: 12px; height: 32px; box-sizing: border-box;">
                     <i class="fas fa-heart" style="color: #ec4899;"></i> <span>Sponsor</span>
                 </a>
 

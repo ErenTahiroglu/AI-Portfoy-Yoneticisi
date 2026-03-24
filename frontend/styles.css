@@ -26,6 +26,36 @@
     --gradient-primary: linear-gradient(135deg, #0ea5e9, #14b8a6);
     --gradient-card: linear-gradient(135deg, rgba(14, 165, 233, 0.05), rgba(20, 184, 166, 0.05));
     --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.3);
+
+    /* ── Invertible Glass variables for Landing ── */
+    --glass-item: rgba(255, 255, 255, 0.02);
+    --glass-item-hover: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme="light"] {
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --card-bg-hover: #f1f5f9;
+    --card-border: #e2e8f0;
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --primary-glow: rgba(2, 132, 199, 0.05);
+    --accent: #0d9488;
+    --accent-hover: #0f766e;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --sidebar-bg: #ffffff;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(226, 232, 240, 0.8);
+    --gradient-primary: linear-gradient(135deg, #0284c7, #0d9488);
+    --gradient-card: linear-gradient(135deg, rgba(2, 132, 199, 0.01), rgba(13, 148, 136, 0.01));
+    --shadow-premium: 0 10px 30px rgba(0, 0, 0, 0.04);
+
+    --glass-item: rgba(15, 23, 42, 0.03);
+    --glass-item-hover: rgba(15, 23, 42, 0.06);
 }
 
 * {

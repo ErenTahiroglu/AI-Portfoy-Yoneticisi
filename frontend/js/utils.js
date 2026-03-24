@@ -21,10 +21,11 @@ function showToast(message, type = "info") {
 // ═══════════════════════════════════════
 function initTheme() {
     const saved = localStorage.getItem("theme");
-    if (saved) {
-        document.documentElement.setAttribute("data-theme", saved);
-        updateThemeIcon(saved);
-    }
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const themeToApply = saved || (systemDark ? "dark" : "light");
+    
+    document.documentElement.setAttribute("data-theme", themeToApply);
+    updateThemeIcon(themeToApply);
 }
 
 function toggleTheme() {
