@@ -28,9 +28,9 @@ def validate_critical_env():
     critical_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
     missing = [v for v in critical_vars if not os.getenv(v)]
     if missing:
-        print(f"❌ KRİTİK HATA: Aşağıdaki ortam değişkenleri eksik: {', '.join(missing)}")
-        print("Sistem Fail-Fast prensibiyle başlatmayı reddediyor.")
-        sys.exit(1)
+        # 🛡️ Gevşetilmiş hata (Sistemin kalkmasına izin verir, ama log'a basar)
+        print(f"⚠️ UYARI: Kritik ortam değişkenleri eksik: {', '.join(missing)}")
+        print("Sistem işlevleri (Örn: DB, Auth) kısıtlı çalışabilir.")
 
 validate_critical_env()
 
