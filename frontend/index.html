@@ -412,7 +412,7 @@
         <!-- AI Settings (conditional control via JS) -->
         <div class="sidebar-section" id="ai-settings">
             <div class="input-group" id="gemini-key-group">
-                <label><i class="fas fa-key"></i> <span data-i18n="sidebar.apiKey">Gemini API Anahtarı</span></label>
+                <label><i class="fas fa-key"></i> <span data-i18n="sidebar.apiKey">AI API Anahtarı (Gemini / Groq)</span></label>
                 <div style="position:relative; display:flex; align-items:center;">
                     <input type="password" id="api-key" placeholder="API Key girin..."
                         style="flex:1; padding-right:30px;">
@@ -423,10 +423,15 @@
             <div class="input-group" id="gemini-model-group">
                 <label><i class="fas fa-globe"></i> <span data-i18n="sidebar.model">Model Seçimi</span></label>
                 <select id="model-select">
-                    <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Önerilen)</option>
-                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                    <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+                    <optgroup label="Google Gemini">
+                        <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </optgroup>
+                    <optgroup label="Groq (Hızlı & Açık Kaynak)">
+                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+                        <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
+                        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                    </optgroup>
                 </select>
             </div>
             <p class="ai-note" id="ai-note" data-i18n="sidebar.aiNote">⚠ Pro modeller için faturalandırma açık

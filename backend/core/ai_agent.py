@@ -1,6 +1,15 @@
 import hashlib
 from datetime import datetime, timezone
 
+def _get_llm(model_name: str, api_key: str, temperature: float = 0.1, max_output_tokens: int = 1000):
+    """Dinamik olarak Gemini veya Groq sağlayıcısını seçer."""
+    name = model_name.lower()
+    if "llama" in name or "mixtral" in name:
+        from langchain_groq import ChatGroq
+        return ChatGroq(model=model_name, temperature=temperature, groq_api_key=api_key, max_tokens=max_output_tokens)
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    return ChatGoogleGenerativeAI(model=model_name, temperature=temperature, google_api_key=api_key, max_output_tokens=max_output_tokens)
+
 async def _log_usage_async(user_id: str, response, prompt_text: str = None):
     """Token kullanımlarını ve AI karar izini (Audit Trail) loglar."""
     if not user_id:
@@ -60,8 +69,8 @@ async def _log_usage_async(user_id: str, response, prompt_text: str = None):
         logger.error(f"Failed to log LLM usage: {e}")
         
 def generate_report(ticker, data, api_key, model_name, check_islamic=True, check_financials=True, fin_data=None, market="US", lang="tr", system_errors: dict = None, ml_prediction: dict = None, user_id: str = None):
-    """Gemini API'sini kullanarak seçili oranlara göre finansal rapor üretir."""
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key, max_output_tokens=1200)
+    """API kullanarak seçili oranlara göre finansal rapor üretir."""
+    llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.1, max_output_tokens=1200)
 
     is_etf = data.get("is_etf", False) if data else False
     is_tefas = data.get("is_tefas", False) if data else False # TEFAS bayrağı de alınsın
@@ -195,15 +204,15 @@ def generate_report(ticker, data, api_key, model_name, check_islamic=True, check
     except Exception as e:
         error_msg = str(e)
         if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
-            return "⚠️ **Kota Sınırı Aşıldı (Kullanım Limiti)**<br>Seçtiğiniz Gemini modelinin ücretsiz sürüm kotası dolmuştur. Lütfen 1-2 dakika bekleyip tekrar deneyin veya ayarlar menüsünden `gemini-2.5-flash` modeline geçiş yapın."
-        return f"Gemini Yanıt Hatası: {error_msg}"
+            return "⚠️ **Kota Sınırı Aşıldı (Kullanım Limiti)**<br>Seçtiğiniz modelin ücretsiz sürüm kotası dolmuştur. Lütfen 1-2 dakika bekleyip tekrar deneyin veya ayarlar menüsünden model değiştirin."
+        return f"AI Yanıt Hatası: {error_msg}"
 
 
 import json
 
 def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr", user_id: str = None) -> list:
     """Kullanıcının metin girişini analiz edip ticker ve ağırlık öneren JSON döndürür."""
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key, max_output_tokens=500)
+    llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.2, max_output_tokens=500)
     
     sys_prompt = f"""
     Sen US ve TR piyasalarına hakim profesyonel bir nicel yatırım yöneticisin. 
@@ -245,8 +254,7 @@ def generate_wizard_portfolio(prompt_text: str, api_key: str, model_name: str = 
 async def run_analyst_agent(portfolio_summary: str, api_key: str, model_name: str) -> str:
     """Quantitative & Risk Specialist Sub-Agent"""
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.1, google_api_key=api_key, max_output_tokens=800)
+        llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.1, max_output_tokens=800)
         
         prompt = f"""
         Sen bir Portföy Yönetim Platformunun 'Kantitatif ve Risk Analisti' alt ajanı özelindesin.
@@ -270,8 +278,7 @@ async def run_analyst_agent(portfolio_summary: str, api_key: str, model_name: st
 async def run_researcher_agent(portfolio_summary: str, api_key: str, model_name: str) -> str:
     """Fundamentals & Sentiment Specialist Sub-Agent"""
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key, max_output_tokens=800)
+        llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.2, max_output_tokens=800)
         
         prompt = f"""
         Sen bir Portföy Yönetim Platformunun 'Temel ve Teknik Analiz Araştırmacısı' alt ajanı özelindesin.
@@ -347,7 +354,7 @@ async def generate_chat_response(messages: list, context: dict, api_key: str, mo
     analyst_rep, researcher_rep = reports
 
     # CIO Orchestration Agent (Chief Investment Officer)
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key, max_output_tokens=1024)
+    llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.3, max_output_tokens=1024)
     
     system_instruction = f"""
     Sen, bu uygulamanın 'Baş Yatırım Sorumlusu' (Chief Investment Officer - CIO) AI ajanıdır.
@@ -388,8 +395,7 @@ def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = 
     """
     Tüm portföyün makro analizini (Riskler, Korelasyon, Dengeleme) streaming (generator) olarak döndürür.
     """
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
+    llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.3, max_output_tokens=1000)
     
     # 🛡️ PII ve Bakiye Maskeleme
     cleaned_data = _sanitize_prompt_data(portfolio_data)
@@ -453,8 +459,7 @@ def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = 
 
 def analyze_news_sentiment(news_data: list, check_islamic: bool, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr") -> dict:
     """Haber başlıkları ve özetlerini analiz edip Duyarlılık Skoru ve İslami Risk döner."""
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.2, google_api_key=api_key)
+    llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.2, max_output_tokens=500)
     
     news_context = []
     for i, item in enumerate(news_data[:5]):
