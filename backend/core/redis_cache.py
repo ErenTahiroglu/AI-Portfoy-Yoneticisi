@@ -122,3 +122,19 @@ def cache_close() -> None:
             _SESSION.close()
         except Exception:
             pass
+
+# ── Cache Stampede (İzdiham) Koruması ────────────────────────────────────
+import threading
+_locks = {}
+_lock_access = threading.Lock()
+
+def cache_get_lock(key: str) -> threading.Lock:
+    """
+    🛡️ Cache Stampede Mutex (Önleme Kilidi).
+    Ağır hesaplamalar öncesinde `with cache_get_lock(key):` kullanılarak
+    aynı anda yüzlerce thread'in DB'ye vurması engellenir.
+    """
+    with _lock_access:
+        if key not in _locks:
+            _locks[key] = threading.Lock()
+        return _locks[key]

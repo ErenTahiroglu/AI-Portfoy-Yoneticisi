@@ -55,8 +55,10 @@ export function initLivePrices() {
     };
 
     _socket.onclose = () => {
-        console.warn('[LivePrices] ⚠️ Bağlantı kapandı — 5s sonra yeniden deneniyor');
-        _reconnectTimer = setTimeout(initLivePrices, 5000);
+        // 🛡️ Thundering Herd (Sürü Fırtınası) Koruması: Jitter (Rastgele Milisaniye Sapması)
+        const jitter = Math.random() * 2000; 
+        console.warn(`[LivePrices] ⚠️ Bağlantı kapandı — ${(5000+jitter)/1000}s sonra yeniden deneniyor`);
+        _reconnectTimer = setTimeout(initLivePrices, 5000 + jitter);
     };
 
     _socket.onerror = (e) => {
