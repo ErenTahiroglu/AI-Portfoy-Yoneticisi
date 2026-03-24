@@ -166,3 +166,22 @@ async def get_portfolio_history(request: Request):
     except Exception as e:
         logger.error(f"Portfolio history fetch failed: {e}")
         return []
+
+@router.post("/logout", dependencies=[Depends(verify_jwt)])
+async def logout(request: Request):
+    """
+    Kullanıcı oturumunu kapatır ve token'ı Redis Blocklist'e ekler.
+    🛡️ Session Hijacking prevent.
+    """
+    authorization = request.headers.get("Authorization")
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        try:
+             from backend.core.redis_cache import cache_set
+             # Token'ı 24 Saatliğine kara listeye al (Max TTL simülasyonu)
+             cache_set(f"jwt_blacklist:{token}", "true", ttl=86400)
+             logger.info(f"User JWT blacklisted successfully on logout.")
+        except ImportError:
+             logger.warning("Redis support missing, token not listed.")
+             
+    return {"status": "success", "message": "Oturum başarıyla kapatıldı."}

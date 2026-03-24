@@ -62,12 +62,25 @@ def register_websocket_routes(app, router=None):
     from fastapi import WebSocket, WebSocketDisconnect
 
     @target.websocket("/ws/prices")
-    async def prices_ws(websocket: WebSocket):
+    async def prices_ws(websocket: WebSocket, token: Optional[str] = None):
         """
         Gerçek zamanlı fiyat stream endpoint'i.
-        Client'lar bağlandıktan sonra ticker listesini JSON ile gönderir:
-          {"action": "subscribe", "tickers": ["AAPL", "TSLA"]}
+        • 🛡️ CSWSH / DoW Koruması: Token validation REQUIRED before accept.
         """
+        if not token:
+             logger.warning("WebSocket: Connection attempt without token.")
+             await websocket.close(code=1008) # Policy Violation
+             return
+
+        # Token Doğrulama
+        from backend.api.auth import verify_token_string
+        try:
+             verify_token_string(token)
+        except Exception as e:
+             logger.warning(f"WebSocket: Invalid token connection attempt -> {e}")
+             await websocket.close(code=1008)
+             return
+
         await websocket.accept()
         _clients.add(websocket)
         logger.info(f"🔌 WebSocket client bağlandı. Toplam: {len(_clients)}")
@@ -93,8 +106,6 @@ def register_websocket_routes(app, router=None):
                 if msg.get("action") == "subscribe" and POLYGON_API_KEY:
                     tickers = ",".join(msg.get("tickers", []))
                     logger.info(f"📈 Ticker aboneliği: {tickers}")
-                    # Subscription mesajı Polygon'a iletilecek (fan-out mimarisinde
-                    # global subscription yönetimi gerekir — şimdilik log edilir)
         except WebSocketDisconnect:
             _clients.discard(websocket)
             logger.info(f"🔌 WebSocket client ayrıldı. Kalan: {len(_clients)}")
