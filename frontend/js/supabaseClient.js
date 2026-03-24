@@ -1,8 +1,8 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 // Supabase URL ve Anon Key
-const SUPABASE_URL = "https://zlggrmsolklhfgijcjnz.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_G67qSQ6JxmUYy3fuQAHb_Q_myhSebvW";
+const SUPABASE_URL = "https://ixzuenvihwlmzndvrdvr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nTICEh2yWv4VmmuUYI8-Mg_j6FchURZ";
 
 // İstemci Başlat (Client Init)
 let supabase = null;
