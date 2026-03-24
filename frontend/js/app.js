@@ -200,15 +200,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("av-api-key").addEventListener("blur", saveApiKeys);
 
     const handleModeToggle = async (e) => {
-        if (e.target.checked) {
-            const user = await window.SupabaseAuth.getUser();
-            if (!user) {
-                e.target.checked = false;
-                document.getElementById("login-modal").classList.remove("hidden");
-                if (typeof showToast === "function") showToast("Profesyonel mod için giriş yapmalısınız.", "warning");
-                return;
-            }
-        }
         AppState.viewMode = e.target.checked ? "pro" : "beginner";
     };
 

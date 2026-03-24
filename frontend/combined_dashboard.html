@@ -106,7 +106,7 @@
 
         <!-- Mode Switcher -->
         <div class="mode-switcher">
-            <span class="mode-label" id="label-beginner" style="color: var(--turquoise);">Başlangıç</span>
+            <span class="mode-label" id="label-beginner" style="color: var(--turquoise); cursor:pointer;" onclick="const t=document.getElementById('mode-toggle'); t.checked=false; t.dispatchEvent(new Event('change'))">Başlangıç</span>
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <div style="position: relative;">
                     <input id="mode-toggle" type="checkbox" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;" />
@@ -114,7 +114,7 @@
                     <div class="dot" style="position: absolute; left: 2px; top: 2px; background: white; width: 12px; height: 12px; border-radius: 50%;"></div>
                 </div>
             </label>
-            <span class="mode-label" id="label-professional" style="color: var(--text-muted);">Profesyonel</span>
+            <span class="mode-label" id="label-professional" style="color: var(--text-muted); cursor:pointer;" onclick="const t=document.getElementById('mode-toggle'); t.checked=true; t.dispatchEvent(new Event('change'))">Profesyonel</span>
         </div>
 
         <div class="navbar-actions">
