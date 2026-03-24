@@ -218,14 +218,14 @@
             </div>
 
             <!-- Scroll Indicator -->
-            <div style="margin-top: 3.5rem; display: flex; flex-direction: column; align-items: center; gap: 5px; color: #9ca3af; font-size: 0.75rem; cursor: pointer; animation: bounce 2s infinite;">
+            <div onclick="document.getElementById('pricing-cards').scrollIntoView({ behavior: 'smooth' }); this.style.opacity='0'; this.style.pointerEvents='none';" style="margin-top: 3.5rem; display: flex; flex-direction: column; align-items: center; gap: 5px; color: #9ca3af; font-size: 0.75rem; cursor: pointer; animation: bounce 2s infinite; transition: opacity 0.4s ease;">
                 <span style="letter-spacing: 1px; opacity: 0.6; font-weight: 700; font-size: 0.65rem;">DAHA FAZLASI</span>
                 <i class="fas fa-chevron-down" style="font-size: 0.85rem; color: #6366f1;"></i>
             </div>
         </section>
 
         <!-- Pricing Cards Section -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; max-width: 700px; margin: 2rem auto 3rem auto; width: 100%; padding: 0 2rem;">
+        <div id="pricing-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; max-width: 700px; margin: 2rem auto 3rem auto; width: 100%; padding: 0 2rem;">
             <!-- Başlangıç Planı -->
             <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 16px; padding: 2rem; text-align: center; backdrop-filter: blur(10px); transition: transform 0.3s;">
                 <div style="font-size: 0.75rem; color: #10b981; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Ücretsiz Deneyim</div>
