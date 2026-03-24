@@ -30,11 +30,14 @@ API sunucusu otomatik olarak `http://localhost:8000` portunda çalışacaktır.
 
 ---
 
-## 🛡️ Güvenlik ve Kurumsal Standartlar
-Bu proje üzerinde uygulanan son denetimlerle birlikte:
-- **İdempotens:** Ağır analiz süreçlerinde mükerrer basımlar (Double-click) engellenmiştir.
-- **Dağıtık İzleme (Tracing):** Ön yüzden backend'e kadar UUID tabanlı log korelasyon zinciri kurulmuştur.
-- **Graceful Shutdown & Fail-Fast:** Başlangıçta eksik ayarlar anında çöker, kapanırken kaynaklar sızıntısız temizlenir.
-- **Güvenlik Çitleri:** Swagger Docs canlı ortamda kapalıdır, CORS katı origin beyaz listesindedir.
+## 🛡️ Güvenlik ve Kurumsal Standartlar (Enterprise Grade)
+Bu proje üzerinde uygulanan son SRE ve Güvenlik denetimleriyle birlikte (Aşama 1-8):
+
+*   **Sıfır Güven (Zero-Trust):** WebSocket ve REST API’ler JWT IAM katmanı ile korunmaktadır. Oturum kapatmalar için Redis tabanlı otomatik **Blocklist** mekanizması bulunur.
+*   **İdempotens & Tracing:** Mükerrer emirler saniyeler içinde süzülür (Double-click guard) ve UUID tabanlı korelasyon log zinciri kurulmuştur.
+*   **Thundering Herd & Cache Stampede Guard:** Yeniden bağlanma (Reconnect) anlarında rastgele bileşenli **Exponential Jitter** uygulanmış ve RAM içi Mutex kilitleme ile cache fırtınaları engellenmiştir.
+*   **Hata Toleransı (Circuit Breaker):** Dış API kesintilerinde ML tahminleri askıya alınır ("Fallback") ve sistemin çökmesi önlenir.
+*   **Prompt Injection & PII Masking:** Dış haberler XML delimiters (`<news_item>`) ile süzülür, LLM’e gitmeden önce hassas finansal veriler maskelenerek tam veri güvenliği sağlanır.
+*   **Cold Start Toleransı (SRE):** Render "uykuya dalma" gecikmelerinde arayüz, kullanıcıyı dinamik sayaca bağlayarak uyarır ve ağ stresini azaltır.
 
 Saygılar.
