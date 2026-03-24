@@ -112,7 +112,36 @@ app.include_router(billing.router)
 # ── Root Redirect & Static Files (Frontend) ───────────────────────────────
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "message": "Portföy Analiz API aktif"}
+    """
+    Sistem Sağlık Kontrolü (Liveness Probe).
+    🛡️ Render/K8s çökme döngüsünü engeller, DB & Redis denetler.
+    """
+    health_status = {"status": "ok", "redis": "connected", "supabase": "connected"}
+    
+    # 1. Redis Check
+    from backend.core.redis_cache import cache_is_redis_active
+    if not cache_is_redis_active():
+        health_status["redis"] = "disconnected (fallback active)"
+
+    # 2. Supabase Check
+    try:
+        import httpx
+        from backend.core.scheduler import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+        headers = {
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
+        }
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            # Basit bir limit=1 query atarak bağlantıyı test edelim
+            resp = await client.get(f"{SUPABASE_URL}/rest/v1/portfolios?limit=1", headers=headers)
+            if resp.status_code not in (200, 206):
+                health_status["supabase"] = f"error (HTTP {resp.status_code})"
+                health_status["status"] = "degraded"
+    except Exception as e:
+         health_status["supabase"] = f"error: {str(e)}"
+         health_status["status"] = "critical"
+
+    return health_status
 
 @app.get("/")
 def read_root():

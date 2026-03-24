@@ -184,4 +184,57 @@ async def logout(request: Request):
         except ImportError:
              logger.warning("Redis support missing, token not listed.")
              
-    return {"status": "success", "message": "Oturum başarıyla kapatıldı."}
+@router.get("/export-data")
+async def export_data(request: Request):
+    """
+    Kullanıcının sistemdeki tüm verilerini (KVKK/GDPR Veri Taşınabilirliği) JSON formatında çıktılar.
+    """
+    user_id = request.state.user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User context required.")
+
+    results = {
+        "user_id": user_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "data": {}
+    }
+
+    try:
+        import httpx
+        from backend.core.scheduler import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+        
+        headers = {
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
+        }
+
+        async with httpx.AsyncClient() as client:
+            # 1. Portfolios
+            p_resp = await client.get(f"{SUPABASE_URL}/rest/v1/portfolios?user_id=eq.{user_id}", headers=headers)
+            results["data"]["portfolios"] = p_resp.json() if p_resp.status_code == 200 else []
+
+            # 2. Paper Trades
+            t_resp = await client.get(f"{SUPABASE_URL}/rest/v1/paper_trades?user_id=eq.{user_id}", headers=headers)
+            results["data"]["paper_trades"] = t_resp.json() if t_resp.status_code == 200 else []
+
+            # 3. Alerts
+            a_resp = await client.get(f"{SUPABASE_URL}/rest/v1/alerts?user_id=eq.{user_id}", headers=headers)
+            results["data"]["alerts"] = a_resp.json() if a_resp.status_code == 200 else []
+
+            # 4. User Settings
+            s_resp = await client.get(f"{SUPABASE_URL}/rest/v1/user_settings?user_id=eq.{user_id}", headers=headers)
+            results["data"]["user_settings"] = s_resp.json() if s_resp.status_code == 200 else []
+
+            # 5. Portfolio Snapshots
+            snap_resp = await client.get(f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?user_id=eq.{user_id}", headers=headers)
+            results["data"]["portfolio_snapshots"] = snap_resp.json() if snap_resp.status_code == 200 else []
+
+            # 6. LLM Usage Logs
+            llm_resp = await client.get(f"{SUPABASE_URL}/rest/v1/llm_usage_logs?user_id=eq.{user_id}", headers=headers)
+            results["data"]["llm_usage_logs"] = llm_resp.json() if llm_resp.status_code == 200 else []
+
+    except Exception as e:
+         logger.error(f"GDPR Export failed ({user_id}): {e}")
+         raise HTTPException(status_code=500, detail="Data export failed. Please try again later.")
+
+    return results
