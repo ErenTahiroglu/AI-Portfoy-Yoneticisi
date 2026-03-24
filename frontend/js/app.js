@@ -10,6 +10,9 @@ import { showComparison } from './components/Comparison.js';
 import { initCopilot, renderMacroAI } from './components/Chat.js';
 import { setupBacktestBindings, fetchAndRenderSignals, setupOptimization, setupRiskAnalysis, setupPaperTrades } from './components/Analysis.js';
 import { initAdminDashboard } from './components/AdminDashboard.js';
+import { runWizard } from './services/WizardService.js';
+import { updateHeroCards } from './components/HeroCardsComponent.js';
+import { renderHeatmap } from './components/HeatmapComponent.js';
 
 // ── Globale Bağlama (Backward Compatibility) ──────────────────────────────
 window.toggleNotifications = toggleNotifications;

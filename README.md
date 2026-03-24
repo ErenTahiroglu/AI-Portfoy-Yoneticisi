@@ -37,6 +37,8 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 *   **`tests/ui/`**: Puppeteer tabanlı otonom ekran görüntüsü ve görsel test otomasyonu.
 *   **`brand_assets/`**: Kurumsal logo, renk paletleri ve font guideline kalkanı.
 *   **`.claudemd`**: AI Workspace kalkanı, teknoloji yığını ve kesin mimari sınır kısıtlamaları.
+*   **🧩 Modüler Mimari (Puzzle)**: `services/` ve `components/` katmanları ile tam SRP (Single Responsibility) uyumu.
+
 
 ---
 

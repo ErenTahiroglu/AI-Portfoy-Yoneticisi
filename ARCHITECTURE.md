@@ -47,3 +47,23 @@ Kullanıcı arayüzden **"Portföyümü Analiz Et"** butonuna bastığında veri
 
 *   **Circuit Breaker (Şalter):** Dış finansal API (Polygon vb.) çöktüğünde sistem kilitlenmez, Falling-back modeline geçilir.
 *   **Stateless Scaling:** Backend kurgusu RAM'de session tutmaz, bu sayede Render üzerinde yatayda sonsuz çoğaltılabilir (Scale-out).
+
+---
+
+## 🧩 4. Modüler Mimari (Puzzle Architecture)
+
+Kod tabanının sürdürülebilirliği (Maintainability) ve Tek Sorumluluk Prensibi (SRP) için sistem monolitik yapılardan arındırılmıştır.
+
+### 🏛️ A. Frontend Modülerliği (`frontend/js/`)
+- **`services/`**: Ağ/Fetch (Network) ve harici API (örneğin AI Sihirbazı) orkestrasyonunu üstlenir.
+  - *Örn:* `WizardService.js`, `NewsService.js`, `ExportService.js`
+- **`components/`**: DOM manipülasyonu, HTML şablonları (Templates) ve UI render işlemlerini izole eder.
+  - *Örn:* `TechnicalsComponent.js`, `HeatmapComponent.js`
+- **`state/` (`app.js`):** Sayfa yaşam döngüsünü ve component'lerin reaktif re-render mekanizmalarını birbirine bağlar.
+
+### 🏛️ B. Backend Modülerliği (`backend/`)
+- **`services/`**: Router'lar üzerindeki ağır veri işleme/birleştirme logic’lerini soyutlar.
+  - *Örn:* `analysis_service.py` (DataFrame inşası ve Ticker analiz sarmalları)
+- **`api/routers/`**: Sadece HTTP endpoint trafiğini ve double-submit korumasını yönetir.
+- **`core/` & `analyzers/`**: Ağır matematiksel modelleri (Risk/Optimizasyon) barındıran çekirdek kütüphanedir.
+

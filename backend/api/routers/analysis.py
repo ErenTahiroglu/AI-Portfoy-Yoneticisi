@@ -214,18 +214,8 @@ async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest, reques
     await check_double_submit(request, req_body.model_dump(), "optimize")
     
     try:
-        from yahooquery import Ticker
-        from backend.core.optimization_engine import optimize_portfolio
-        t = Ticker(req_body.tickers)
-        hist = t.history(period="1y", adj_ohlc=True)
-        if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty): raise HTTPException(status_code=500, detail="Veri indirilemedi.")
-        price_df = hist['close'].unstack(level=0)
-        price_df.columns = [c.upper() for c in price_df.columns]
-        price_df.ffill(inplace=True); price_df.dropna(inplace=True)
-        returns_df = price_df.pct_change().dropna()
-        if returns_df.empty or len(returns_df) < 20: raise HTTPException(status_code=400, detail="Yetersiz veri.")
-        opt_results = await asyncio.to_thread(optimize_portfolio, returns_df, req_body.risk_free_rate)
-        return {"status": "success", "current_weights": req_body.weights or {t: 100.0 / len(req_body.tickers) for t in req_body.tickers}, "optimal_weights": opt_results.get("max_sharpe", {}), "min_volatility_weights": opt_results.get("min_volatility", {})}
+        from backend.services.analysis_service import optimize_portfolio_service
+        return await optimize_portfolio_service(req_body.tickers, req_body.risk_free_rate, req_body.weights)
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/risk-analysis", dependencies=[Depends(verify_jwt)])
@@ -236,15 +226,8 @@ async def risk_analysis_endpoint(req_body: PortfolioRiskRequest, request: Reques
     await check_double_submit(request, req_body.model_dump(), "risk")
     
     try:
-        from yahooquery import Ticker
-        from backend.analyzers.risk_analyzer import calculate_portfolio_risk
-        t = Ticker(req_body.tickers)
-        hist = t.history(period="1y", adj_ohlc=True)
-        price_df = hist['close'].unstack(level=0)
-        price_df.columns = [c.upper() for c in price_df.columns]
-        price_df.ffill(inplace=True); price_df.dropna(inplace=True)
-        returns_df = price_df.pct_change().dropna()
-        return await asyncio.to_thread(calculate_portfolio_risk, returns_df, req_body.weights)
+        from backend.services.analysis_service import calculate_portfolio_risk_service
+        return await calculate_portfolio_risk_service(req_body.tickers, req_body.weights)
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/predict/{ticker}", dependencies=[Depends(limiter.check)])

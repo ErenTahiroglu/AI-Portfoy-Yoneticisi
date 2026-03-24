@@ -14,7 +14,7 @@ if (!fs.existsSync(SCREENSHOT_DIR)) {
     console.log('🚀 Puppeteer Başlatılıyor...');
     const browser = await puppeteer.launch({
         headless: "new", // "new" is recommended for newer versions
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files']
     });
     
     const page = await browser.newPage();

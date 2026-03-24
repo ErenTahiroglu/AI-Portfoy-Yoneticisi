@@ -5,6 +5,8 @@
  * app.js içindeki appendResultItem mantığının izole edilmiş halidir.
  */
 
+import { renderTechnicals } from './TechnicalsComponent.js';
+
 export function createSummaryRow(res) {
     const fin = res.financials || {};
     const val = res.valuation || {};
@@ -167,8 +169,8 @@ export function createCard(res, idx) {
     let relPerfHTML = "";
     if (res.technicals && res.technicals.relative_performance) relPerfHTML = `<div class="relative-perf-container"><canvas id="relperf-${chartId}"></canvas></div>`;
 
-    // renderTechnicals is global
-    let techHTML = typeof renderTechnicals === "function" ? renderTechnicals(res.technicals) : ""; 
+    // renderTechnicals is imported
+    let techHTML = renderTechnicals ? renderTechnicals(res.technicals) : ""; 
 
     let returnTableHTML = "";
     if (fin.ay && Object.keys(fin.ay).length > 0) {

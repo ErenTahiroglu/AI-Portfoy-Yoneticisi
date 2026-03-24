@@ -43,61 +43,7 @@
 // ═══════════════════════════════════════
 // AI WIZARD
 // ═══════════════════════════════════════
-async function runWizard() {
-    const promptText = document.getElementById("wizard-input").value.trim();
-    if (!promptText) { showToast(t("toast.enterTickers") || "Lütfen sihirbaza bir talimat yazın", "warning"); return; }
-
-    const apiKey = document.getElementById("api-key").value;
-    if (!apiKey) { showToast(t("toast.noApiKey") || "AI Sihirbazı için Gemini API Anahtarı gereklidir (Ayarlar)", "warning"); return; }
-
-    const currModel = document.getElementById("model-select").value || "gemini-2.5-flash";
-    const btn = document.getElementById("btn-run-wizard");
-    const origText = btn.innerHTML;
-
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sihirbaz Düşünüyor...`;
-    btn.disabled = true;
-
-    try {
-        let jwtToken = "";
-        try {
-            const session = await window.SupabaseAuth.getValidSession();
-            if (session) jwtToken = session.access_token;
-        } catch (e) {
-            throw new Error(e.message);
-        }
-
-        const res = await fetch(`${API_BASE}/api/wizard`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${jwtToken}`
-            },
-            body: JSON.stringify({ prompt: promptText, api_key: apiKey, model: currModel, lang: getLang() })
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Makine öğrenimi servisi yanıt vermedi");
-
-        if (data.portfolio && Array.isArray(data.portfolio)) {
-            const tickerString = data.portfolio.map(p => `${p.ticker}:${p.weight}`).join(", ");
-            document.getElementById("ticker-input").value = tickerString;
-            showToast("Yapay Zeka portföyünüzü hazırladı! Analiz başlıyor...", "success");
-
-            document.getElementById("ticker-input").scrollIntoView({ behavior: "smooth", block: "center" });
-
-            setTimeout(() => {
-                document.getElementById("analyze-btn").click();
-            }, 800);
-        } else {
-            showToast("Geçerli bir portföy döndürülemedi.", "error");
-        }
-    } catch (err) {
-        showToast(`Sihirbaz Hatası: ${err.message}`, "error");
-    } finally {
-        btn.innerHTML = origText;
-        btn.disabled = false;
-    }
-}
+// runWizard has been moved to services/WizardService.js
 
 // ═══════════════════════════════════════
 // HEALTH CHECK
@@ -118,147 +64,14 @@ async function checkServerHealth() {
 // ═══════════════════════════════════════
 // DYNAMIC NEWS
 // ═══════════════════════════════════════
-async function loadNews(results) {
-    const wrap = document.getElementById("news-wrap");
-    const container = document.getElementById("news-container");
-
-    // Sadece geçerli ticker listesi
-    const tickers = results.filter(r => !r.error && r.ticker).map(r => r.ticker);
-    if (tickers.length === 0) {
-        wrap.classList.add("hidden");
-        return;
-    }
-
-    wrap.classList.remove("hidden");
-    const { createLoadingSpinnerCard } = await import('./components/CardComponent.js');
-    container.innerHTML = createLoadingSpinnerCard("Yapay zeka haberleri tarayıp portföyünüz için en önemlilerini seçiyor...");
-
-    let aKey = "";
-    if (localStorage.getItem("settingsParams")) {
-        try {
-            const sp = JSON.parse(await decryptData(localStorage.getItem("settingsParams")));
-            aKey = sp.geminiApiKey || "";
-        } catch { }
-    }
-    const currModel = localStorage.getItem("ai_model") || "gemini-2.5-flash";
-
-    try {
-        let jwtToken = "";
-        try {
-            const session = await window.SupabaseAuth.getValidSession();
-            if (session) jwtToken = session.access_token;
-        } catch (e) {
-            container.innerHTML = createMessageCard(`Güvenlik Hatası: ${e.message}`, "error");
-            return;
-        }
-
-        const res = await fetch(`${API_BASE}/api/news`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${jwtToken}` 
-            },
-            body: JSON.stringify({ tickers: tickers.slice(0, 5), api_key: aKey, model: currModel, lang: getLang() })
-        });
-
-        const data = await res.json();
-
-        const { createNewsCard, createMessageCard } = await import('./components/CardComponent.js');
-
-        if (!data.news || data.news.length === 0) {
-            container.innerHTML = createMessageCard("Portföydeki şirketler için kayda değer önemli bir haber bulunamadı.");
-            return;
-        }
-
-        container.innerHTML = ""; // Clear Previous
-        data.news.forEach(item => {
-            const cardNode = createNewsCard(item);
-            container.appendChild(cardNode);
-        });
-
-    } catch (err) {
-        const { createMessageCard } = await import('./components/CardComponent.js');
-        container.innerHTML = createMessageCard(`Haberler yüklenirken hata oluştu: ${err.message}`, "error");
-    }
-}
+// loadNews has been moved to services/NewsService.js
 
 // ═══════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════
-async function exportResults(format) {
-    if (!lastResults) { showToast(t("toast.noTickers"), "warning"); return; }
-    showToast(`${format.toUpperCase()} ${t("toast.exporting")}`, "info");
+// exportResults has been moved to services/ExportService.js
 
-    // Client-side Excel Export using SheetJS (XLSX)
-    if (format === 'excel' && typeof XLSX !== 'undefined') {
-        try {
-            const rows = lastResults.map(res => {
-                const fin = res.financials || {};
-                const val = res.valuation || {};
-                return {
-                    "Hisse/Fon": res.ticker || "",
-                    "Pazar": res.market || "",
-                    "Durum": res.status || "-",
-                    "Arındırma Oranı (%)": res.purification_ratio !== undefined ? res.purification_ratio : "-",
-                    "Borçluluk Oranı (%)": res.debt_ratio !== undefined ? res.debt_ratio : "-",
-                    "5Y Reel Getiri (%)": fin.s5 !== undefined ? fin.s5 : "-",
-                    "3Y Reel Getiri (%)": fin.s3 !== undefined ? fin.s3 : "-",
-                    "P/E": val.pe !== undefined ? val.pe : "-",
-                    "P/B": val.pb !== undefined ? val.pb : "-",
-                    "Beta": val.beta !== undefined ? val.beta : "-"
-                };
-            });
-
-            const ws = XLSX.utils.json_to_sheet(rows);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Portföy Analizi");
-            XLSX.writeFile(wb, "portfoy_analizi.xlsx");
-            showToast(t("toast.exported"), "success");
-            return;
-        } catch (err) {
-            console.error("XLSX Export Error:", err);
-        }
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/api/export/${format}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ results: lastResults, format }) });
-        if (!res.ok) throw new Error("Export failed");
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `portfoy_analizi.${format === "excel" ? "xlsx" : format}`;
-        document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
-        showToast(t("toast.exported"), "success");
-    } catch (err) { showToast(`Export hatası: ${err.message}`, "error"); }
-}
-
-async function exportPortfolioImage() {
-    const resultsElem = document.getElementById("results");
-    if (!lastResults || lastResults.length === 0) { showToast(t("toast.noTickers"), "warning"); return; }
-
-    showToast("Görsel hazırlanıyor...", "info");
-    try {
-        const canvas = await html2canvas(resultsElem, {
-            scale: 2,
-            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-body') || '#0f172a',
-            ignoreElements: (el) => el.classList.contains('toolbar-actions') // Hide buttons in screenshot
-        });
-
-        const url = canvas.toDataURL("image/png");
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `portfoy_analizi.png`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        showToast("Görsel indirildi!", "success");
-    } catch (err) {
-        console.error(err);
-        showToast(`Görsel oluşturma hatası: ${err.message}`, "error");
-    }
-}
+// exportPortfolioImage has been moved to services/ExportService.js
 
 // ═══════════════════════════════════════
 // MAIN ANALYSIS
