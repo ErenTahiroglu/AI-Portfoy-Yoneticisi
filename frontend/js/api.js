@@ -1,5 +1,7 @@
 // ── Global Correlation ID Tracer & Cold Start Warner ──
 (function() {
+    let coldStartWarningShown = false; // Debounce flag için
+
     const originalFetch = window.fetch;
     window.fetch = async function(...args) {
         let [resource, config] = args;
@@ -16,8 +18,12 @@
             let isSlow = false;
             const timer = setTimeout(() => {
                 isSlow = true;
-                if (typeof window.showToast === "function") {
+                if (!coldStartWarningShown && typeof window.showToast === "function") {
+                    coldStartWarningShown = true;
                     window.showToast("🚀 Sunucu uyandırılıyor olabilir (Render Cold Start), lütfen 15-30 sn bekleyin...", "info");
+                    
+                    // 30 saniye boyunca tekrar uyarı verilmesini engelle
+                    setTimeout(() => { coldStartWarningShown = false; }, 30000);
                 }
             }, 3000); // 3 sn yanıt gelmezse uyarı göster
 
