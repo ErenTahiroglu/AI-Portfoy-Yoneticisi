@@ -143,20 +143,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 // Giriş yapmış kullanıcılar için butonları "Uygulamaya Git" olarak güncelle
                 const actionBtn = document.getElementById("landing-action-btn");
                 if (actionBtn) {
-                    actionBtn.innerHTML = 'Uygulamaya Git <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>';
+                    actionBtn.innerHTML = 'Giriş Yap / Kayıt Ol <i class="fas fa-sign-in-alt" style="margin-left: 8px;"></i>';
                     actionBtn.onclick = () => {
-                        if (landing) landing.style.display = "none";
-                        if (sidebar) sidebar.style.display = "flex";
-                        if (mainContent) mainContent.style.display = "block";
+                        document.getElementById('login-modal').classList.remove('hidden');
                     };
                 }
                 const navBtn = document.getElementById("landing-nav-login-btn");
                 if (navBtn) {
-                    navBtn.innerText = "Uygulamaya Git";
+                    navBtn.innerText = "Giriş Yap / Kayıt Ol";
                     navBtn.onclick = () => {
-                        if (landing) landing.style.display = "none";
-                        if (sidebar) sidebar.style.display = "flex";
-                        if (mainContent) mainContent.style.display = "block";
+                        document.getElementById('login-modal').classList.remove('hidden');
                     };
                 }
             } else {

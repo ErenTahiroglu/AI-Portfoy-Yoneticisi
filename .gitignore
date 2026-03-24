@@ -78,3 +78,7 @@ out.txt
 # Database files
 *.db
 *.sqlite3
+
+# Puppeteer & Automated Testing
+.cache/
+/tests/ui/screenshots/

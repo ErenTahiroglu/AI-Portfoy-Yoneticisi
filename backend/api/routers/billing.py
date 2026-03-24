@@ -46,6 +46,17 @@ async def billing_webhook(
     
     if not x_webhook_signature or not x_webhook_timestamp:
          logger.warning("Billing Webhook: Missing required verification headers.")
+         # 🔴 Red Team Güvenlik Denetimi - Aşama 5
+
+# - [x] **1. Analiz ve Denetim (Reconnect, Cache Stampede, Leaks)** <!-- id: 220 -->
+#   - [x] Reconnect Jitter ve WebSocket Çöküş Analizi (`api.js`) <!-- id: 221 -->
+#   - [x] Cache Stampede ve DB Pool Analizi (`redis_cache.py`) <!-- id: 222 -->
+#   - [x] Frontend ve Config Secret Sızıntı Analizi (`.env.example`) <!-- id: 223 -->
+# - [x] **2. Raporlama (Audit Report v20)** <!-- id: 224 -->
+# - [x] **3. Onay Sonrası Dayanıklılık İyileştirmeleri** <!-- id: 225 -->
+
+# ---
+# *Durum:* Tüm operasyonel strese dayanıklılık kalkanları (WebSocket Jitter, Cache Stampede Guard) tamamlandı.
          raise HTTPException(status_code=400, detail="Missing signature headers.")
 
     # 1. 🛡️ Replay Attack Protection (Timestamp Validity)

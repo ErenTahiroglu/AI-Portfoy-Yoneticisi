@@ -35,7 +35,9 @@ Geleneksel analizlerin aksine, canlı veri akışları ve çoklu-ajan asistan (C
 
 *   **`/frontend`**: Vanilla Javascript, CSS3 ve HTML5. Dinamik yükleme modals ve Cold Start UI toleransları.
 *   **`/backend`**: FastAPI (Python 3.11). Asenkron I/O akışları ve arka plan metrik işleyiciler. İzolasyonlu proxy operasyonları.
-*   **`/infrastructure`**: Statik veritabanı `schema.sql` ve Docker konfigürasyonları.
+*   **`tests/ui/`**: Puppeteer tabanlı otonom ekran görüntüsü ve görsel test otomasyonu.
+*   **`brand_assets/`**: Kurumsal logo, renk paletleri ve font guideline kalkanı.
+*   **`.claudemd`**: AI Workspace kalkanı, teknoloji yığını ve kesin mimari sınır kısıtlamaları.
 
 ---
 
@@ -57,6 +59,21 @@ docker-compose up --build
 ```
 *   **API Gateway:** `http://localhost:8000`
 *   **Statik UI Dağılımı:** `http://localhost:8000/ui`
+
+---
+
+## 🧪 Otonom UI/UX Testleri
+
+Arayüzün görsel bütünlüğünü otomatik test etmek ve ekran görüntüleri almak için Puppeteer kullanılmaktadır:
+
+```bash
+# 1. Node Bağımlılıklarını Kurun (Kök dizinde)
+npm install
+
+# 2. Otonom Ekran Görüntüsü Botunu Çalıştırın
+npm run test:ui
+```
+*Görsel çıktılar `tests/ui/screenshots/` klasörüne kaydedilir.*
 
 ---
 

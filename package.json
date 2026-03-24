@@ -1,0 +1,26 @@
+{
+  "name": "ai-portfoy-yoneticisi",
+  "version": "1.0.0",
+  "description": "**Yapay Zeka Destekli, Kurumsal Standartlarda Akıllı Portföy Analiz ve Risk Yönetimi Platformu**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:ui": "node tests/ui/screenshot_bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi/issues"
+  },
+  "homepage": "https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi#readme",
+  "dependencies": {
+    "extract-zip": "^2.0.1",
+    "puppeteer": "^24.40.0"
+  }
+}

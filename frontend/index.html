@@ -414,12 +414,12 @@
             
             <!-- Mode Switcher -->
             <div class="mode-switcher" style="margin-left:auto; margin-right: 15px; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); padding:5px 12px; border-radius:20px; z-index:10;">
-                <span style="font-size:0.75rem; color:var(--text-muted);" id="lbl-beginner">Sade</span>
+                <span style="font-size:0.75rem; color:var(--text-muted);" id="lbl-beginner">Başlangıç</span>
                 <label class="switch" style="position:relative; display:inline-block; width:34px; height:18px; margin:0;">
                     <input type="checkbox" id="ui-mode-toggle" style="position:absolute; opacity:0; width:0; height:0;">
                     <span class="slider round" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#333; transition:.4s; border-radius:34px;"></span>
                 </label>
-                <span style="font-size:0.75rem; color:var(--primary);" id="lbl-pro">Quant</span>
+                <span style="font-size:0.75rem; color:var(--primary);" id="lbl-pro">Profesyonel</span>
             </div>
             
             <div class="auth-controls" id="auth-controls" style="margin-left:auto; display:flex; align-items:center;">
@@ -481,7 +481,7 @@
             <button class="tab-btn" data-target="file-card"
                 style="padding:0.6rem 1rem; border-radius:8px; border:1px solid var(--glass-border); background:var(--card-bg); color:var(--text-muted); font-weight:600; cursor:pointer;"><i
                     class="fas fa-file-upload"></i> <span data-i18n="tab.file">Dosya Yükle</span></button>
-            <button class="tab-btn" data-target="wizard-card"
+            <button class="tab-btn pro-only" data-target="wizard-card"
                 style="padding:0.6rem 1rem; border-radius:8px; border:1px solid var(--glass-border); background:var(--card-bg); color:var(--text-muted); font-weight:600; cursor:pointer;"><i
                     class="fas fa-magic"></i> <span data-i18n="tab.wizard">AI Sihirbazı</span></button>
         </div>
@@ -526,38 +526,7 @@
                 </div>
             </div>
 
-            <!-- AI Wizard -->
-            <div class="tab-content hidden" id="wizard-card"
-                style="position:relative; overflow:hidden; border-radius:8px; border: 1px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(2,132,199,0.05)); padding:1rem;">
-                <div
-                    style="position:absolute; top:-50px; right:-50px; width:150px; height:150px; background:radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%); filter:blur(20px); pointer-events:none;">
-                </div>
-
-                <h3 style="margin-bottom:0.75rem; font-size:0.85rem; font-weight:700;"><i class="fas fa-magic"
-                        style="color:#a78bfa"></i> AI Portföy Sihirbazı</h3>
-                <textarea id="wizard-input" rows="3" class="input"
-                    placeholder="Örnek: 'Temettü verimi yüksek 5 BIST hissesi' veya 'Teknoloji ağırlıklı agresif ABD portföyü'"
-                    style="width:100%; padding:0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
-
-                <div class="wizard-chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem;">
-                    <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText"
-                        style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Temettü
-                        verimi yüksek 5 BIST hissesi</button>
-                    <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText"
-                        style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Teknoloji
-                        ağırlıklı agresif ABD portföyü</button>
-                    <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText"
-                        style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Enflasyona
-                        karşı koruyan defansif fonlar</button>
-                </div>
-
-                <button class="btn btn-primary" id="btn-run-wizard"
-                    style="width:100%; margin-top:1rem; padding:0.85rem; background:linear-gradient(135deg, #7c3aed, #0284c7); border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer; box-shadow:0 0 15px rgba(124, 58, 237, 0.4);">
-                    <i class="fas fa-wand-magic-sparkles"></i> Sihirbazı Çalıştır
-                </button>
-                <p class="input-helper" style="margin-top:0.75rem; font-size:0.72rem; color:var(--text-muted);">Yapay
-                    zeka asistanı isteklerinize göre en uygun portföyü tasarlar.</p>
-            </div>
+            <!-- AI Wizard content moved to results section -->
         </div>
 
         <!-- ANALYZE BUTTON -->
@@ -821,8 +790,22 @@
                         </div>
                     </div>
 
+                    <!-- AI Wizard Card (Moved from Input) -->
+                    <div class="scenario-card premium-card pro-only" id="wizard-card" style="grid-column: 1 / -1; margin-bottom: 1.5rem; position:relative; overflow:hidden; border: 1px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(2,132,199,0.05)); padding:1.5rem;">
+                        <div style="position:absolute; top:-50px; right:-50px; width:150px; height:150px; background:radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%); filter:blur(20px); pointer-events:none;"></div>
+                        <h3 style="margin-bottom:0.75rem; font-size:0.85rem; font-weight:700;"><i class="fas fa-magic" style="color:#a78bfa"></i> AI Portföy Sihirbazı</h3>
+                        <textarea id="wizard-input" rows="3" class="input" placeholder="Örnek: 'Temettü verimi yüksek 5 BIST hissesi' veya 'Teknoloji ağırlıklı agresif ABD portföyü'" style="width:100%; padding:0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
+                        <div class="wizard-chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem;">
+                            <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText" style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Temettü verimi yüksek 5 BIST hissesi</button>
+                            <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText" style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Teknoloji ağırlıklı agresif ABD portföyü</button>
+                            <button class="chip-btn" onclick="document.getElementById('wizard-input').value=this.innerText" style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); padding:0.4rem 0.8rem; border-radius:1rem; color:var(--text-main); font-size:0.75rem; cursor:pointer; transition:all 0.2s;">Enflasyona karşı koruyan defansif fonlar</button>
+                        </div>
+                        <button class="btn btn-primary" id="btn-run-wizard" style="width:100%; margin-top:1rem; padding:0.85rem; background:linear-gradient(135deg, #7c3aed, #0284c7); border:none; border-radius:8px; color:white; font-weight:700; cursor:pointer; box-shadow:0 0 15px rgba(124, 58, 237, 0.4);"><i class="fas fa-wand-magic-sparkles"></i> Sihirbazı Çalıştır</button>
+                        <p class="input-helper" style="margin-top:0.75rem; font-size:0.72rem; color:var(--text-muted);">Yapay zeka asistanı isteklerinize göre en uygun portföyü tasarlar.</p>
+                    </div>
+
                     <!-- Backtest & Simulation Card -->
-                    <div class="scenario-card premium-card" style="grid-column: 1 / -1;">
+                    <div class="scenario-card premium-card pro-only" style="grid-column: 1 / -1;">
                         <div class="card-glow"></div>
                         <div class="card-inner">
                             <div class="card-head">
@@ -857,7 +840,7 @@
                     </div>
 
                     <!-- Dividend FI/RE Card -->
-                    <div class="scenario-card premium-card">
+                    <div class="scenario-card premium-card pro-only">
                         <div class="card-glow"></div>
                         <div class="card-inner">
                             <div class="card-head">
@@ -909,7 +892,7 @@
             </div>
 
             <!-- PV Simulation & Drawdown -->
-            <div id="pv-simulation-wrap" class="hidden" style="margin-bottom:2rem;">
+            <div id="pv-simulation-wrap" class="hidden pro-only" style="margin-bottom:2rem;">
                 <div class="section-header">
                     <h3 data-i18n="results.pvSim"><i class="fas fa-history"></i> Portföy Simülasyonu (PV Risk Analizi)</h3>
                     <p class="section-desc" data-i18n="results.pvSimDesc">Son 5 yıllık geçmiş performansa dayalı risk ve getiri analizi.</p>
@@ -1011,12 +994,12 @@
                     <div class="chart-container"><canvas id="sector-chart"></canvas></div>
                 </div>
                 <!-- Correlation Matrix -->
-                <div class="extra-card hidden" id="correlation-card">
+                <div class="extra-card hidden pro-only" id="correlation-card">
                     <h3><i class="fas fa-th"></i> <span data-i18n="results.correlation">Korelasyon Matrisi</span></h3>
                     <div id="correlation-content"></div>
                 </div>
                 <!-- Monte Carlo -->
-                <div class="extra-card hidden" id="monte-carlo-card">
+                <div class="extra-card hidden pro-only" id="monte-carlo-card">
                     <h3><i class="fas fa-random"></i> <span data-i18n="monte.title">Monte Carlo Simülasyonu (1
                             Yıl)</span></h3>
                     <div class="chart-container"><canvas id="monte-carlo-chart"></canvas></div>
