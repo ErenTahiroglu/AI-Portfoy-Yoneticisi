@@ -384,10 +384,11 @@ async def generate_chat_response(messages: list, context: dict, api_key: str, mo
             return "Kota sınırı aşıldı. Lütfen birkaç dakika bekleyin."
         return f"Üzgünüm, şu an bağlantı kuramıyorum (CIO Hatası: {error_msg})"
 
-def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr"):
+def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr", user_id: str = None):
     """
     Tüm portföyün makro analizini (Riskler, Korelasyon, Dengeleme) streaming (generator) olarak döndürür.
     """
+    from langchain_google_genai import ChatGoogleGenerativeAI
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
     
     # 🛡️ PII ve Bakiye Maskeleme
@@ -420,10 +421,29 @@ def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = 
     Dil talimatı: { "Respond entirely in English using beautiful Markdown formatting." if lang == "en" else "Sonuçları her zaman Türkçe üret ve Markdown formatını güzel kullan." }
     """
     
+    full_text = ""
     try:
         for chunk in llm.stream(prompt):
             if chunk.content:
+                full_text += chunk.content
                 yield chunk.content
+                
+        # 🕰️ End of stream SRE logging
+        if user_id:
+             try:
+                 mock_class = type('MockResponse', (object,), {})
+                 resp = mock_class()
+                 resp.response_metadata = {
+                     "usage_metadata": {
+                         "prompt_tokens": llm.get_num_tokens(prompt),
+                         "candidates_tokens": llm.get_num_tokens(full_text)
+                     }
+                 }
+                 import asyncio
+                 asyncio.create_task(_log_usage_async(user_id, resp, prompt_text=prompt[:200]))
+             except Exception as e:
+                 logger.error(f"Stream usage log failed: {e}")
+                 
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
@@ -440,9 +460,9 @@ def analyze_news_sentiment(news_data: list, check_islamic: bool, api_key: str, m
     for i, item in enumerate(news_data[:5]):
         title = item.get("title", "Başlık yok")
         summary = item.get("summary", "Özet yok")
-        news_context.append(f"[{i}] BAŞLIK: {title} | ÖZET: {summary}")
+        news_context.append(f"<news_item>\n[Başlık]: {title}\n[Özet]: {summary}\n</news_item>")
         
-    context_str = "\n".join(news_context) if news_context else "Haber bulunamadı."
+    context_str = f"<news_list>\n" + "\n".join(news_context) + "\n</news_list>" if news_context else "Haber bulunamadı."
     
     islamic_prompt = "Ayrıca haberleri İslami finans ilkelerine (helal kazanç, faizsizlik vb.) aykırı bir 'risk' teşkil edip etmediği açısından incele. 'islamic_risk_flag' ve 'risk_reason' değerlerini buna göre belirle." if check_islamic else "İslami kontrol kapalıdır, 'islamic_risk_flag' false ve 'risk_reason' 'Kontrol kapalı' bırakabilirsiniz."
 

@@ -34,6 +34,11 @@ export function initCopilot() {
     if (closeBtn) closeBtn.addEventListener("click", () => widget.classList.add("hidden"));
     
     function appendMsg(text, isUser) {
+        // 🛡️ SRE DOM Pruning to prevent Memory Leaks in long sessions
+        while (body.children.length >= 50) {
+            body.removeChild(body.firstChild);
+        }
+
         const div = document.createElement("div");
         div.className = `copilot-msg ${isUser ? 'user-msg' : 'ai-msg'}`;
         div.innerHTML = isUser ? text : (typeof marked !== "undefined" ? marked.parse(text) : text); 
@@ -45,6 +50,17 @@ export function initCopilot() {
         const text = input.value.trim();
         if (!text) return;
         
+        // 🛡️ SRE Stale State / Slippage Guard on wakeup
+        if (window.lastPricesUpdatedAt) {
+            const diff = Date.now() - window.lastPricesUpdatedAt;
+            if (diff > 5 * 10 * 1000) { // 50 saniye (Sık güncellenen piyasa için daha hassas)
+                if (typeof showToast === "function") {
+                    showToast("🚀 Canlı fiyatlar güncel değil (Stale). WebSocket yeniden bağlanıyor, lütfen bekleyin.", "warning");
+                }
+                return;
+            }
+        }
+
         const apiKey = document.getElementById("api-key").value;
         if (!apiKey) {
             if (typeof showToast === "function") showToast("AI bağlantısı için API anahtarı gereklidir.", "warning");

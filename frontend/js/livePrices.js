@@ -89,6 +89,9 @@ function _sendSubscribe(tickers) {
 function _handleTick(msg) {
     if (msg.ev !== 'T') return; // Sadece Trade event'leri işle
 
+    // 🛡️ SRE Stale State Tracking
+    window.lastPricesUpdatedAt = Date.now();
+
     const ticker = msg.sym;
     const price  = msg.p;   // Price
     const prev   = _priceCache[ticker];

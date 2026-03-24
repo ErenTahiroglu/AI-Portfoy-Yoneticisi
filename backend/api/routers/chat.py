@@ -26,11 +26,14 @@ async def analyze_macro_endpoint(request: Request):
         if not api_key:
             raise HTTPException(status_code=400, detail="Gemini API Key is required")
 
+        user = getattr(request.state, "user", None)
+        user_id = user["sub"] if user else None
+
         from backend.core.ai_agent import generate_macro_advice
 
         def event_generator():
             try:
-                for chunk in generate_macro_advice(portfolio, api_key, model, lang):
+                for chunk in generate_macro_advice(portfolio, api_key, model, lang, user_id=user_id):
                     yield f"data: {json.dumps({'chunk': chunk}, ensure_ascii=False)}\n\n"
                 yield "data: [DONE]\n\n"
             except Exception as e:
