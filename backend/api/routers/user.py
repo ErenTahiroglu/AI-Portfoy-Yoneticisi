@@ -238,3 +238,80 @@ async def export_data(request: Request):
          raise HTTPException(status_code=500, detail="Data export failed. Please try again later.")
 
     return results
+
+@router.get("/portfolio", dependencies=[Depends(verify_jwt)])
+async def get_portfolio(request: Request):
+    """Kullanıcının güncel portföy dökümünü (tickers) getirir."""
+    user_id = request.state.user.get("sub")
+    if not user_id: 
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    supa_url = os.getenv('SUPABASE_URL', '')
+    supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+    if not supa_url or not supa_key: return {"tickers": []}
+
+    url = f"{supa_url}/rest/v1/portfolios?user_id=eq.{user_id}"
+    headers = { "apikey": supa_key, "Authorization": f"Bearer {supa_key}" }
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data: return data[0]
+        return {"tickers": []}
+    except Exception as e:
+        logger.error(f"Portfolio fetch failed: {e}")
+        return {"tickers": []}
+
+@router.post("/portfolio", dependencies=[Depends(verify_jwt)])
+async def save_portfolio(request: Request):
+    """Kullanıcının portföyünü (tickers) güvenli bir şekilde kaydeder/günceller."""
+    user_id = request.state.user.get("sub")
+    if not user_id: 
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        payload = await request.json()
+        if "tickers" not in payload:
+            raise HTTPException(status_code=400, detail="Missing tickers")
+
+        supa_url = os.getenv('SUPABASE_URL', '')
+        supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+        if not supa_url or not supa_key:
+            raise HTTPException(status_code=500, detail="DB Config Missing")
+
+        from datetime import datetime, timezone
+        body = {
+            "user_id": user_id,
+            "tickers": payload["tickers"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+
+        # 🛡️ PostgREST Upsert (Conflict on user_id)
+        # Prefer: resolution=merge-duplicates veya direct upsert can be used.
+        # Alternatif: POST with resolution=merge-duplicates
+        headers = {
+            "apikey": supa_key,
+            "Authorization": f"Bearer {supa_key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates" 
+        }
+
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(f"{supa_url}/rest/v1/portfolios", json=body, headers=headers)
+            if resp.status_code in (200, 201):
+                return {"status": "success"}
+            else:
+                logger.error(f"Portfolio upsert error: {resp.status_code} - {resp.text}")
+                # Fallback to PATCH if merge fails or unsupported
+                patch_url = f"{supa_url}/rest/v1/portfolios?user_id=eq.{user_id}"
+                patch_headers = headers.copy()
+                patch_headers["Prefer"] = "return=minimal"
+                patch_resp = await client.patch(patch_url, json={"tickers": payload["tickers"], "updated_at": body["updated_at"]}, headers=patch_headers)
+                if patch_resp.status_code in (200, 204):
+                    return {"status": "success"}
+                raise HTTPException(status_code=500, detail="Database write failed")
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=400, detail=str(e))

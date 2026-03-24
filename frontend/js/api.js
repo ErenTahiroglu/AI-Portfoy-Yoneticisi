@@ -1,4 +1,4 @@
-// ── Global Correlation ID Tracer (Tracing) ──
+// ── Global Correlation ID Tracer & Cold Start Warner ──
 (function() {
     const originalFetch = window.fetch;
     window.fetch = async function(...args) {
@@ -11,6 +11,24 @@
                 config.headers["X-Correlation-ID"] = crypto.randomUUID();
             }
             args[1] = config;
+
+            // 🕰️ SRE Cold Start Warning Timer
+            let isSlow = false;
+            const timer = setTimeout(() => {
+                isSlow = true;
+                if (typeof window.showToast === "function") {
+                    window.showToast("🚀 Sunucu uyandırılıyor olabilir (Render Cold Start), lütfen 15-30 sn bekleyin...", "info");
+                }
+            }, 3000); // 3 sn yanıt gelmezse uyarı göster
+
+            try {
+                const response = await originalFetch.apply(this, args);
+                clearTimeout(timer);
+                return response;
+            } catch (err) {
+                clearTimeout(timer);
+                throw err;
+            }
         }
         return originalFetch.apply(this, args);
     };
