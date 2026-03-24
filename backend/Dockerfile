@@ -8,14 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Bağımlılıkları kopyala ve kur
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Tüm dosyaları kopyala
 COPY . .
-
-# Çalışma dizinini backend yap
-WORKDIR /app/backend
 
 EXPOSE 8000
 
