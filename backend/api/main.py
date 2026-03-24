@@ -143,6 +143,19 @@ async def health_check():
 
     return health_status
 
+@app.get("/api/metrics")
+async def get_metrics():
+    """
+    📊 Uygulama Telemetri Verileri (Monitoring).
+    🛡️ Anlık aktif WebSocket bağlantı sayılarını ve sağlık özetini döner.
+    """
+    from backend.api.websocket import _clients
+    from datetime import datetime, timezone
+    return {
+        "active_websocket_connections": len(_clients),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 @app.get("/")
 def read_root():
     return RedirectResponse(url="/ui")

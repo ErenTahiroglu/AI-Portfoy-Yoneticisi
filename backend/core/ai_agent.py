@@ -292,6 +292,22 @@ async def run_researcher_agent(portfolio_summary: str, api_key: str, model_name:
     except Exception as e:
         return f"Researcher Agent Hatası: {str(e)}"
 
+def _sanitize_prompt_data(data):
+    """
+    🛡️ LLM'e gitmeden önce hassas finansal bakiyeleri (Tam değerler) maskeler veya çıkarır.
+    """
+    if isinstance(data, dict):
+        cleaned = {}
+        for k, v in data.items():
+            # Filtreye takılacak hassas anahtarlar
+            if k in ("total_value", "cash_balance", "user_id", "email", "cost_usd"):
+                continue 
+            cleaned[k] = _sanitize_prompt_data(v)
+        return cleaned
+    elif isinstance(data, list):
+        return [_sanitize_prompt_data(item) for item in data]
+    return data
+
 async def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr", user_id: str = None) -> str:
     """Yüzen Chatbot (Copilot) için Çoklu Ajan (CIO-Orkestratör) mimarisiyle yanıt üretir."""
     
@@ -318,7 +334,9 @@ async def generate_chat_response(messages: list, context: dict, api_key: str, mo
                 filtered_results.append(safe_item)
             safe_context["results"] = filtered_results
 
-    portfolio_summary = json.dumps(safe_context, indent=2, ensure_ascii=False)
+    # 🛡️ PII ve Bakiye Maskeleme
+    cleaned_context = _sanitize_prompt_data(safe_context)
+    portfolio_summary = json.dumps(cleaned_context, indent=2, ensure_ascii=False)
     
     # Alt Ajanları Paralel Olarak Çalıştır (Speedup)
     import asyncio
@@ -372,8 +390,9 @@ def generate_macro_advice(portfolio_data: dict, api_key: str, model_name: str = 
     """
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.3, google_api_key=api_key)
     
-    # Portföy özetini sıkıştır
-    summary_str = json.dumps(portfolio_data, indent=2, ensure_ascii=False)
+    # 🛡️ PII ve Bakiye Maskeleme
+    cleaned_data = _sanitize_prompt_data(portfolio_data)
+    summary_str = json.dumps(cleaned_data, indent=2, ensure_ascii=False)
     
     prompt = f"""
     Sen, büyük bir varlık yönetimi şirketinde çalışan Baş Yatırım Stratejistisin (CIO).
