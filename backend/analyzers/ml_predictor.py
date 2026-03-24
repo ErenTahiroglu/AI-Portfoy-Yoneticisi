@@ -72,7 +72,21 @@ def predict_price(ticker: str) -> dict:
 
         current_price = float(df["y"].iloc[-1])
 
-        # ── 2. İstatistiksel Hesaplamalar ─────────────────────────────────
+        # ── 2. Veri Zehirlenmesi / Anomali Filtresi (Outlier Detection) ──
+        returns = df["y"].pct_change().dropna()
+        # %30'dan fazla günlük değişimler (kriptolar hariç) şüpheli veri pikidir (split/hata)
+        is_crypto = ticker.endswith("-USD")
+        anomaly_threshold = 0.50 if is_crypto else 0.25 
+        
+        anomalies = returns[returns.abs() > anomaly_threshold]
+        if not anomalies.empty:
+             logger.warning(f"⚠️ [{ticker}] Veri Zehirlenmesi/Anomali Tespit Edildi! (%{anomaly_threshold*100}+ devingenlik). Tahmin durduruluyor.")
+             return {
+                 "ticker": ticker, 
+                 "error": f"Veri setinde aşırı anomali tespit edildi (%{round(anomalies.iloc[-1]*100,2)}). Tahmin askıya alındı.",
+                 "enabled": True
+             }
+
         series = df["y"]
         
         # EMA (Üstel Hareketli Ortalama) - Son trendi yakalamak için
@@ -89,14 +103,12 @@ def predict_price(ticker: str) -> dict:
             momentum = 0.0
 
         # Volatilite (Günlük getiri standart sapması)
-        returns = series.pct_change().dropna()
         daily_vol = float(returns.std()) # Günlük oynaklık oranı (Örn: 0.02)
         if pd.isna(daily_vol) or daily_vol < 0:
             daily_vol = 0.02 # Safe baseline volatility
         
         # ── 3. 7 Günlük Projeksiyon ───────────────────────────────────────
         proj_days = 7
-        is_crypto = ticker.endswith("-USD")
         
         # Gelecekteki Tarihleri Üret (Kripto için Gün, Hisse için İş günü)
         freq = "D" if is_crypto else "B"
@@ -109,7 +121,6 @@ def predict_price(ticker: str) -> dict:
         # Volatilitenin gün sayısı kareköküyle büyümesi kuralı
         for i in range(1, proj_days + 1):
             # Ağırlıklı kombinasyon: EMA'ya doğru çekilme + Mevcut Momentum
-            # Basit formül: Fiyat + i*Momentum + (EMA - Fiyat)*0.1
             step_target = target_price + momentum + (curr_ema - target_price) * 0.1
             
             # Volatilite Bantları (Standart Hata)
@@ -128,14 +139,20 @@ def predict_price(ticker: str) -> dict:
         upper_bound = plot_data[-1]["yhat_upper"]
         change_pct = ((target_price - current_price) / current_price) * 100
 
-        # ── 4. Güven Skoru (Confidence) ───────────────────────────────────
-        # Volatilite ne kadar düşükse güven o kadar yüksek
-        # Yıllıklaştırılmış volatilite gibi bir rasyoya ters orantı
-        vol_factor = daily_vol * 100 # Yüzde cinsinden (Örn: 2.5)
+        # ── 4. Güven Skoru (Confidence) & Drift Fallback ───────────────────
+        vol_factor = daily_vol * 100
         
-        # %1 volatilite -> 90 güven, %5 volatilite -> 30 güven gibi bir ölçeklendirme
         if vol_factor <= 0: confidence = 95.0
         else: confidence = max(10, min(95, 100 - (vol_factor * 15)))
+
+        # ⚡ DRIFT GUARD: Güven skoru fırlarsa/çürürse klasik analizlere dön (Fallback)
+        if confidence < 40.0:
+            logger.warning(f"📉 [{ticker}] Model Drift / Denge Bozulması! Güven Skoru: %{confidence}. Tahmin reddediliyor.")
+            return {
+                "ticker": ticker,
+                "error": f"Yüksek oynaklık nedeniyle tahmin güvenilir değil (%{round(confidence,1)}). Klasik analize güveniniz.",
+                "enabled": True
+            }
 
         # ── 5. Yön Belirleme ─────────────────────────────────────────────
         if change_pct > 1.0: direction = "UP"
