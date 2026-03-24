@@ -11,8 +11,7 @@
 
 ## 📖 Genel Bakış
 
-AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıklarını **Gemini (Yapay Zeka)** motoruyla saniyeler içinde analiz eden, optimize eden ve risk süzgecinden geçiren modern bir web uygulamasıdır. 
-Geleneksel analizlerin aksine, canlı veri akışları ve çoklu-ajan asistan (CIO Orchestrator) mimarisiyle yatırımcıya harekete geçebileceği net tavsiyeler üretir.
+AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıklarını **Gemini / Groq (Yapay Zeka)** motorlarıyla saniyeler içinde analiz eden, optimize eden ve risk süzgecinden geçiren modern bir web uygulamasıdır. Geleneksel analizlerin aksine, canlı veri akışları ve çoklu-ajan asistan (CIO Orchestrator) mimarisiyle yatırımcıya harekete geçebileceği net tavsiyeler üretir.
 
 ---
 

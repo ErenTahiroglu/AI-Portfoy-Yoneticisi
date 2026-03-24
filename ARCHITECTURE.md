@@ -36,6 +36,7 @@ Kullanıcı arayüzden **"Portföyümü Analiz Et"** butonuna bastığında veri
 4.  **Önbellek Sorgulama (Cache):** Analiz sonucu talep edilmeden önce Redis Cache sorgulanır. Cache Miss olursa **Mutex Locking** devreye girerek Cache Stampede önlenir.
 5.  **Analitik & AI Orkestrasyonu (`ai_agent.py`):**
     *   Sistem kullanıcının portföy kurgusunu alır.
+    *   **Dinamik Sağlayıcı (Multi-Provider):** Gelen `model_name` prefix'ine göre **Gemini** veya **Groq** (Llama/Mixtral) motorları dinamik sarmalanır.
     *   Hassas değerler prompt öncesi **Maskelenir (PII Sanitization)**.
     *   İçerikler `<news_item>` etiketleriyle beslenerek **Indirect Prompt Injection** engellenir.
 6.  **Nihai Sonuç:** Yapay zeka orkestratörü (CIO) çıktı üretir ve Frontend'e basar. İstek veritabanına loglanır.
