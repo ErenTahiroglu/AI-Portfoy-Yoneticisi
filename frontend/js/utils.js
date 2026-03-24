@@ -282,7 +282,18 @@ function formatMarketCap(val) {
 }
 function fmtNum(val, suffix = "") {
     if (val === undefined || val === null || val === "-") return "-";
-    return (typeof val === "number" ? val.toFixed(2) : val) + suffix;
+    if (typeof val !== "number") return val + suffix;
+    
+    // 🛡️ Locale-Aware Formatting (TR/US auto formats)
+    const locale = (typeof getLang === "function" && getLang() === "en") ? "en-US" : "tr-TR";
+    try {
+         return new Intl.NumberFormat(locale, {
+             minimumFractionDigits: 2,
+             maximumFractionDigits: 2
+         }).format(val) + suffix;
+    } catch {
+         return val.toFixed(2) + suffix;
+    }
 }
 function colorClass(val) {
     if (val === undefined || val === null) return "";
