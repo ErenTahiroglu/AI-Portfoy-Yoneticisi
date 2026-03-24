@@ -42,6 +42,12 @@
         .pulsing-glow { animation: pulseGlow 4s infinite ease-in-out; }
         .features-grid > div { transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease !important; cursor: pointer; }
         .features-grid > div:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.04) !important; box-shadow: 0 12px 30px rgba(99, 102, 241, 0.1); }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+            60% { transform: translateY(-4px); }
+        }
     </style>
 </head>
 
@@ -209,6 +215,12 @@
                     <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 6px;">Sanal Paper Trading</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; line-height: 1.5;">Hiçbir gerçek bakiye riske atmadan piyasada anlık alım/satım simülasyonları yapın.</p>
                 </div>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div style="margin-top: 3.5rem; display: flex; flex-direction: column; align-items: center; gap: 5px; color: #9ca3af; font-size: 0.75rem; cursor: pointer; animation: bounce 2s infinite;">
+                <span style="letter-spacing: 1px; opacity: 0.6; font-weight: 700; font-size: 0.65rem;">DAHA FAZLASI</span>
+                <i class="fas fa-chevron-down" style="font-size: 0.85rem; color: #6366f1;"></i>
             </div>
         </section>
 
