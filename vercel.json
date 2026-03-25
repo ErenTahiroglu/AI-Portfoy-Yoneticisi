@@ -27,5 +27,7 @@
       "source": "/(.*)",
       "destination": "/frontend/$1"
     }
-  ]
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
 }

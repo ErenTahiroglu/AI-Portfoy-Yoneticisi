@@ -11,6 +11,10 @@ env/
 venv/
 ENV/
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # Python Cache & Build
 __pycache__/
@@ -81,4 +85,5 @@ out.txt
 
 # Puppeteer & Automated Testing
 .cache/
-/tests/ui/screenshots/
+/tests/ui/screenshots/*.png
+!/tests/ui/screenshots/.gitkeep
