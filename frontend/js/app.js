@@ -11,9 +11,21 @@ import { initCopilot, renderMacroAI } from './components/Chat.js';
 import { setupBacktestBindings, fetchAndRenderSignals, setupOptimization, setupRiskAnalysis, setupPaperTrades } from './components/Analysis.js';
 import { initAdminDashboard } from './components/AdminDashboard.js';
 import { runWizard } from './services/WizardService.js';
-import { updateHeroCards } from './components/HeroCardsComponent.js';
+import { updateHeroCards, showEmptyPortfolioState, hideEmptyPortfolioState } from './components/HeroCardsComponent.js';
 import { renderHeatmap } from './components/HeatmapComponent.js';
 import { setupAuthModal, updateAuthUI } from './supabaseClient.js';
+
+// ── CTA: "İlk Varlığını Ekle" (Empty State butonu) ──
+window._triggerAddAsset = function() {
+    // Ticker input’a scroll et ve focus ver
+    const tickerInput = document.getElementById("ticker-input");
+    const tickerTab = document.querySelector('.tab-btn[data-target="ticker-card"]');
+    if (tickerTab) tickerTab.click(); // Manuel Giriş sekmesine geç
+    if (tickerInput) {
+        tickerInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => tickerInput.focus(), 350);
+    }
+};
 
 // ── Globale Bağlama (Backward Compatibility) ──────────────────────────────
 window.toggleNotifications = toggleNotifications;
@@ -151,6 +163,25 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else {
                 const guestLogoutBtn = document.getElementById("guest-logout-btn");
                 if (guestLogoutBtn) guestLogoutBtn.style.display = "none";
+
+                // ── Post-Login Routing: Başlangıç (Beginner) sekmesine yönlendir ──
+                // Profesyonel modu kapat → kullanıcı Başlangıç sekmesinde başlasın
+                document.body.classList.remove("professional-mode");
+                localStorage.setItem("viewMode", "beginner");
+                const profToggle = document.getElementById("prof-mode-toggle");
+                if (profToggle) profToggle.checked = false;
+                const uiToggle = document.getElementById("ui-mode-toggle");
+                if (uiToggle) uiToggle.checked = false;
+
+                // ── Empty State: portföy yoksa göster ──
+                try {
+                    const portfolio = await window.SupabaseAuth.loadPortfolio();
+                    if (!portfolio || portfolio.length === 0) {
+                        showEmptyPortfolioState();
+                    }
+                } catch (_e) {
+                    showEmptyPortfolioState();
+                }
             }
         } catch (e) {
             console.error("Auth status loading error:", e);
@@ -206,6 +237,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Analyze Click Handler
     const analyzeBtn = document.getElementById("analyze-btn");
     analyzeBtn.addEventListener("click", () => {
+        // Analiz başlarken empty state'i kaldır
+        hideEmptyPortfolioState();
+
         const checkIslamic = document.getElementById("check-islamic-toggle").checked;
         const checkFinancials = document.getElementById("check-financials-toggle").checked;
         const useAI = aiToggle.checked;

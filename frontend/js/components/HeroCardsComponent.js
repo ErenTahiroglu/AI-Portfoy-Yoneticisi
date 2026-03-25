@@ -2,6 +2,102 @@
 // HERO CARDS COMPONENT
 // ═══════════════════════════════════════
 
+/** Portföy verisi yokken Premium Empty State gösterir */
+export function showEmptyPortfolioState() {
+    // Eğer zaten empty state varsa tekrar ekleme
+    if (document.getElementById("portfolio-empty-state")) return;
+
+    // Sonuç alanını göster (ama içini değiştir)
+    const resultsSection = document.getElementById("results");
+    if (resultsSection) resultsSection.classList.remove("hidden");
+
+    // Hero cards'ı gizle
+    const heroCards = document.getElementById("hero-cards");
+    if (heroCards) heroCards.classList.add("hidden");
+
+    // Results grid ve toolbar gizlensin, sadece empty state görünsün
+    const resultsGrid = document.getElementById("results-grid");
+    if (resultsGrid) resultsGrid.innerHTML = "";
+
+    // Mevcut empty state yoksa oluştur
+    const emptyState = document.createElement("div");
+    emptyState.id = "portfolio-empty-state";
+    emptyState.style.cssText = [
+        "display:flex", "flex-direction:column", "align-items:center", "justify-content:center",
+        "gap:1.5rem", "padding:4rem 2rem", "text-align:center",
+        "background:rgba(99,102,241,0.03)", "border:1px dashed rgba(99,102,241,0.2)",
+        "border-radius:20px", "margin:2rem 0",
+        "backdrop-filter:blur(8px)", "animation:slideUpFade 0.4s ease"
+    ].join(";");
+
+    emptyState.innerHTML = `
+        <div style="
+            width:72px;height:72px;
+            background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12));
+            border:1px solid rgba(99,102,241,0.2);
+            border-radius:22px;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 8px 32px rgba(99,102,241,0.12);
+        ">
+            <i class="fas fa-chart-pie" style="font-size:2rem;color:rgba(99,102,241,0.6);"></i>
+        </div>
+        <div>
+            <h3 style="margin:0 0 0.5rem;font-size:1.25rem;font-weight:800;color:var(--text-main);letter-spacing:-0.3px;">
+                Portföyünüz şu an boş
+            </h3>
+            <p style="margin:0;font-size:0.9rem;color:var(--text-muted);max-width:320px;line-height:1.6;">
+                Hisse, ETF veya fon ekleyerek yapay zeka destekli analizini başlat.
+            </p>
+        </div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;">
+            <button id="empty-state-cta-btn" style="
+                padding:0.75rem 1.5rem;
+                background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                border:none;border-radius:12px;
+                color:#fff;font-size:0.9rem;font-weight:700;
+                cursor:pointer;
+                display:flex;align-items:center;gap:8px;
+                box-shadow:0 4px 16px rgba(99,102,241,0.35);
+                transition:transform 0.15s,box-shadow 0.15s;
+            "
+            onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(99,102,241,0.45)'"
+            onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(99,102,241,0.35)'"
+            onclick="window._triggerAddAsset()">
+                <i class="fas fa-plus-circle"></i> İlk Varlığını Ekle
+            </button>
+            <button style="
+                padding:0.75rem 1.5rem;
+                background:rgba(255,255,255,0.04);
+                border:1px solid var(--glass-border);border-radius:12px;
+                color:var(--text-muted);font-size:0.9rem;font-weight:600;
+                cursor:pointer;
+                transition:background 0.2s,color 0.2s;
+            "
+            onmouseenter="this.style.background='rgba(255,255,255,0.08)';this.style.color='var(--text-main)'"
+            onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.color='var(--text-muted)'"
+            onclick="document.getElementById('ticker-input')?.focus()">
+                <i class="fas fa-keyboard"></i> Manuel Giriş
+            </button>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin:0;">
+            <i class="fas fa-bolt" style="color:var(--primary);"></i>
+            Örnek: <code style="background:rgba(99,102,241,0.1);padding:2px 6px;border-radius:4px;color:var(--primary);">AAPL, MSFT, THYAO</code> yaz ve analizi başlat
+        </p>
+    `;
+
+    if (resultsGrid) {
+        resultsGrid.parentNode.insertBefore(emptyState, resultsGrid);
+    } else if (resultsSection) {
+        resultsSection.appendChild(emptyState);
+    }
+}
+
+/** Eğer gösterilmişse Empty State'i kaldır */
+export function hideEmptyPortfolioState() {
+    const el = document.getElementById("portfolio-empty-state");
+    if (el) el.remove();
+}
+
 export function updateHeroCards(results, extras) {
     const cardsContainer = document.getElementById("hero-cards");
     const scoreVal = document.getElementById("hero-score-val");
@@ -12,8 +108,13 @@ export function updateHeroCards(results, extras) {
 
     if (!results || results.length === 0) {
         cardsContainer.classList.add("hidden");
+        // Empty state'i kaldır (analiz başlatılmadan önceki duruma dön)
+        hideEmptyPortfolioState();
         return;
     }
+
+    // Analiz verisi geldi — empty state'i kaldır
+    hideEmptyPortfolioState();
 
     cardsContainer.classList.remove("hidden");
 
