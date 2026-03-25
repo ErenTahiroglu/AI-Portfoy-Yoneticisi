@@ -13,6 +13,7 @@ import { initAdminDashboard } from './components/AdminDashboard.js';
 import { runWizard } from './services/WizardService.js';
 import { updateHeroCards } from './components/HeroCardsComponent.js';
 import { renderHeatmap } from './components/HeatmapComponent.js';
+import { setupAuthModal, updateAuthUI } from './supabaseClient.js';
 
 // ── Globale Bağlama (Backward Compatibility) ──────────────────────────────
 window.toggleNotifications = toggleNotifications;
@@ -138,39 +139,26 @@ document.addEventListener("DOMContentLoaded", async () => {
             const sidebar = document.getElementById("sidebar");
             const mainContent = document.querySelector(".main-content");
 
-            if (user) {
-                // landing.style.display = "none"; // Her zaman landing page gösterilsin
-                const guestLogoutBtn = document.getElementById("guest-logout-btn");
-                if (guestLogoutBtn) guestLogoutBtn.style.display = "none";
+            // Fix: updateAuthUI handles button state reactively (both logged-in and guest cases)
+            updateAuthUI(user);
 
-                // Giriş yapmış kullanıcılar için butonları "Uygulamaya Git" olarak güncelle
-                const actionBtn = document.getElementById("landing-action-btn");
-                if (actionBtn) {
-                    actionBtn.innerHTML = 'Giriş Yap / Kayıt Ol <i class="fas fa-sign-in-alt" style="margin-left: 8px;"></i>';
-                    actionBtn.onclick = () => {
-                        document.getElementById('login-modal').classList.remove('hidden');
-                    };
-                }
-                const navBtn = document.getElementById("landing-nav-login-btn");
-                if (navBtn) {
-                    navBtn.innerText = "Giriş Yap / Kayıt Ol";
-                    navBtn.onclick = () => {
-                        document.getElementById('login-modal').classList.remove('hidden');
-                    };
-                }
-            } else {
+            if (!user) {
                 if (landing) landing.style.display = "flex";
                 if (sidebar) sidebar.style.display = "none";
                 if (mainContent) mainContent.style.display = "none";
-                
-                // Ayrıca açılış sayfası dışındaki mobil barları gizle
                 const mobBtn = document.getElementById("mobile-menu-btn");
                 if (mobBtn) mobBtn.style.display = "none";
+            } else {
+                const guestLogoutBtn = document.getElementById("guest-logout-btn");
+                if (guestLogoutBtn) guestLogoutBtn.style.display = "none";
             }
         } catch (e) {
             console.error("Auth status loading error:", e);
         }
     }
+
+    // Fix 1: setup auth modal events (wires form, tabs, close, onAuthStateChange)
+    setupAuthModal();
 
     initTheme();
     setLanguage(currentLang);
