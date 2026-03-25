@@ -37,9 +37,10 @@ _ERROR_MESSAGES = {
 }
 
 
-def safe_api_call(func, *args, **kwargs):
+def safe_api_call(func, *args, stale_key: str = None, **kwargs):
     """
     Harici API çağrılarını saran, 3 kez hata durumunda fallback üreten Circuit Breaker.
+    stale_key verilirse, 429/Timeout durumunda önce Redis cache'den bayatlanmış veri döner.
     """
     for attempt in range(3):
         try:
@@ -47,13 +48,20 @@ def safe_api_call(func, *args, **kwargs):
         except Exception as e:
             err_str = str(e)
             # 429 Rate Limit veya Timeout tespiti
-            if "429" in err_str or "Rate Limit" in err_str or "Too Many Requests" in err_str:
-                if attempt == 2: # Son deneme
-                    return {"error": "API Limiti Aşıldı (429)", "is_fallback": True}
-                time.sleep(1) # 1 saniye bekle ve tekrar dene
+            if "429" in err_str or "Rate Limit" in err_str or "Too Many Requests" in err_str or "Timeout" in err_str or "timed out" in err_str:
+                if stale_key:
+                    stale = cache_get(stale_key)
+                    if stale:
+                        logger.warning(f"⚠️ safe_api_call: API hatası, bayat cache kullanılıyor. key={stale_key}")
+                        stale["is_stale"] = True
+                        return stale
+                if attempt == 2:  # Son deneme
+                    return {"error": "API Limiti Aşıldı (429/Timeout)", "is_fallback": True, "is_stale": False}
+                time.sleep(1)  # 1 saniye bekle ve tekrar dene
             elif attempt == 2:
                 return {"error": f"API Hatası: {err_str}", "is_fallback": True}
     return {"error": "Bilinmeyen API Hatası", "is_fallback": True}
+
 
 def _friendly_error(raw_error: str) -> str:
     """Teknik hata mesajını kullanıcı dostu Türkçe metne çevirir."""

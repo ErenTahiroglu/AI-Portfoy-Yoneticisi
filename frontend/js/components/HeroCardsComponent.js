@@ -17,6 +17,19 @@ export function updateHeroCards(results, extras) {
 
     cardsContainer.classList.remove("hidden");
 
+    // — Stale Data Badge (Fix 6) —
+    const isStale = results.some(r => r.is_stale === true);
+    const existingBadge = cardsContainer.querySelector('.stale-data-badge');
+    if (existingBadge) existingBadge.remove();
+    if (isStale) {
+        const badge = document.createElement('div');
+        badge.className = 'stale-data-badge';
+        badge.title = 'Canlı piyasa verisi alınamadı, önceki veriler gösteriliyor.';
+        badge.innerHTML = '⚠️ <small>Veriler gecikmeli</small>';
+        badge.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--warning);padding:4px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:999px;margin-bottom:0.75rem;width:fit-content;';
+        cardsContainer.insertBefore(badge, cardsContainer.firstChild);
+    }
+
     // Portföy Skoru
     if (extras && extras.weighted_return_5y !== undefined) {
         const val = parseFloat(extras.weighted_return_5y);
@@ -51,8 +64,10 @@ export function updateHeroCards(results, extras) {
     let totalRisk = 0;
     let riskCount = 0;
     results.forEach(r => {
-        if (!r.error && r.financials && r.financials.risk && r.financials.risk.max_drawdown !== null) {
-            totalRisk += Math.abs(r.financials.risk.max_drawdown);
+        // Fix 4: Optional chaining to prevent crash when r.financials.risk is undefined
+        const maxDD = r?.financials?.risk?.max_drawdown;
+        if (!r.error && maxDD !== undefined && maxDD !== null) {
+            totalRisk += Math.abs(maxDD);
             riskCount++;
         }
     });

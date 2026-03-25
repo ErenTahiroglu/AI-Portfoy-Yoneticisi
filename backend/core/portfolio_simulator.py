@@ -38,6 +38,9 @@ def run_portfolio_simulation(
     
     # Normalize weights to sum to 1.0
     total_w = sum(weights_map[t] for t in active_tickers)
+    if total_w == 0:
+        logger.warning("run_portfolio_simulation: Tüm ağırlıklar sıfır. Simülasyon iptal edildi.")
+        return {}
     target_weights = {t: weights_map[t]/total_w for t in active_tickers}
     
     # Aydan aya gruplama için

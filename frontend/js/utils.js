@@ -282,7 +282,8 @@ function formatMarketCap(val) {
 }
 function fmtNum(val, suffix = "") {
     if (val === undefined || val === null || val === "-") return "-";
-    if (typeof val !== "number") return val + suffix;
+    const num = typeof val === "number" ? val : parseFloat(val);
+    if (isNaN(num)) return "-";
     
     // 🛡️ Locale-Aware Formatting (TR/US auto formats)
     const locale = (typeof getLang === "function" && getLang() === "en") ? "en-US" : "tr-TR";
@@ -290,9 +291,9 @@ function fmtNum(val, suffix = "") {
          return new Intl.NumberFormat(locale, {
              minimumFractionDigits: 2,
              maximumFractionDigits: 2
-         }).format(val) + suffix;
+         }).format(num) + suffix;
     } catch {
-         return val.toFixed(2) + suffix;
+         return num.toFixed(2) + suffix;
     }
 }
 function colorClass(val) {

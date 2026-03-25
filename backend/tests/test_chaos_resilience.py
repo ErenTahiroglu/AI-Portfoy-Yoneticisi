@@ -104,3 +104,62 @@ async def test_api_analytics_empty_tickers():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
          response = await ac.post("/api/analyze", json={"tickers": []})
          assert response.status_code in [400, 422]
+
+
+# ── 4. Mock Portfolio: Sıfır Ağırlıklı Portföy (ZeroDivision Guard) ──────────────
+
+def test_zero_weight_portfolio():
+    """Tüm ağırlıklar 0 olduğunda portfolio_simulator çökmemeli, boş dict dönmeli."""
+    import pandas as pd
+    from backend.core.portfolio_simulator import run_portfolio_simulation
+    
+    # Mock fiyat verisi: 30 günlük seri
+    dates = pd.date_range("2024-01-01", periods=30)
+    price_df = pd.DataFrame({"AAPL": [150.0 + i for i in range(30)]}, index=dates)
+    
+    # Tüm ağırlıklar sıfır
+    weights = {"AAPL": 0}
+    result = run_portfolio_simulation(price_df, weights)
+    assert result == {}, f"Beklenen boş dict, alınan: {result}"
+
+
+def test_empty_portfolio():
+    """Boş portföyü simülasörü çökmeden boş dict dönmeli."""
+    import pandas as pd
+    from backend.core.portfolio_simulator import run_portfolio_simulation
+    
+    result = run_portfolio_simulation(pd.DataFrame(), {})
+    assert result == {}
+
+
+def test_cost_zero_asset():
+    """Maliyeti 0 olan varlık PnL hesabında sıfıra bölme hatası üretmemeli."""
+    import pandas as pd
+    from backend.core.portfolio_simulator import run_portfolio_simulation
+    
+    dates = pd.date_range("2024-01-01", periods=30)
+    # Fiyat dizisinde sıfır başlangıç fiyatı
+    prices = [0.0] + [1.0 + i * 0.01 for i in range(29)]
+    price_df = pd.DataFrame({"TSLA": prices}, index=dates)
+    weights = {"TSLA": 100}
+    # Sıfır fiyatlı günde `prev_price > 0` guard devreye girmeli, çökmemeli.
+    result = run_portfolio_simulation(price_df, weights)
+    assert isinstance(result, dict), "Simülasör bir dict dönmeliydi."
+
+
+def test_safe_api_call_stale_cache_on_timeout():
+    """API Timeout'unda safe_api_call stale cache'den veri çekerek is_stale=True göndermeli."""
+    from unittest.mock import patch, MagicMock
+    from backend.core.analysis_engine import safe_api_call
+
+    fake_stale_data = {"ticker": "AAPL", "price": 155.0}
+    stale_key = "AAPL:False:True"
+
+    def failing_func():
+        raise Exception("Connection timed out")
+
+    with patch("backend.core.analysis_engine.cache_get", return_value=fake_stale_data):
+        result = safe_api_call(failing_func, stale_key=stale_key)
+
+    assert result.get("is_stale") is True
+    assert result.get("price") == 155.0
