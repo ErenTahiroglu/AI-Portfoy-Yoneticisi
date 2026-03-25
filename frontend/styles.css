@@ -285,6 +285,30 @@ body {
     gap: 0.1rem;
 }
 
+.hero-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.hero-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.hero-value small {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
 .toggle-label {
     font-size: 0.8rem;
     font-weight: 600;
@@ -1024,30 +1048,51 @@ body {
 .hero-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: var(--radius);
+    border-radius: 16px;
     padding: 1.5rem;
     display: flex;
     align-items: center;
     gap: 1.25rem;
     background-image: var(--gradient-card);
-    transition: all 0.3s;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-premium);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(14, 165, 233, 0.03) 0%, transparent 70%);
+    pointer-events: none;
 }
 
 .hero-card:hover {
-    border-color: rgba(14, 165, 233, 0.2);
-    box-shadow: 0 4px 24px rgba(14, 165, 233, 0.08);
-    transform: translateY(-2px);
+    border-color: var(--primary);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px var(--primary-glow);
+    transform: translateY(-6px) scale(1.02);
 }
 
 .hero-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: rgba(14, 165, 233, 0.08);
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    background: rgba(14, 165, 233, 0.1);
     color: var(--primary);
     display: grid;
     place-items: center;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+    transition: transform 0.3s ease;
+    box-shadow: inset 0 0 10px rgba(14, 165, 233, 0.05);
+}
+
+.hero-card:hover .hero-icon {
+    transform: rotate(10deg) scale(1.1);
 }
 
 .hero-info {
@@ -1134,6 +1179,10 @@ body {
     overflow-x: auto;
     border-radius: var(--radius);
     border: 1px solid var(--card-border);
+    max-height: 500px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
 }
 
 .summary-table {
@@ -1143,27 +1192,44 @@ body {
 }
 
 .summary-table th {
-    background: rgba(14, 165, 233, 0.06);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
     color: var(--text-muted);
     font-weight: 700;
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.65rem 0.8rem;
+    letter-spacing: 1px;
+    padding: 0.75rem 0.8rem;
     text-align: left;
     border-bottom: 1px solid var(--card-border);
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .summary-table td {
-    padding: 0.6rem 0.8rem;
+    padding: 0.75rem 0.8rem;
     border-bottom: 1px solid var(--glass-border);
     color: var(--text-main);
     white-space: nowrap;
+    font-size: 0.8rem;
 }
 
 .summary-table tr:hover td {
-    background: rgba(14, 165, 233, 0.03);
+    background: rgba(14, 165, 233, 0.06);
+    color: var(--primary);
+}
+
+/* Numeric columns refinement */
+.summary-table td:nth-child(4),
+.summary-table td:nth-child(5),
+.summary-table td:nth-child(8),
+.summary-table td:nth-child(9),
+.summary-table td:nth-child(10),
+.trading-table td {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 500;
 }
 
 .status-approved {
@@ -1469,9 +1535,18 @@ body.halal-only .summary-table tr.status-rejected {
 .extra-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
+    border-radius: 16px;
+    padding: 1.5rem;
     background-image: var(--gradient-card);
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-premium);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+
+.extra-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+    border-color: rgba(14, 165, 233, 0.2);
 }
 
 .extra-card h3 {
@@ -2754,4 +2829,77 @@ body.professional-mode .btn-primary {
 
 body.professional-mode .btn-primary:hover {
     box-shadow: 0 8px 32px rgba(168, 85, 247, 0.35);
+}
+
+/* ── AI Wizard Refinements ────────────── */
+#wizard-card {
+    transition: all 0.4s ease;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+}
+
+#wizard-card:hover {
+    border-color: rgba(139, 92, 246, 0.5) !important;
+    box-shadow: 0 15px 45px rgba(139, 92, 246, 0.15);
+}
+
+#wizard-input {
+    transition: all 0.3s ease;
+    border: 1px solid var(--glass-border) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+#wizard-input:focus {
+    outline: none;
+    border-color: #a78bfa !important;
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.2), inset 0 0 10px rgba(0,0,0,0.2) !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.chip-btn {
+    border-radius: 999px !important;
+    padding: 0.5rem 1.2rem !important;
+    font-weight: 600 !important;
+    font-size: 0.72rem !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    background: rgba(139, 92, 246, 0.05) !important;
+    transition: all 0.25s ease !important;
+    color: var(--text-main) !important;
+}
+
+.chip-btn:hover {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-color: rgba(139, 92, 246, 0.5) !important;
+    transform: scale(1.05);
+    color: white !important;
+}
+
+#btn-run-wizard {
+    transition: all 0.3s ease;
+}
+
+#btn-run-wizard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+    filter: brightness(1.1);
+}
+
+.trading-table th {
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--glass-border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.trading-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--primary);
 }

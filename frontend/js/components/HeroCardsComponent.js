@@ -17,14 +17,16 @@ export function updateHeroCards(results, extras) {
 
     cardsContainer.classList.remove("hidden");
 
-    // Portföy Skoru (Ağırlıklı Getiri veya Ortalama)
+    // Portföy Skoru
     if (extras && extras.weighted_return_5y !== undefined) {
-        if (scoreVal) scoreVal.textContent = `%${extras.weighted_return_5y}`;
+        const val = parseFloat(extras.weighted_return_5y);
+        const color = val >= 0 ? "var(--success)" : "var(--danger)";
+        if (scoreVal) scoreVal.innerHTML = `<span style="color:${color}">%${val.toFixed(1)}</span>`;
     } else {
         if (scoreVal) scoreVal.textContent = "-";
     }
 
-    // En İyi Hisse (5Y getiriye göre veya Son Değişim)
+    // En İyi Hisse
     let bestStock = null;
     let maxRet = -Infinity;
     results.forEach(r => {
@@ -39,13 +41,13 @@ export function updateHeroCards(results, extras) {
     
     if (bestVal) {
         if (bestStock) {
-            bestVal.innerHTML = `${bestStock} <span style="font-size:0.8rem;color:var(--success)">(%${maxRet.toFixed(1)})</span>`;
+            bestVal.innerHTML = `<span class="ticker-box">${bestStock}</span> <small style="color:var(--success); font-weight:700;">(+%${maxRet.toFixed(1)})</small>`;
         } else {
             bestVal.textContent = "-";
         }
     }
 
-    // Risk Seviyesi (Ortalama Max DD)
+    // Risk Seviyesi
     let totalRisk = 0;
     let riskCount = 0;
     results.forEach(r => {
@@ -60,9 +62,26 @@ export function updateHeroCards(results, extras) {
             const avgRisk = totalRisk / riskCount;
             let riskLabel = "Düşük";
             let riskColor = "var(--success)";
-            if (avgRisk > 30) { riskLabel = "Yüksek"; riskColor = "var(--danger)"; }
-            else if (avgRisk > 15) { riskLabel = "Orta"; riskColor = "var(--warning)"; }
-            riskVal.innerHTML = `<span style="color:${riskColor}">${riskLabel}</span> <span style="font-size:0.8rem;color:var(--text-muted)">(MaxDD: %${avgRisk.toFixed(1)})</span>`;
+            let riskIcon = "fa-shield-check";
+            
+            if (avgRisk > 30) { 
+                riskLabel = "Yüksek"; 
+                riskColor = "var(--danger)"; 
+                riskIcon = "fa-radiation";
+            } else if (avgRisk > 15) { 
+                riskLabel = "Orta"; 
+                riskColor = "var(--warning)"; 
+                riskIcon = "fa-exclamation-triangle";
+            }
+            
+            riskVal.innerHTML = `<span style="color:${riskColor}">${riskLabel}</span> <small>(MaxDD: %${avgRisk.toFixed(1)})</small>`;
+            
+            // Update Icon based on risk
+            const riskCardIcon = document.querySelector('#hero-risk-val').closest('.hero-card').querySelector('.hero-icon i');
+            if (riskCardIcon) {
+                riskCardIcon.className = `fas ${riskIcon}`;
+                riskCardIcon.style.color = riskColor;
+            }
         } else {
             riskVal.textContent = "-";
         }
