@@ -86,17 +86,13 @@ export function initCopilot() {
             const userProfile = typeof window.getUserProfile === "function" ? window.getUserProfile() : null;
 
             // ── Telemetry: Kullanıcı Tepkisi Takibi ──
-            if (window.lastBrakeTriggered) {
-                const lowerText = text.toLowerCase();
-                const acceptedWords = ["anladım", "haklısın", "tamam", "bekleyelim", "bekleyeceğim", "iptal", "peki", "ok"];
-                const ignoredWords = ["hayır", "sat", "yine de", "emir", "onaylıyorum", "devam et", "zorla", "yap"];
+            if (window.lastAiMessageWasBrake) {
+                // Basit bir RegEx ile kullanıcının ısrar edip etmediğini anla (Is Ignored?)
+                const isIgnored = /sat|yap|onayla|boşver|istiyorum|yine de/i.test(text.toLowerCase());
+                const eventType = isIgnored ? 'brake_ignored' : 'brake_accepted';
                 
-                let eventType = "brake_ignored";
-                if (acceptedWords.some(w => lowerText.includes(w))) eventType = "brake_accepted";
-                else if (ignoredWords.some(w => lowerText.includes(w))) eventType = "brake_ignored";
-                
-                logTelemetryEvent(eventType, { user_response: text });
-                window.lastBrakeTriggered = false;
+                logTelemetryEvent(eventType, { user_reply: text });
+                window.lastAiMessageWasBrake = false;
             }
 
             const contextMsg = {
@@ -142,8 +138,8 @@ export function initCopilot() {
             chatHistory.push({ role: "assistant", content: reply });
 
             // ── Telemetry: AI Frenini Yakala ──
-            if (reply.includes("beklemek ister misiniz?") && userProfile?.level === "beginner") {
-                window.lastBrakeTriggered = true;
+            if ((reply.includes("beklemek ister misiniz") || reply.includes("panikle satmak")) && userProfile?.level === "beginner") {
+                window.lastAiMessageWasBrake = true;
             }
         } catch(err) {
             loadDiv.remove();
