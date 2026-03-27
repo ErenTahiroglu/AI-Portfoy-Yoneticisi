@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional, Dict
+from pydantic import BaseModel, ConfigDict, Field
+from typing import List, Optional, Dict, Any
 
 class AnalysisRequest(BaseModel):
     model_config = ConfigDict(strict=True)
