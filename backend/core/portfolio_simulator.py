@@ -45,7 +45,7 @@ def run_portfolio_simulation(
     
     # Aydan aya gruplama için
     df['YearMonth'] = df.index.year.astype(str) + "-" + df.index.month.astype(str).str.zfill(2)
-    end_of_month_dates = df.groupby('YearMonth').apply(lambda x: x.index[-1]).values
+    end_of_month_dates = df.groupby('YearMonth').tail(1).index.values
     
     # Başlangıç değerleri
     current_balances = {t: initial_balance * target_weights[t] for t in active_tickers}
