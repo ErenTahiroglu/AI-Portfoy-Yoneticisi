@@ -29,6 +29,7 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 ### 🛡️ 3. Güvenlik ve Kurumsal Kalkanlar (SRE Essentials)
 *   **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan (Penny stocks, altcoins) otomatik filtrelenir.
 *   **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO (panik satış/dürtüsel alış) içeren komutlarını durdurur ve rasyonel sorgulama yapar.
+*   **📊 Telemetry Pipeline:** Tüm güvenlik müdahaleleri (Brake triggered, accepted, ignored) Supabase `user_events` tablosunda loglanır; veri odaklı UX iyileştirmesi sağlar.
 *   **Sıfır Güven (Zero-Trust) IAM:** WebSocket ve API kollarında JWT güvenliği ve Supabase Auth entegrasyonu.
 *   **Prompt Isolation & PII Sanitization:** Dışarıdan akan haberler XML etiketleri ile hapsedilir, LLM’e gitmeden hassas bakiye verileri otomatik maskelenir.
 *   **Idempotency & Tracing:** Mükerrer emir basımları (Double-click) prevent edilir; baştan uca UUID Correlation zinciri mevcuttur.
