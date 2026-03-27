@@ -59,3 +59,19 @@ async def check_llm_quota(request: Request, payload=Depends(verify_jwt)):
             )
             
         return user_id
+
+async def get_current_user(request: Request) -> dict:
+    """JWT Token'ı doğrular ve içindeki kullanıcı verisini (payload) döner."""
+    payload = await verify_jwt(request)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired session.")
+    return payload
+
+def get_supabase_client():
+    """Supabase client (PostgREST) instance'ı döner (Synchronous wrappers are common in FastAPI DI)."""
+    from supabase import create_client, Client
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not url or not key:
+        raise ValueError("Supabase configuration missing.")
+    return create_client(url, key)

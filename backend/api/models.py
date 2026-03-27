@@ -58,5 +58,5 @@ class OnboardingProfileRequest(BaseModel):
 
 class TelemetryEventRequest(BaseModel):
     model_config = ConfigDict(strict=True)
-    event_type: str
-    event_metadata: Optional[Dict[str, str]] = None # JSONB sütununa kaydedilecek
+    event_type: str = Field(..., description="Olayın türü (örn: brake_triggered, brake_accepted, brake_ignored)")
+    event_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Ekstra log verileri")
