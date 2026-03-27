@@ -432,30 +432,31 @@ Yanıtın şu tonda olmalıdır: "Şu an piyasa genelinde bir dalgalanma/düşü
         res_content = str(response.content)
 
         # ── Behavioral Brake Telemetry ──────────────────────────────────────────
-        # Eğer üretilen yanıt fren şablonunu içeriyorsa logla
-        if "beklemek ister misiniz?" in res_content and user_profile and user_profile.get("level") == "beginner":
+        # Davranışsal fren kelimeleri (Sistem prompt'una eklenen kilit cümleler)
+        brake_keywords = ["piyasa genelinde bir dalgalanma/düşüş var", "panikle/aceleyle hareket etmek", "beklemek ister misiniz"]
+        is_brake_triggered = any(keyword.lower() in res_content.lower() for keyword in brake_keywords)
+
+        if is_brake_triggered and user_profile and user_profile.get("level") == "beginner":
             try:
-                # Kullanıcının son mesajını al (Metadata için)
+                # Kullanıcının panik içeren son mesajını yakala
                 last_user_msg = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "Unknown")
                 
-                # Asenkron olarak veritabanına logla (User ID varsa)
                 if user_id:
-                    supa_url = os.getenv("SUPABASE_URL", "")
-                    supa_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+                    from backend.api.dependencies import get_supabase_client
+                    supabase = get_supabase_client()
                     
-                    async def _log_brake_triggered():
-                        payload = {
+                    def _log_to_supabase():
+                        supabase.table("user_events").insert({
                             "user_id": user_id,
                             "event_type": "brake_triggered",
-                            "event_metadata": {"user_message": last_user_msg, "ai_response": res_content[:200]}
-                        }
-                        headers = {"apikey": supa_key, "Authorization": f"Bearer {supa_key}", "Content-Type": "application/json"}
-                        async with httpx.AsyncClient() as client:
-                            await client.post(f"{supa_url}/rest/v1/user_events", json=payload, headers=headers)
-                    
-                    asyncio.create_task(_log_brake_triggered())
+                            "event_metadata": {"user_message": last_user_msg, "ai_response": res_content[:500]}
+                        }).execute()
+
+                    # Ana akışı bloklamamak için thread-safe bir şekilde veya doğrudan çalıştırılabilir
+                    # (Supabase-py sync olduğu için küçük gecikme yaratabilir, ancak operasyonel izleme için kritiktir)
+                    _log_to_supabase()
             except Exception as e:
-                logger.error(f"Brake telemetry log failed: {e}")
+                logger.error(f"Brake trigger telemetrisi loglanamadı: {e}")
 
         if user_id:
              asyncio.create_task(_log_usage_async(user_id, response, prompt_text=portfolio_summary))
