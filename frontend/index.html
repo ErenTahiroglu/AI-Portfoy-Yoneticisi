@@ -164,7 +164,36 @@
         </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- ONBOARDING WIZARD OVERLAY                                      -->
+    <!-- Yeni kullanıcılara ilk girişte gösterilen 3 adımlı sihirbaz   -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div id="onboarding-wizard-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:1500; background: var(--bg-color); background-image: radial-gradient(circle at 50% 15%, var(--primary-glow) 0%, var(--bg-color) 75%); flex-direction:column; align-items:center; justify-content:center; padding:2rem; box-sizing:border-box; font-family:'Inter',sans-serif;">
+
+        <!-- Progress bar -->
+        <div style="position:absolute; top:0; left:0; width:100%; height:3px; background:rgba(255,255,255,0.06);">
+            <div id="wizard-progress-fill" style="height:100%; width:33.33%; background:linear-gradient(90deg,#6366f1,#a855f7); transition:width 0.4s ease;"></div>
+        </div>
+
+        <!-- Step meta -->
+        <p id="wizard-step-meta" style="font-size:0.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.75rem;">Adım 1 / 3</p>
+
+        <!-- Step title -->
+        <h2 id="wizard-step-title" style="font-size:clamp(1.1rem,3.5vw,1.6rem); font-weight:800; color:var(--text-main); text-align:center; max-width:540px; line-height:1.25; letter-spacing:-0.5px; margin:0 0 2.5rem;">
+            Yatırım konusundaki durumunu en iyi hangisi anlatıyor?
+        </h2>
+
+        <!-- Card grid — populated by OnboardingWizard.js -->
+        <div id="wizard-cards-grid" class="wizard-cards-grid"></div>
+
+        <!-- Skip link -->
+        <a id="wizard-skip-link" tabindex="0" role="button" style="margin-top:2.5rem; font-size:0.78rem; color:var(--text-muted); cursor:pointer; text-decoration:none; opacity:0.6; transition:opacity 0.2s;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.6'" onclick="if(typeof window.skipOnboardingWizard==='function') window.skipOnboardingWizard()">
+            Şimdilik geç →
+        </a>
+    </div>
+
     <!-- LANDING PAGE OVERLAY (Visible when Not Authenticated) -->
+
     <div id="landing-page" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-color); background-image: radial-gradient(circle at 50% 10%, var(--primary-glow) 0%, var(--bg-color) 80%); z-index: 1200; overflow-y: auto; display: flex; flex-direction: column; font-family: 'Inter', sans-serif;">
         <!-- Landing Navbar -->
         <nav style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 3rem; background: var(--glass-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass-border);">

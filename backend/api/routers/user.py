@@ -2,12 +2,99 @@ import logging
 import os
 import httpx
 from fastapi import APIRouter, HTTPException, Depends, Request
-from backend.api.models import UserSettingsRequest
+from backend.api.models import UserSettingsRequest, OnboardingProfileRequest
 from backend.api.auth import verify_jwt
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["User"])
+
+
+# ════════════════════════════════════════════════════
+# ONBOARDING PROFILE ENDPOINTS
+# ════════════════════════════════════════════════════
+
+@router.get("/onboarding", dependencies=[Depends(verify_jwt)])
+async def get_onboarding_profile(request: Request):
+    """
+    Kullanıcının onboarding profili ve tamamlama bayrağını döndürür.
+    Frontend bu endpoint'i uygulama yüklenirken sihirbazı gösterip göstermeyeceğine
+    karar vermek için kullanır.
+    """
+    user = getattr(request.state, "user", None)
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="User Identity Not Found")
+
+    user_id = user["sub"]
+    supa_url = os.getenv("SUPABASE_URL", "")
+    supa_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+    url = f"{supa_url}/rest/v1/user_settings?user_id=eq.{user_id}&select=onboarding_profile,is_onboarded"
+    headers = {"apikey": supa_key, "Authorization": f"Bearer {supa_key}"}
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data:
+                    return {
+                        "is_onboarded": data[0].get("is_onboarded", False),
+                        "onboarding_profile": data[0].get("onboarding_profile"),
+                    }
+        return {"is_onboarded": False, "onboarding_profile": None}
+    except Exception as e:
+        logger.error(f"Onboarding profile fetch failed: {e}")
+        return {"is_onboarded": False, "onboarding_profile": None}
+
+
+@router.post("/onboarding", dependencies=[Depends(verify_jwt)])
+async def save_onboarding_profile(body: OnboardingProfileRequest, request: Request):
+    """
+    Kullanıcının onboarding seçimlerini user_settings tablosuna ükler/günceller.
+    is_onboarded bayrağını TRUE olarak işaretler.
+    """
+    user = getattr(request.state, "user", None)
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="User Identity Not Found")
+
+    user_id = user["sub"]
+    supa_url = os.getenv("SUPABASE_URL", "")
+    supa_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+    profile_payload = {
+        "level": body.level,
+        "goal": body.goal,
+        "riskTolerance": body.risk_tolerance,
+    }
+
+    upsert_body = {
+        "user_id": user_id,
+        "onboarding_profile": profile_payload,
+        "is_onboarded": True,
+    }
+
+    url = f"{supa_url}/rest/v1/user_settings"
+    headers = {
+        "apikey": supa_key,
+        "Authorization": f"Bearer {supa_key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(url, headers=headers, json=upsert_body)
+            if resp.status_code not in (200, 201):
+                raise HTTPException(status_code=500, detail=f"DB Error: {resp.text}")
+        return {"status": "success"}
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        logger.error(f"Onboarding profile save failed: {e}")
+        raise HTTPException(status_code=500, detail=f"DB Error: {e}")
+
+
 
 @router.get("/alerts", dependencies=[Depends(verify_jwt)])
 async def get_alerts(request: Request):

@@ -4,7 +4,7 @@ services:
     env: python
     healthCheckPath: "/api/health"
     rootDir: backend
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: "pip install -r requirements.txt && alembic upgrade head"
     startCommand: "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
 
     envVars:

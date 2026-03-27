@@ -315,7 +315,7 @@ def _sanitize_prompt_data(data):
         return [_sanitize_prompt_data(item) for item in data]
     return data
 
-async def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr", user_id: str = None) -> str:
+async def generate_chat_response(messages: list, context: dict, api_key: str, model_name: str = "gemini-2.5-flash", lang: str = "tr", user_id: str = None, user_profile: dict = None) -> str:
     """Yüzen Chatbot (Copilot) için Çoklu Ajan (CIO-Orkestratör) mimarisiyle yanıt üretir."""
     
     # Portföy bağlamını güvenlik filtresinden geçirerek temizle
@@ -353,10 +353,57 @@ async def generate_chat_response(messages: list, context: dict, api_key: str, mo
     reports = await asyncio.gather(analyst_task, researcher_task)
     analyst_rep, researcher_rep = reports
 
-    # CIO Orchestration Agent (Chief Investment Officer)
-    llm = _get_llm(model_name=model_name, api_key=api_key, temperature=0.3, max_output_tokens=1024)
-    
-    system_instruction = f"""
+    # ══ Onboarding Profil Blobu — Temiz İnsan Dili, Ham JSON Değil ═════════════
+    profile_block = ""
+    if user_profile and isinstance(user_profile, dict):
+        _level_map = {
+            "beginner": "Yatırıma yeni başlayan (hiç deneyim yok)",
+            "read":     "Biraz araştırmış, henüz gerçek işlem yapmamış",
+            "tried":   "Daha önce yatırım denemiş, belirli bir deneyimi var",
+        }
+        _goal_map = {
+            "protect": "Enflasyona karşı koruma (birikim erimesini önlemek)",
+            "target":  "Belirli bir hedefe ulaşma (konut, araç, eğitim vb.)",
+            "grow":    "Uzun vadeli büyüme ve servet artışı",
+        }
+        _risk_map = {
+            "low":    "Düşük — kayıplardan kaçınan, istikrarlı getiri arayan",
+            "medium": "Orta — dengeli büyüme, makul dalgalanma hoşgörüsü",
+            "high":   "Yüksek — uzun vadeli, yüksek volatiliteye dayanıklı",
+        }
+        level_text = _level_map.get(user_profile.get("level", ""), "Belirtilmemiş")
+        goal_text  = _goal_map.get(user_profile.get("goal", ""),  "Belirtilmemiş")
+        risk_text  = _risk_map.get(user_profile.get("riskTolerance", ""), "Belirtilmemiş")
+
+        profile_block = f"""\
+[KULLANICI PROFİLİ — Onboarding Verisi]
+Deneyim seviyesi : {level_text}
+Yatırım amacı    : {goal_text}
+Risk toleransı   : {risk_text}
+
+Bu profili yanıtlarını şekillendirmek için kullan:
+• Deneyim "Yeni başlayan" ise teknik terimleri kısaca açıkla; jargonu asgariye indir.
+• Hedef "Koruma" ise agresif büyüme önerilerinden kaçın; istikrar ve düşük volatiliteye odaklan.
+• Risk toleransı "Düşük" ise hiçbir durumda yüksek riskli işlem veya kaldıraç önerme.
+[/KULLANICI PROFİLİ]
+
+"""
+
+    # ══ Davranışsal Fren (Behavioral Brake) — Yeni Başlayanları Korumak İçin ══
+    brake_rules = ""
+    if user_profile and user_profile.get("level") == "beginner":
+        brake_rules = """
+[KRİTİK GÜVENLİK KURALI — Davranışsal Fren]
+Kullanıcı "Yeni Başlayan" profilindedir. Eğer kullanıcı:
+1. "Hepsini sat", "hemen çık", "mahvolduk", "batıyoruz" gibi yoğun panik (FUD) içeren,
+2. "Tüm paramla al", "fırsat kaçıyor", "hemen girmeliyim" gibi dürtüsel (FOMO) içeren
+komutlar verirse, bu işlemi işleme koymayı reddet ve rasyonel bir sorgulama yap.
+Yanıtın şu tonda olmalıdır: "Şu an piyasa genelinde bir dalgalanma/düşüş var, elinizdeki varlığın temel verilerinde bir bozulma görünmüyor. Panikle/aceleyle hareket etmek genellikle zararı kalıcı hale getirir. Bu işlemi onaylamadan önce piyasanın sakinleşmesini beklemek ister misiniz?"
+[/Davranışsal Fren]
+"""
+
+    # CIO sistem talimatı — profil ve fren bloğu öne eklenir
+    system_instruction = profile_block + brake_rules + f"""
     Sen, bu uygulamanın 'Baş Yatırım Sorumlusu' (Chief Investment Officer - CIO) AI ajanıdır.
     Görevin: Alt analistlerinizden gelen raporları (Analyst ve Researcher) ve kullanıcı mesajlarını sentezleyerek kullanıcıya nihai, şık ve harekete geçirici bir yatırım tavsiyesi sunmaktır.
     

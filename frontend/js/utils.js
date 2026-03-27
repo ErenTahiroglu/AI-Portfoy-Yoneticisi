@@ -122,12 +122,68 @@ function setupAutocomplete() {
 
     let selectedIndex = -1;
 
+    // ── BIST30 ve Güvenli Varlıklar (Yeni Başlayanlar İçin Whitelist) ──
+    const BIST30 = [
+        "AKBNK", "ALARK", "ARCLK", "ASELS", "ASTOR", "BIMAS", "DOAS", "EKGYO", 
+        "ENKAI", "EREGL", "FROTO", "GARAN", "GUBRF", "HEKTS", "ISCTR", "KCHOL", 
+        "KONTR", "KOZAL", "ODAS", "PGSUS", "PETKM", "SAHOL", "SASA", "SISE", 
+        "TCELL", "THYAO", "TOASO", "TUPRS", "VESTL", "YKBNK"
+    ];
+
+    function isSafeAsset(s) {
+        const profile = typeof window.getUserProfile === "function" ? window.getUserProfile() : null;
+        if (!profile || profile.level !== "beginner") return true; 
+
+        const ticker = (s.symbol || "").toUpperCase();
+        const exch = (s.exchDisp || "").toUpperCase();
+
+        // 1. Kripto: Sadece BTC ve ETH
+        if (exch.includes("CRYPTO")) {
+            return ["BTC", "ETH"].includes(ticker);
+        }
+
+        // 2. BIST: Sadece BIST30
+        if (exch.includes("BIST")) {
+            return BIST30.includes(ticker);
+        }
+
+        // 3. ABD: Sadece Majörler (Big Tech & S&P Top 10)
+        if (exch.includes("US") || exch.includes("NASDAQ") || exch.includes("NYSE")) {
+            const US_MAJORS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK-B", "V", "MA"];
+            return US_MAJORS.includes(ticker);
+        }
+
+        // 4. TEFAS: Genellikle güvenli kabul edilir (ancak sığ olanlar hariç, basitlik için hepsine izin verelim veya kısıtlayalım)
+        if (exch.includes("TEFAS")) return true;
+
+        return false;
+    }
+
     function renderItems(items) {
-        if (!items || items.length === 0) {
-            dropdown.classList.add("hidden");
+        const profile = typeof window.getUserProfile === "function" ? window.getUserProfile() : null;
+        const isBeginner = profile && profile.level === "beginner";
+        
+        // Güvenli filtreleme (Beginner ise)
+        const visibleItems = isBeginner ? items.filter(isSafeAsset) : items;
+        const hiddenCount = items.length - visibleItems.length;
+
+        if (visibleItems.length === 0) {
+            if (isBeginner && items.length > 0) {
+                // Filtreleme sonucu hepsi gizlendiyse uyarı göster
+                dropdown.innerHTML = `
+                    <div style="padding:1rem; text-align:center; color:var(--text-muted); font-size:0.8rem; line-height:1.4;">
+                        <i class="fas fa-user-shield" style="font-size:1.2rem; color:var(--warning); margin-bottom:0.5rem; display:block;"></i>
+                        Bu varlık yüksek volatilite içerdiğinden başlangıç profiliniz için gizlenmiştir. 
+                        <strong>BIST30</strong> ve majör varlıklarda işlem yapmanız önerilir.
+                    </div>`;
+                dropdown.classList.remove("hidden");
+            } else {
+                dropdown.classList.add("hidden");
+            }
             return;
         }
-        dropdown.innerHTML = items.map((s, i) => `
+
+        let html = visibleItems.map((s, i) => `
             <div class="autocomplete-item ${i === selectedIndex ? 'selected' : ''}" data-ticker="${s.symbol}">
                 <div style="flex:1; display:flex; align-items:center; gap:8px;" class="autocomplete-clickable">
                     <span class="ticker-symbol">${s.symbol}</span>
@@ -136,6 +192,15 @@ function setupAutocomplete() {
                 </div>
                 <i class="fas fa-plus ticker-info-btn" title="Listeye Ekle" data-ticker="${s.symbol}"></i>
             </div>`).join("");
+
+        // Eğer bazı varlıklar gizlendiyse ufak bir bilgilendirme ekle
+        if (hiddenCount > 0) {
+            html += `<div style="font-size:0.65rem; padding:0.5rem; color:var(--text-muted); border-top:1px solid var(--glass-border); text-align:center; opacity:0.8;">
+                <i class="fas fa-eye-slash"></i> ${hiddenCount} riskli varlık profiliniz gereği gizlendi.
+            </div>`;
+        }
+
+        dropdown.innerHTML = html;
         dropdown.classList.remove("hidden");
         attachItemEvents();
     }

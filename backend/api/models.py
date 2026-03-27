@@ -46,3 +46,11 @@ class ChatRequest(BaseModel):
     api_key: Optional[str] = None
     model: str = "gemini-2.5-flash"
     lang: str = "tr"
+    user_profile: Optional[dict] = None  # Onboarding wizard'dan gelen yatırımcı profili
+
+
+class OnboardingProfileRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    level: str          # "beginner" | "read" | "tried"
+    goal: str           # "protect" | "target" | "grow"
+    risk_tolerance: str # "low" | "medium" | "high"

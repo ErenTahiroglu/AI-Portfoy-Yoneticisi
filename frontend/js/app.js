@@ -14,6 +14,7 @@ import { runWizard } from './services/WizardService.js';
 import { updateHeroCards, showEmptyPortfolioState, hideEmptyPortfolioState } from './components/HeroCardsComponent.js';
 import { renderHeatmap } from './components/HeatmapComponent.js';
 import { setupAuthModal, updateAuthUI } from './supabaseClient.js';
+import { initOnboardingWizard, getUserProfile, skipWizard } from './services/OnboardingWizard.js';
 
 // ── CTA: "İlk Varlığını Ekle" (Empty State butonu) ──
 window._triggerAddAsset = function() {
@@ -34,6 +35,9 @@ window.fetchAutonomousAlerts = fetchAutonomousAlerts;
 window.openMetricModal = openMetricModal;
 window.showComparison = showComparison;
 window.renderMacroAI = renderMacroAI;
+// ── Onboarding Wizard Globals ──────────────────────────────────────────────
+window.getUserProfile       = getUserProfile;  // Chat.js tarafından kullanılacak
+window.skipOnboardingWizard = skipWizard;      // HTML skip link tarafından çağrılacak
 
 const API_BASE = window.API_BASE;
 
@@ -164,8 +168,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const guestLogoutBtn = document.getElementById("guest-logout-btn");
                 if (guestLogoutBtn) guestLogoutBtn.style.display = "none";
 
-                // ── Post-Login Routing: Başlangıç (Beginner) sekmesine yönlendir ──
-                // Profesyonel modu kapat → kullanıcı Başlangıç sekmesinde başlasın
                 document.body.classList.remove("professional-mode");
                 localStorage.setItem("viewMode", "beginner");
                 const profToggle = document.getElementById("prof-mode-toggle");
@@ -173,7 +175,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const uiToggle = document.getElementById("ui-mode-toggle");
                 if (uiToggle) uiToggle.checked = false;
 
-                // ── Empty State: portföy yoksa göster ──
+                // ── Onboarding wizard: ilk girişte sihirbaz ─────────────────
+                // Dashboard, wizard onComplete callback'i içinde açılacak
+                await initOnboardingWizard(() => {
+                    if (landing)     landing.style.display     = "none";
+                    if (sidebar)     sidebar.style.display     = "";
+                    if (mainContent) mainContent.style.display = "";
+                });
+
+                // Empty State: portföy yoksa göster
                 try {
                     const portfolio = await window.SupabaseAuth.loadPortfolio();
                     if (!portfolio || portfolio.length === 0) {

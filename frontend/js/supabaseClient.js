@@ -253,14 +253,31 @@ export function setupAuthModal() {
                 } else {
                     _showAuthSuccess("Giriş başarılı! Yönlendiriliyorsunuz...");
                     updateAuthUI(result.user);
-                    setTimeout(() => {
-                        modal.classList.add("hidden");
-                        const landing = document.getElementById("landing-page");
-                        const sidebar = document.getElementById("sidebar");
-                        const main = document.querySelector(".main-content");
-                        if (landing) landing.style.display = "none";
-                        if (sidebar) sidebar.style.display = "";
-                        if (main) main.style.display = "";
+                    setTimeout(async () => {
+                        // Onboarding wizard entegrasyon noktası:
+                        // Yeni kullanıcı → wizard göster, eski kullanıcı → direkt geç
+                        try {
+                            const { initOnboardingWizard } = await import('./services/OnboardingWizard.js');
+                            await initOnboardingWizard(() => {
+                                modal.classList.add("hidden");
+                                const landing = document.getElementById("landing-page");
+                                const sidebar = document.getElementById("sidebar");
+                                const main = document.querySelector(".main-content");
+                                if (landing) landing.style.display = "none";
+                                if (sidebar) sidebar.style.display = "";
+                                if (main) main.style.display = "";
+                            });
+                        } catch (e) {
+                            // Wizard yüklenemezse direkt dashboard'a geç
+                            console.error("Wizard init failed, falling back:", e);
+                            modal.classList.add("hidden");
+                            const landing = document.getElementById("landing-page");
+                            const sidebar = document.getElementById("sidebar");
+                            const main = document.querySelector(".main-content");
+                            if (landing) landing.style.display = "none";
+                            if (sidebar) sidebar.style.display = "";
+                            if (main) main.style.display = "";
+                        }
                     }, 1200);
                 }
             } catch (err) {

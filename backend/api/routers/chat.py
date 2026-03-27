@@ -93,7 +93,7 @@ async def chat_api(request: Request, body: ChatRequest):
         user_id = user["sub"] if user else None
 
         from backend.core.ai_agent import generate_chat_response
-        reply = await generate_chat_response(body.messages, body.portfolio_context, body.api_key, body.model, body.lang, user_id=user_id)
+        reply = await generate_chat_response(body.messages, body.portfolio_context, body.api_key, body.model, body.lang, user_id=user_id, user_profile=body.user_profile)
         
         if user_id and body.messages:
              user_msg = ""

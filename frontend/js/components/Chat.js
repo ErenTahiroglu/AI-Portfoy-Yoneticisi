@@ -93,7 +93,8 @@ export function initCopilot() {
                 portfolio_context: contextMsg,
                 api_key: apiKey,
                 model: document.getElementById("model-select").value,
-                lang: typeof getLang === "function" ? getLang() : "tr"
+                lang: typeof getLang === "function" ? getLang() : "tr",
+                user_profile: typeof window.getUserProfile === "function" ? window.getUserProfile() : null
             };
             
             let jwtToken = "";

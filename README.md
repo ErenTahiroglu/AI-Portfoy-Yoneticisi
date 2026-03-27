@@ -22,9 +22,14 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 *   **Hisse & Fon Raporlama:** VaR (Value at Risk), Beta ve Maximum Drawdown gibi modern risk metrikleri.
 *   **Makro Analiz Generator:** Tüm portföyün korelasyonlarını ve dengeleme ihtiyaçlarını streaming (akan) metin olarak sunar.
 
-### 🛡️ 2. Güvenlik ve Kurumsal Kalkanlar (SRE Essentials)
-*   **Sıfır Güven (Zero-Trust) IAM:** WebSocket ve API kollarında JWT güvenliği ve Redis tabanlı Canlı **Oturum İptal (Revocation)** süzgeci.
-*   **Thundering Herd & Cache Stampede Guard:** Yeniden bağlanma anlarında **Exponential Jitter** metodu ve RAM içi Mutex loklaması ile sunucu darboğazlarını çözer.
+### 🎨 2. Kullanıcı Deneyimi (UX) & Onboarding
+*   **Akıllı Karşılama Sihirbazı (Onboarding Wizard):** "Sıfırıncı Seviye" kullanıcılar için 3 adımlı, jargonsuz ve card-based bir yatırım profili oluşturma akışı.
+*   **Kişiselleştirilmiş AI Yanıtları:** Sihirbazda toplanan veriler otomatik olarak AI sistem prompt'una enjekte edilir (Kullanıcı tecrübesine göre dil değişimi).
+
+### 🛡️ 3. Güvenlik ve Kurumsal Kalkanlar (SRE Essentials)
+*   **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan (Penny stocks, altcoins) otomatik filtrelenir.
+*   **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO (panik satış/dürtüsel alış) içeren komutlarını durdurur ve rasyonel sorgulama yapar.
+*   **Sıfır Güven (Zero-Trust) IAM:** WebSocket ve API kollarında JWT güvenliği ve Supabase Auth entegrasyonu.
 *   **Prompt Isolation & PII Sanitization:** Dışarıdan akan haberler XML etiketleri ile hapsedilir, LLM’e gitmeden hassas bakiye verileri otomatik maskelenir.
 *   **Idempotency & Tracing:** Mükerrer emir basımları (Double-click) prevent edilir; baştan uca UUID Correlation zinciri mevcuttur.
 
@@ -38,6 +43,7 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 *   **`brand_assets/`**: Kurumsal logo, renk paletleri ve font guideline kalkanı.
 *   **`.claudemd`**: AI Workspace kalkanı, teknoloji yığını ve kesin mimari sınır kısıtlamaları.
 *   **🧩 Modüler Mimari (Puzzle)**: `services/` ve `components/` katmanları ile tam SRP (Single Responsibility) uyumu.
+*   **🗄️ Database Migrations**: Alembic ile versiyonlanmış veritabanı şeması (Supabase entegrasyonu).
 
 
 ---

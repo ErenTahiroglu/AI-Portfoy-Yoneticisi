@@ -2903,3 +2903,95 @@ body.professional-mode .btn-primary:hover {
     background: rgba(255, 255, 255, 0.02);
     color: var(--primary);
 }
+/* ═══════════════════════════════════════════════════════════
+   ONBOARDING WIZARD — Kart Tabanlı Adım Akışı
+   ═══════════════════════════════════════════════════════════ */
+
+/* Kart ızgarası */
+.wizard-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    width: 100%;
+    max-width: 520px;
+}
+
+/* Tek kart */
+.wizard-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.4rem;
+    background: var(--glass-item);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.wizard-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.45);
+    background: rgba(99, 102, 241, 0.06);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.12);
+}
+
+.wizard-card.selected {
+    border-color: rgba(99, 102, 241, 0.7);
+    background: rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18), 0 8px 24px rgba(99, 102, 241, 0.18);
+    transform: scale(1.012);
+}
+
+/* Kart içi öğeler */
+.wizard-card-emoji {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.wizard-card-label {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: block;
+    margin-bottom: 2px;
+}
+
+.wizard-card-desc {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+    display: block;
+}
+
+/* Kart metni sütun düzeni */
+.wizard-card strong,
+.wizard-card span {
+    display: block;
+}
+
+/* Adım slayt animasyonu */
+@keyframes wizardSlideIn {
+    from { opacity: 0; transform: translateX(28px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.wizard-cards-grid.wizard-slide-in {
+    animation: wizardSlideIn 0.28s ease-out both;
+}
+
+/* Mobil uyum */
+@media (max-width: 480px) {
+    .wizard-cards-grid {
+        max-width: 100%;
+    }
+    .wizard-card {
+        padding: 0.95rem 1rem;
+    }
+    .wizard-card-emoji {
+        font-size: 1.3rem;
+    }
+}
