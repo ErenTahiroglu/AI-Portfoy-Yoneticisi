@@ -1,6 +1,6 @@
 """Add onboarding_profile and is_onboarded to user_settings
 
-Revision ID: 001
+Revision ID: 001_add_onboarding_to_user_settings
 Revises: 
 Create Date: 2026-03-27
 
@@ -14,8 +14,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 
 # ── Revision metadata ──────────────────────────────────────────────────────────
-revision = "001"
-down_revision = None   # İlk migration — önceki revision yok
+revision = "001_add_onboarding_to_user_settings"
+down_revision = None
 branch_labels = None
 depends_on = None
 
