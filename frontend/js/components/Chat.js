@@ -83,6 +83,22 @@ export function initCopilot() {
             const lastResults = window.lastResults || (typeof AppState !== "undefined" && AppState.results) || [];
             const lastExtras = window.lastExtras || (typeof AppState !== "undefined" && AppState.extras) || {};
             
+            const userProfile = typeof window.getUserProfile === "function" ? window.getUserProfile() : null;
+
+            // ── Telemetry: Kullanıcı Tepkisi Takibi ──
+            if (window.lastBrakeTriggered) {
+                const lowerText = text.toLowerCase();
+                const acceptedWords = ["anladım", "haklısın", "tamam", "bekleyelim", "bekleyeceğim", "iptal", "peki", "ok"];
+                const ignoredWords = ["hayır", "sat", "yine de", "emir", "onaylıyorum", "devam et", "zorla", "yap"];
+                
+                let eventType = "brake_ignored";
+                if (acceptedWords.some(w => lowerText.includes(w))) eventType = "brake_accepted";
+                else if (ignoredWords.some(w => lowerText.includes(w))) eventType = "brake_ignored";
+                
+                logTelemetryEvent(eventType, { user_response: text });
+                window.lastBrakeTriggered = false;
+            }
+
             const contextMsg = {
                 results: lastResults.map(r => ({ ticker: r.ticker, metrics: r.valuation, risk: r.financials?.risk, performance: r.financials?.s5 })),
                 extras: lastExtras
@@ -94,7 +110,7 @@ export function initCopilot() {
                 api_key: apiKey,
                 model: document.getElementById("model-select").value,
                 lang: typeof getLang === "function" ? getLang() : "tr",
-                user_profile: typeof window.getUserProfile === "function" ? window.getUserProfile() : null
+                user_profile: userProfile
             };
             
             let jwtToken = "";
@@ -124,10 +140,30 @@ export function initCopilot() {
             const reply = data.reply || data.response;
             appendMsg(reply, false);
             chatHistory.push({ role: "assistant", content: reply });
+
+            // ── Telemetry: AI Frenini Yakala ──
+            if (reply.includes("beklemek ister misiniz?") && userProfile?.level === "beginner") {
+                window.lastBrakeTriggered = true;
+            }
         } catch(err) {
             loadDiv.remove();
             appendMsg("Bağlantı hatası: " + err.message, false);
         }
+    }
+
+    async function logTelemetryEvent(eventType, metadata = {}) {
+        try {
+            const session = await window.SupabaseAuth.getValidSession();
+            if (!session) return;
+            await fetch(`${API_BASE}/api/telemetry/event`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ event_type: eventType, event_metadata: metadata })
+            });
+        } catch (e) { console.warn("Telemetry failed:", e); }
     }
     
     if (sendBtn) sendBtn.addEventListener("click", sendMessage);

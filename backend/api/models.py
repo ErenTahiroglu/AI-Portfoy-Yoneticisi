@@ -54,3 +54,9 @@ class OnboardingProfileRequest(BaseModel):
     level: str          # "beginner" | "read" | "tried"
     goal: str           # "protect" | "target" | "grow"
     risk_tolerance: str # "low" | "medium" | "high"
+
+
+class TelemetryEventRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    event_type: str
+    event_metadata: Optional[Dict[str, str]] = None # JSONB sütununa kaydedilecek

@@ -429,9 +429,37 @@ Yanıtın şu tonda olmalıdır: "Şu an piyasa genelinde bir dalgalanma/düşü
             
     try:
         response = await llm.ainvoke(langchain_msgs)
+        res_content = str(response.content)
+
+        # ── Behavioral Brake Telemetry ──────────────────────────────────────────
+        # Eğer üretilen yanıt fren şablonunu içeriyorsa logla
+        if "beklemek ister misiniz?" in res_content and user_profile and user_profile.get("level") == "beginner":
+            try:
+                # Kullanıcının son mesajını al (Metadata için)
+                last_user_msg = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "Unknown")
+                
+                # Asenkron olarak veritabanına logla (User ID varsa)
+                if user_id:
+                    supa_url = os.getenv("SUPABASE_URL", "")
+                    supa_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+                    
+                    async def _log_brake_triggered():
+                        payload = {
+                            "user_id": user_id,
+                            "event_type": "brake_triggered",
+                            "event_metadata": {"user_message": last_user_msg, "ai_response": res_content[:200]}
+                        }
+                        headers = {"apikey": supa_key, "Authorization": f"Bearer {supa_key}", "Content-Type": "application/json"}
+                        async with httpx.AsyncClient() as client:
+                            await client.post(f"{supa_url}/rest/v1/user_events", json=payload, headers=headers)
+                    
+                    asyncio.create_task(_log_brake_triggered())
+            except Exception as e:
+                logger.error(f"Brake telemetry log failed: {e}")
+
         if user_id:
              asyncio.create_task(_log_usage_async(user_id, response, prompt_text=portfolio_summary))
-        return str(response.content)
+        return res_content
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
