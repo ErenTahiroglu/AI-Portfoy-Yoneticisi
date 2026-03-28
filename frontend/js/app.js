@@ -322,6 +322,15 @@ setTimeout(() => {
 
     // Admin Dashboard Kontrolü
     initAdminDashboard();
+    
+    // 🛡️ DEV-ONLY: Show persistent warning if Admin Bypass is active
+    if (localStorage.getItem("admin_bypass") === "true") {
+        setTimeout(() => {
+            if (typeof showToast === "function") {
+                showToast("⚠️ Geliştirici/Bypass Modu AKTİF (Bazı veriler sahte olabilir)", "warning");
+            }
+        }, 3000);
+    }
 
     // ── Global Paywall Interceptor (402 Payment Required) ──
     const originalFetch = window.fetch;
@@ -348,10 +357,10 @@ document.addEventListener("click", (e) => {
             const current = localStorage.getItem("admin_bypass") === "true";
             localStorage.setItem("admin_bypass", !current ? "true" : "false");
             if (typeof showToast === "function") {
-                showToast(`Sistem Durumu: ${!current ? "Yönetici" : "Normal"}`, "info");
+                showToast(`Sistem Durumu: ${!current ? "🛠️ GELİŞTİRİCİ (MODERN)" : "🛡️ STANDART (GÜVENLİ)"}`, !current ? "warning" : "success");
             }
             secretClicks = 0;
-            setTimeout(() => window.location.reload(), 1000);
+            setTimeout(() => window.location.reload(), 1500);
         }
         setTimeout(() => { if (secretClicks > 0) secretClicks--; }, 3000);
     }

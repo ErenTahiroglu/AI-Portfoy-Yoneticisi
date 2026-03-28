@@ -83,22 +83,36 @@ export async function signOut() {
 }
 
 export async function getUser() {
-    if (typeof localStorage !== "undefined" && localStorage.getItem("admin_bypass") === "true") {
-        return { id: "dev_admin", email: "admin@local", user_metadata: { full_name: "Yönetici" } };
-    }
     if (!supabase) return null;
-    const { data } = await supabase.auth.getUser();
-    return data?.user || null;
+    try {
+        const { data, error } = await supabase.auth.getUser();
+        if (data?.user) return data.user;
+    } catch (e) {
+        console.warn("Auth check failed:", e);
+    }
+    
+    // Check bypass ONLY if no real user persists
+    if (typeof localStorage !== "undefined" && localStorage.getItem("admin_bypass") === "true") {
+        return { id: "dev_admin", email: "admin@local", user_metadata: { full_name: "Yönetici (Bypass)" } };
+    }
+    return null;
 }
 
 export async function getValidSession() {
+    try {
+        if (supabase) {
+            const { data, error } = await supabase.auth.getSession();
+            if (data?.session) return data.session;
+        }
+    } catch (e) {}
+
     if (typeof localStorage !== "undefined" && localStorage.getItem("admin_bypass") === "true") {
-        return { user: { id: "dev_admin", email: "admin@local" } };
+        return { 
+            access_token: "mock_bypass_token",
+            user: { id: "dev_admin", email: "admin@local" } 
+        };
     }
-    if (!supabase) return null;
-    const { data, error } = await supabase.auth.getSession();
-    if (error) { console.error("Session fetch error:", error); return null; }
-    return data?.session || null;
+    return null;
 }
 
 // ── UI Reactivity — oturum durumuna göre butonları reaktif günceller ─────────

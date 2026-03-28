@@ -18,41 +18,47 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 ## 🔥 Öne Çıkan Özellikler (Features)
 
 ### 🤖 1. Yapay Zeka & Analiz
-*   **Chief Investment Officer (CIO) Ajanı:** Analist ve Researcher modellerinden gelen verileri sentezleyen orkestratör asistan.
-*   **Hisse & Fon Raporlama:** VaR (Value at Risk), Beta ve Maximum Drawdown gibi modern risk metrikleri.
-*   **Makro Analiz Generator:** Tüm portföyün korelasyonlarını ve dengeleme ihtiyaçlarını streaming (akan) metin olarak sunar.
+
+* **Chief Investment Officer (CIO) Ajanı:** Analist ve Researcher modellerinden gelen verileri sentezleyen orkestratör asistan.
+* **Hisse & Fon Raporlama:** VaR (Value at Risk), Beta ve Maximum Drawdown gibi modern risk metrikleri.
+* **Makro Analiz Generator:** Tüm portföyün korelasyonlarını ve dengeleme ihtiyaçlarını streaming (akan) metin olarak sunar.
 
 ### 🎨 2. Kullanıcı Deneyimi (UX) & Onboarding
-*   **Akıllı Karşılama Sihirbazı (Onboarding Wizard):** "Sıfırıncı Seviye" kullanıcılar için 3 adımlı, jargonsuz ve card-based bir yatırım profili oluşturma akışı.
-*   **Kişiselleştirilmiş AI Yanıtları:** Sihirbazda toplanan veriler otomatik olarak AI sistem prompt'una enjekte edilir.
-*   **Modern Landing Page (UX Refined):** Scroll-based navigasyon, akıllı "Uygulamaya Git" butonu ve otomatik dashboard atlamayı önleyen kontrollü geçişler.
+
+* **Akıllı Karşılama Sihirbazı (Onboarding Wizard):** "Sıfırıncı Seviye" kullanıcılar için 3 adımlı, jargonsuz ve card-based bir yatırım profili oluşturma akışı.
+* **Kişiselleştirilmiş AI Yanıtları:** Sihirbazda toplanan veriler otomatik olarak AI sistem prompt'una enjekte edilir.
+* **Modern Landing Page (UX Refined):** Scroll-based navigasyon, akıllı "Uygulamaya Git" butonu ve otomatik dashboard atlamayı önleyen kontrollü geçişler.
+* **İzole Yönetici Modu (Admin Isolation):** Geliştirici erişimi (Bypass) gerçek kullanıcı oturumlarından ayrıştırıldı; oturum varken kimlik değişimi engellendi.
 
 ### 🛡️ 3. Güvenlik ve Kurumsal Kalkanlar (SRE Essentials)
-*   **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan otomatik filtrelenir.
-*   **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO durumlarını durdurur ve rasyonel sorgulama yapar.
-*   **📊 Telemetry Pipeline:** Tüm güvenlik müdahaleleri Supabase `user_events` tablosunda loglanır.
-*   **Sıfır Güven (Zero-Trust) IAM:** JWT güvenliği ve Supabase Auth entegrasyonu.
-*   **Prompt Isolation:** Dışarıdan akan haberler XML etiketleri ile hapsedilir.
-*   **Idempotency:** Mükerrer emir basımları prevent edilir.
+
+* **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan otomatik filtrelenir.
+* **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO durumlarını durdurur ve rasyonel sorgulama yapar.
+* **📊 Telemetry Pipeline:** Tüm güvenlik müdahaleleri Supabase `user_events` tablosunda loglanır.
+* **Sıfır Güven (Zero-Trust) IAM:** JWT güvenliği ve Supabase Auth entegrasyonu.
+* **Prompt Isolation:** Dışarıdan akan haberler XML etiketleri ile hapsedilir.
+* **Idempotency:** Mükerrer emir basımları prevent edilir.
 
 ---
 
 ## 📝 Son Değişiklikler (Changelog)
-*   **v1.2.0:** Landing page tasarımı yenilendi, UX akışları optimize edildi.
-*   **v1.1.5:** Güvenlik katmanı (Behavioral Brake) iyileştirildi, loglama mekanizması güçlendirildi.
-*   **v1.1.0:** Çoklu-ajan (CIO) mimarisi canlıya alındı.
+
+* **v1.2.5:** Yönetici yetki izolasyonu (Admin Bypass Fix) ve görsel bildirim katmanı eklendi.
+* **v1.2.0:** Landing page tasarımı yenilendi, UX akışları optimize edildi.
+* **v1.1.5:** Güvenlik katmanı (Behavioral Brake) iyileştirildi, loglama mekanizması güçlendirildi.
+* **v1.1.0:** Çoklu-ajan (CIO) mimarisi canlıya alındı.
 
 ---
 
 ## 🏗️ Mimari Yapı (Monorepo)
 
-*   **`/frontend`**: Vanilla Javascript, CSS3 ve HTML5. Dinamik yükleme modals ve Cold Start UI toleransları.
-*   **`/backend`**: FastAPI (Python 3.11). Asenkron I/O akışları ve arka plan metrik işleyiciler. İzolasyonlu proxy operasyonları.
-*   **`tests/ui/`**: Puppeteer tabanlı otonom ekran görüntüsü ve görsel test otomasyonu.
-*   **`brand_assets/`**: Kurumsal logo, renk paletleri ve font guideline kalkanı.
-*   **`.claudemd`**: AI Workspace kalkanı, teknoloji yığını ve kesin mimari sınır kısıtlamaları.
-*   **🧩 Modüler Mimari (Puzzle)**: `services/` ve `components/` katmanları ile tam SRP (Single Responsibility) uyumu.
-*   **🗄️ Database Migrations**: Alembic ile versiyonlanmış veritabanı şeması (Supabase entegrasyonu).
+* **`/frontend`**: Vanilla Javascript, CSS3 ve HTML5. Dinamik yükleme modals ve Cold Start UI toleransları.
+* **`/backend`**: FastAPI (Python 3.11). Asenkron I/O akışları ve arka plan metrik işleyiciler. İzolasyonlu proxy operasyonları.
+* **`tests/ui/`**: Puppeteer tabanlı otonom ekran görüntüsü ve görsel test otomasyonu.
+* **`brand_assets/`**: Kurumsal logo, renk paletleri ve font guideline kalkanı.
+* **`.claudemd`**: AI Workspace kalkanı, teknoloji yığını ve kesin mimari sınır kısıtlamaları.
+* **🧩 Modüler Mimari (Puzzle)**: `services/` ve `components/` katmanları ile tam SRP (Single Responsibility) uyumu.
+* **🗄️ Database Migrations**: Alembic ile versiyonlanmış veritabanı şeması (Supabase entegrasyonu).
 
 
 ---
@@ -73,8 +79,8 @@ Tüm platformu tek satır kodla ayağa kaldırabilirsiniz:
 ```bash
 docker-compose up --build
 ```
-*   **API Gateway:** `http://localhost:8000`
-*   **Statik UI Dağılımı:** `http://localhost:8000/ui`
+* **API Gateway:** `http://localhost:8000`
+* **Statik UI Dağılımı:** `http://localhost:8000/ui`
 
 ---
 
@@ -94,7 +100,6 @@ npm run test:ui
 ---
 
 ## 🤝 İletişim & Destek
-*   **Geliştirici:** Eren Tahiroğlu
 *   **Sponsorluk:** Katkıda bulunmak için [GitHub Sponsor](https://github.com/sponsors/ErenTahiroglu) sayfasını ziyaret edebilirsiniz.
 
 Saygılarımızla.

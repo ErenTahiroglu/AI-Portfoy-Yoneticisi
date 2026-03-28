@@ -29,12 +29,21 @@ export function initAdminDashboard() {
 }
 
 async function checkAdminAccess() {
+    const adminSection = document.getElementById("admin-sidebar-section");
+    if (!adminSection) return;
+
+    // 1. Check for manual bypass (Development/Debug Mode)
+    if (localStorage.getItem("admin_bypass") === "true") {
+        adminSection.classList.remove("hidden");
+        return;
+    }
+
     if (!window.SupabaseAuth) return;
     try {
         const session = await window.SupabaseAuth.getValidSession();
-        if (!session) return;
+        if (!session || !session.access_token) return;
+        
         const token = session.access_token;
-
         const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
             ? "http://localhost:8000" 
             : "https://ai-portfoy-yoneticisi.onrender.com";
@@ -45,8 +54,7 @@ async function checkAdminAccess() {
         });
         
         if (resp.ok) {
-            const adminSection = document.getElementById("admin-sidebar-section");
-            if (adminSection) adminSection.classList.remove("hidden");
+            adminSection.classList.remove("hidden");
         }
     } catch (e) {
          // Silently fail if not admin
