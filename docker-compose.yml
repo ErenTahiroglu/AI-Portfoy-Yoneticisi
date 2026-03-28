@@ -10,5 +10,17 @@ services:
     env_file:
       - .env
     volumes:
-      - .:/app
+      - ./backend:/app
+    environment:
+      - ENVIRONMENT=development
     restart: unless-stopped
+
+  # Frontend is served by the backend or separately (Vercel)
+  # To run locally with full stack:
+  # frontend:
+  #   image: nginx:alpine
+  #   volumes:
+  #     - ./frontend:/usr/share/nginx/html
+  #   ports:
+  #     - "3000:80"
+

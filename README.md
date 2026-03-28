@@ -24,15 +24,23 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ### 🎨 2. Kullanıcı Deneyimi (UX) & Onboarding
 *   **Akıllı Karşılama Sihirbazı (Onboarding Wizard):** "Sıfırıncı Seviye" kullanıcılar için 3 adımlı, jargonsuz ve card-based bir yatırım profili oluşturma akışı.
-*   **Kişiselleştirilmiş AI Yanıtları:** Sihirbazda toplanan veriler otomatik olarak AI sistem prompt'una enjekte edilir (Kullanıcı tecrübesine göre dil değişimi).
+*   **Kişiselleştirilmiş AI Yanıtları:** Sihirbazda toplanan veriler otomatik olarak AI sistem prompt'una enjekte edilir.
+*   **Modern Landing Page (UX Refined):** Scroll-based navigasyon, akıllı "Uygulamaya Git" butonu ve otomatik dashboard atlamayı önleyen kontrollü geçişler.
 
 ### 🛡️ 3. Güvenlik ve Kurumsal Kalkanlar (SRE Essentials)
-*   **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan (Penny stocks, altcoins) otomatik filtrelenir.
-*   **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO (panik satış/dürtüsel alış) içeren komutlarını durdurur ve rasyonel sorgulama yapar.
-*   **📊 Telemetry Pipeline:** Tüm güvenlik müdahaleleri (Brake triggered, accepted, ignored) Supabase `user_events` tablosunda loglanır; veri odaklı UX iyileştirmesi sağlar.
-*   **Sıfır Güven (Zero-Trust) IAM:** WebSocket ve API kollarında JWT güvenliği ve Supabase Auth entegrasyonu.
-*   **Prompt Isolation & PII Sanitization:** Dışarıdan akan haberler XML etiketleri ile hapsedilir, LLM’e gitmeden hassas bakiye verileri otomatik maskelenir.
-*   **Idempotency & Tracing:** Mükerrer emir basımları (Double-click) prevent edilir; baştan uca UUID Correlation zinciri mevcuttur.
+*   **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan otomatik filtrelenir.
+*   **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO durumlarını durdurur ve rasyonel sorgulama yapar.
+*   **📊 Telemetry Pipeline:** Tüm güvenlik müdahaleleri Supabase `user_events` tablosunda loglanır.
+*   **Sıfır Güven (Zero-Trust) IAM:** JWT güvenliği ve Supabase Auth entegrasyonu.
+*   **Prompt Isolation:** Dışarıdan akan haberler XML etiketleri ile hapsedilir.
+*   **Idempotency:** Mükerrer emir basımları prevent edilir.
+
+---
+
+## 📝 Son Değişiklikler (Changelog)
+*   **v1.2.0:** Landing page tasarımı yenilendi, UX akışları optimize edildi.
+*   **v1.1.5:** Güvenlik katmanı (Behavioral Brake) iyileştirildi, loglama mekanizması güçlendirildi.
+*   **v1.1.0:** Çoklu-ajan (CIO) mimarisi canlıya alındı.
 
 ---
 

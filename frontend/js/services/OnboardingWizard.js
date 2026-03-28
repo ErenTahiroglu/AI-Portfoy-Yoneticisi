@@ -70,14 +70,14 @@ export async function initOnboardingWizard(onCompleteCb) {
     if (serverResult.is_onboarded && serverResult.onboarding_profile) {
         // Sunucu "tamamlandı" diyor → cache'e yaz, sihirbazı atla
         _saveToCache(serverResult.onboarding_profile);
-        onCompleteCb(serverResult.onboarding_profile);
+        onCompleteCb(serverResult.onboarding_profile, false); // false: wizard was not shown
         return;
     }
 
     // 2. Sunucu erişilemezse localStorage cache'e düş
     const cached = getUserProfile();
     if (cached) {
-        onCompleteCb(cached);
+        onCompleteCb(cached, false); // false: wizard was not shown
         return;
     }
 
@@ -200,7 +200,7 @@ async function _completeWizard() {
     // Supabase'e kaydet (başarısız olsa bile önce dashboard'u aç)
     _saveToServer(_profile).catch(e => console.warn("Onboarding save failed:", e));
 
-    if (_onCompleteCb) _onCompleteCb(_profile);
+    if (_onCompleteCb) _onCompleteCb(_profile, true); // true: wizard was shown
 }
 
 // ── Skip ──────────────────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export function skipWizard() {
     _saveToCache(defaultProfile);
     _saveToServer(defaultProfile).catch(e => console.warn("Onboarding skip save failed:", e));
     _hideOverlay();
-    if (_onCompleteCb) _onCompleteCb(defaultProfile);
+    if (_onCompleteCb) _onCompleteCb(defaultProfile, true); // true: wizard was shown (and skipped)
 }
 
 // ── Supabase Kaydet ───────────────────────────────────────────────────────

@@ -176,11 +176,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (uiToggle) uiToggle.checked = false;
 
                 // ── Onboarding wizard: ilk girişte sihirbaz ─────────────────
-                // Dashboard, wizard onComplete callback'i içinde açılacak
-                await initOnboardingWizard(() => {
-                    if (landing)     landing.style.display     = "none";
-                    if (sidebar)     sidebar.style.display     = "";
-                    if (mainContent) mainContent.style.display = "";
+                // Dashboard, wizard onComplete callback'i içinde açılacak (sadece ilk kez gösterildiğinde)
+                await initOnboardingWizard((profile, wasShown) => {
+                    if (wasShown) {
+                        if (landing)     landing.style.display     = "none";
+                        if (sidebar)     sidebar.style.display     = "";
+                        if (mainContent) mainContent.style.display = "";
+                    } else {
+                        // Zaten onboarded ise landing page kalsın, updateAuthUI butonu "Uygulamaya Git" yaptı.
+                        // Sadece sidebar ve mainContent'in arkada hazır olmasını sağlayabiliriz ama gizli kalsınlar.
+                        if (landing)     landing.style.display     = "flex";
+                        if (sidebar)     sidebar.style.display     = "none";
+                        if (mainContent) mainContent.style.display = "none";
+                    }
                 });
 
                 // Empty State: portföy yoksa göster
