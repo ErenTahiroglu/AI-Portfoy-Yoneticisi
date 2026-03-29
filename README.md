@@ -22,6 +22,7 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 * **Chief Investment Officer (CIO) Ajanı:** Analist ve Researcher modellerinden gelen verileri sentezleyen orkestratör asistan.
 * **Hisse & Fon Raporlama:** VaR (Value at Risk), Beta ve Maximum Drawdown gibi modern risk metrikleri.
 * **Makro Analiz Generator:** Tüm portföyün korelasyonlarını ve dengeleme ihtiyaçlarını streaming (akan) metin olarak sunar.
+* **Puzzle Early Exit:** Sadece İslami uygunluk arayan kullanıcılar için gereksiz LLM çağrılarını kesen maliyet optimizasyonu.
 
 ### 🎨 2. Kullanıcı Deneyimi (UX) & Onboarding
 
@@ -35,7 +36,9 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 * **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan otomatik filtrelenir.
 * **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO durumlarını durdurur ve rasyonel sorgulama yapar.
 * **📊 Telemetry Pipeline:** Tüm güvenlik müdahaleleri Supabase `user_events` tablosunda loglanır.
-* **Sıfır Güven (Zero-Trust) IAM:** JWT güvenliği ve Supabase Auth entegrasyonu.
+* **Zero-Trust CI:** `pytest-socket` kalkanı ile test sırasında dış dünya ile tüm ağ trafiği bloklanır (Sızıntı koruması).
+* **Performance Gates:** Analiz süreleri 20s sınırında (Vercel/Render limitleri) otomatik monitor edilir.
+* **Safe-Fail LLM Mocking:** API anahtarı yokken bile framework kabiliyetleri mock-LLM ile test edilebilir.
 * **Prompt Isolation:** Dışarıdan akan haberler XML etiketleri ile hapsedilir.
 * **Idempotency:** Mükerrer emir basımları prevent edilir.
 

@@ -26,6 +26,10 @@ yarn-error.log*
 backend/tests/performance_report.txt
 backend/tests/memory_log.txt
 *.log
+*.swp
+*~
+.DS_Store
+brand_assets/compressed/
 
 # Secrets & Local Config
 .env
