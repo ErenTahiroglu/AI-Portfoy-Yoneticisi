@@ -58,9 +58,12 @@ try:
     from curl_cffi import requests as curl_req
     CURL_SESSION = curl_req.Session(verify=False, impersonate="chrome")
     HAS_CURL = True
+    req_lib = CURL_SESSION
 except Exception:
     HAS_CURL = False
     CURL_SESSION = None
+    import requests
+    req_lib = requests
 
 
 # ── .env dosyasını yükle ──────────────────────────────────────────────────

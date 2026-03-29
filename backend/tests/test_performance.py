@@ -23,8 +23,10 @@ async def test_full_analysis_performance_gate():
     # Create a fake LLM response for all adversarial agents
     fake_llm = FakeListChatModel(responses=['{"decision": "BUY", "reason": "Mocked performance test"}'])
     
-    with patch("backend.infrastructure.llm_factory.get_quick_think_llm", return_value=fake_llm), \
-         patch("backend.infrastructure.llm_factory.get_deep_think_llm", return_value=fake_llm):
+    # Patch targets everywhere they are imported
+    with patch("backend.nodes.adversarial_agents.get_quick_think_llm", return_value=fake_llm), \
+         patch("backend.nodes.adversarial_agents.get_deep_think_llm", return_value=fake_llm), \
+         patch("backend.engine.graph.get_quick_think_llm", return_value=fake_llm):
         
         graph = compile_trading_graph()
         

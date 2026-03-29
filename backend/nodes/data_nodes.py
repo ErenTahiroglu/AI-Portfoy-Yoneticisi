@@ -55,14 +55,12 @@ async def islamic_node(state: GraphState) -> dict:
     logger.info(f"[DataNode - Islamic] Checking real compliance for {ticker}")
     
     try:
-        from backend.analyzers.islamic_analyzer import IslamicAnalyzer
-        analyzer = IslamicAnalyzer()
-        # IslamicAnalyzer has specific logic for BIST and US
-        res = analyzer.full_check(ticker)
+        from backend.analyzers.islamic_analyzer import get_financials
+        res, error = get_financials(ticker)
         if res:
             return {"islamic_report": res}
             
-        return {"islamic_report": {"uygunluk": "Bilinmiyor", "sebep": "Analiz verisi yetersiz."}}
+        return {"islamic_report": {"uygunluk": "Bilinmiyor", "sebep": f"Analiz verisi yetersiz: {error}"}}
     except Exception as e:
         logger.error(f"[IslamicNode] Fail: {e}")
         return {"islamic_report": {"error": str(e)}}
