@@ -14,6 +14,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - TEMP_ADMIN_PASSWORD=${TEMP_ADMIN_PASSWORD:-Admin123!}
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc_dir
     restart: unless-stopped
 
   # Frontend is served by the backend or separately (Vercel)
