@@ -57,7 +57,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-asyncio psutil memory-profiler pytest-socket httpx pandas numpy
+          pip install pytest pytest-asyncio psutil memory-profiler pytest-socket httpx pandas numpy langchain-community
 
       - name: Run Zero Trust Tests (SRE Guard Locked)
         run: |
