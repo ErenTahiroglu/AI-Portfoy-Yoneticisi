@@ -12,8 +12,8 @@ from fastapi import HTTPException
 # ── 1. Rate Limiter Spam Concurrency Test ───────────────────────────────────
 
 @pytest.mark.asyncio
-@patch("backend.core.redis_cache.cache_get")
-@patch("backend.core.redis_cache.cache_set")
+@patch("backend.infrastructure.redis_cache.cache_get")
+@patch("backend.infrastructure.redis_cache.cache_set")
 async def test_rate_limiter_concurrency_spam(mock_set, mock_get):
     """1.000 paralel istekte asenkron Lock stabilizasyonunu test eder."""
     from backend.infrastructure.limiter import RateLimiter
@@ -111,7 +111,7 @@ async def test_api_analytics_empty_tickers():
 def test_zero_weight_portfolio():
     """Tüm ağırlıklar 0 olduğunda portfolio_simulator çökmemeli, boş dict dönmeli."""
     import pandas as pd
-    from backend.infrastructure.portfolio_simulator import run_portfolio_simulation
+    from backend.logic.simulator import run_portfolio_simulation
     
     # Mock fiyat verisi: 30 günlük seri
     dates = pd.date_range("2024-01-01", periods=30)
@@ -126,7 +126,7 @@ def test_zero_weight_portfolio():
 def test_empty_portfolio():
     """Boş portföyü simülasörü çökmeden boş dict dönmeli."""
     import pandas as pd
-    from backend.infrastructure.portfolio_simulator import run_portfolio_simulation
+    from backend.logic.simulator import run_portfolio_simulation
     
     result = run_portfolio_simulation(pd.DataFrame(), {})
     assert result == {}
@@ -135,7 +135,7 @@ def test_empty_portfolio():
 def test_cost_zero_asset():
     """Maliyeti 0 olan varlık PnL hesabında sıfıra bölme hatası üretmemeli."""
     import pandas as pd
-    from backend.infrastructure.portfolio_simulator import run_portfolio_simulation
+    from backend.logic.simulator import run_portfolio_simulation
     
     dates = pd.date_range("2024-01-01", periods=30)
     # Fiyat dizisinde sıfır başlangıç fiyatı
@@ -147,22 +147,8 @@ def test_cost_zero_asset():
     assert isinstance(result, dict), "Simülasör bir dict dönmeliydi."
 
 
-def test_safe_api_call_stale_cache_on_timeout():
-    """API Timeout'unda safe_api_call stale cache'den veri çekerek is_stale=True göndermeli."""
-    from unittest.mock import patch, MagicMock
-    from backend.infrastructure.analysis_engine import safe_api_call
-
-    fake_stale_data = {"ticker": "AAPL", "price": 155.0}
-    stale_key = "AAPL:False:True"
-
-    def failing_func():
-        raise Exception("Connection timed out")
-
-    with patch("backend.core.analysis_engine.cache_get", return_value=fake_stale_data):
-        result = safe_api_call(failing_func, stale_key=stale_key)
-
-    assert result.get("is_stale") is True
-    assert result.get("price") == 155.0
+# [DEPRECATED] Safe API Call logic has been absorbed into LangGraph nodes.
+# Removal of obsolete Unit Test for non-existent safe_api_call.
 
 
 # ── 6. Redis Connection Failure & Job Fallback ──────────────────────────────
@@ -173,7 +159,7 @@ async def test_redis_fallback_on_connection_error():
     SRE Chaos Test: Upstash Redis (REST) çöktüğünde sistemin
     in-memory _LOCAL sözlüğüne sessizce geçiş yapması ve veriyi koruması.
     """
-    from backend.infrastructure import redis_cache
+    from backend.infrastructure import redis_cache as redis_cache
     from unittest.mock import patch, MagicMock
     import httpx
     
@@ -201,7 +187,7 @@ async def test_datasync_fan_in_race_condition():
     Paralel veri toplama düğümleri (Market, Islamic, News) farklı sürelerde
     bitse bile DataSyncNode'un veriyi kusursuz birleştirdiğini doğrular.
     """
-    from backend.engine.trading_graph import data_sync_node
+    from backend.engine.graph import data_sync_node
     
     # Simüle edilmiş asenkron sonuçlar kümesi
     state = {

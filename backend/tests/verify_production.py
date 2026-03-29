@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Test Edilecek Modüller
 from backend.analyzers.islamic_analyzer import _get_single_stock_data
 from backend.analyzers.technical_analyzer import run_technical_indicators
-from backend.infrastructure.analysis_engine import AnalysisEngine, analyzer_registry
+from backend.engine.graph import NODE_REGISTRY
 
 class TestProductionIntegrity(unittest.TestCase):
 
@@ -157,18 +157,15 @@ class TestProductionIntegrity(unittest.TestCase):
     # Bölüm 3: Registry ve Genel Orkestrasyon
     # ══════════════════════════════════════════════════════════════════════
 
-    def test_registry_integration(self):
-        """Stratejilerin doğru register edildiğini test eder."""
-        # AnalysisEngine başlatılarak stratejilerin kaydı tetiklenir
-        _ = AnalysisEngine()
-        strategies = analyzer_registry.get_strategies()
-        self.assertTrue(len(strategies) > 0)
-        names = [s.name for s in strategies]
-        self.assertIn("islamic", names)
-        self.assertIn("technical", names)
-        self.assertIn("financial", names)
-        print(f"-> Kayıtlı Stratejiler: {names}")
-        print("✅ Registry Entegrasyonu: Başarılı")
+    def test_node_registry_integration(self):
+        """Düğümlerin (Nodes) doğru register edildiğini test eder."""
+        from backend.engine.graph import NODE_REGISTRY
+        self.assertTrue(len(NODE_REGISTRY) > 0)
+        self.assertIn("MarketNode", NODE_REGISTRY)
+        self.assertIn("IslamicNode", NODE_REGISTRY)
+        self.assertIn("Portfolio Manager", NODE_REGISTRY)
+        print(f"-> Kayıtlı Düğümler: {list(NODE_REGISTRY.keys())}")
+        print("✅ Node Registry Entegrasyonu: Başarılı")
 
 if __name__ == '__main__':
     print("\n🚀 AI Portfoy Yöneticisi AGRESİF Üretim Doğrulama Testi Başlatılıyor...\n")
