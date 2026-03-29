@@ -43,7 +43,8 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ## 📝 Son Değişiklikler (Changelog)
 
-* **v10.0 (Current):** **Kurumsal Gözlemlenebilirlik ve PnL (Shadow Tracking).** Tamamen izole Supabase pg_cron tabanlı T+n sanal kâr/zarar ölçüm motoru ve `/metrics` Prometheus telemetri altyapısı kuruldu. LangGraph SummarizerValidation zırhı eklendi.
+* **v10.1 (Current):** **Free-Tier SRE & Ölçeklenebilirlik Optimizasyonu.** Vercel 10s Timeout limitleri için Upstash Redis tabanlı Asenkron Polling (HTTP 202 Job Queue) mimarisine geçildi. Render uyku kalkanı olarak Ping-First (Kapı zili) ve 14-Dakika pg_cron hilesi eklendi. PWA `Stale-While-Revalidate` performansı artırıldı ve LangGraph için Sliding Window Reducer (OOM Koruması) devreye alındı. Single-worker in-memory failover mekanizması kodlandı.
+* **v10.0:** **Kurumsal Gözlemlenebilirlik ve PnL (Shadow Tracking).** Tamamen izole Supabase pg_cron tabanlı T+n sanal kâr/zarar ölçüm motoru ve `/metrics` Prometheus telemetri altyapısı kuruldu. LangGraph SummarizerValidation zırhı eklendi.
 * **v9.0:** **Yönlü Graf (LangGraph) Multi-Agent** kurgusuna geçildi! Bull vs Bear tartışma döngüleri, Devre Kesici (Circuit Breaker) kalkanı ve Shadow Deployment (Gölge Dağıtım) mekanizması ile sıfır riskli paralel geçiş operasyonu. Kapsamlı otonomi ve Fan-Out Fan-In veri toplayıcılar eklendi.
 * **v1.2.8:** Güvenli Yönetici Başlatma (Admin Bootstrap) ve Genişletilmiş JWT Yaşam Döngüsü yapılandırması.
 * **v1.2.5:** Yönetici yetki izolasyonu (Admin Bypass Fix) ve görsel bildirim katmanı eklendi.

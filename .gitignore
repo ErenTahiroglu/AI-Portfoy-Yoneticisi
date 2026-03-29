@@ -25,6 +25,7 @@ build/
 dist/
 *.spec
 *.pyc
+prometheus_multiproc_dir/
 
 # IDE and Editor files
 .vscode/

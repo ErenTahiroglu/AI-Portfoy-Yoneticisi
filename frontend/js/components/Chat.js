@@ -128,14 +128,28 @@ export function initCopilot() {
                 body: JSON.stringify(payload)
             });
             
-            loadDiv.remove();
-            
-            if (!res.ok) throw new Error("API Hatası");
-            const data = await res.json();
-            
-            const reply = data.reply || data.response;
-            appendMsg(reply, false);
-            chatHistory.push({ role: "assistant", content: reply });
+            const initialData = await res.json();
+            if (res.status === 202 && initialData.job_id) {
+                 // Polling başlat (Vercel kalkanı)
+                 const jobData = await window.pollJobResult(initialData.job_id, 3000);
+                 
+                 loadDiv.remove();
+                 
+                 const reply = jobData.reply || jobData.response;
+                 if (reply) {
+                     appendMsg(reply, false);
+                     chatHistory.push({ role: "assistant", content: reply });
+                 } else {
+                     throw new Error("Geçerli bir yanıt alınamadı.");
+                 }
+            } else {
+                 loadDiv.remove();
+                 if (!res.ok) throw new Error(initialData.detail || "API Hatası");
+                 
+                 const reply = initialData.reply || initialData.response;
+                 appendMsg(reply, false);
+                 chatHistory.push({ role: "assistant", content: reply });
+            }
 
             // ── Telemetry: AI Frenini Yakala ──
             if ((reply.includes("beklemek ister misiniz") || reply.includes("panikle satmak")) && userProfile?.level === "beginner") {

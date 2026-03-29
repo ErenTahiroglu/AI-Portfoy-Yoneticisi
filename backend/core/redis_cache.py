@@ -19,6 +19,9 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # ── In-Memory Fallback ────────────────────────────────────────────────────
+# KESİN UYARI: Bu in-memory fallback yapısı sadece SINGLE-WORKER (tek işçi) ortamlarında çalışır.
+# Çoklu worker (Gunicorn/Uvicorn workers > 1) veya serverless (Vercel) gibi ortamlarda state paylaşılamaz
+# ve polling (Durum kontrol) işlemleri tutarsızlıklarla (404 Not Found) sonuçlanır.
 _LOCAL: dict = {}
 
 # ── Upstash REST Client ───────────────────────────────────────────────────
@@ -55,6 +58,7 @@ def cache_get(key: str) -> Optional[dict]:
                 f"{_UPSTASH_URL}/get/{key}",
                 headers=_upstash_headers()
             )
+            resp.raise_for_status() # Limitlere/hatalara takılırsa in-memory'ye düşür
             if resp.status_code == 200:
                 result = resp.json().get("result")
                 if result:
@@ -79,11 +83,12 @@ def cache_set(key: str, data: dict, ttl: int = 300) -> None:
 
     if _redis_available and _UPSTASH_URL and _SESSION:
         try:
-            _SESSION.post(
+            resp = _SESSION.post(
                 f"{_UPSTASH_URL}/set/{key}",
                 headers=_upstash_headers(),
                 content=json.dumps([serialized, "EX", ttl])
             )
+            resp.raise_for_status()
             logger.debug(f"✍️ Redis cache set: {key} (TTL={ttl}s)")
         except Exception as e:
             logger.warning(f"Redis SET hatası ({key}): {e} — sadece in-memory yazıldı.")

@@ -1,10 +1,36 @@
-// ── Global Correlation ID Tracer & Cold Start Warner ──
+// ── Global Correlation ID Tracer & Cold Start Resilience ──
 (function() {
-    let coldStartWarningShown = false; // Debounce flag için
+    let coldStartWarningShown = false; 
+
+    // Kapı Zili (Ping-First) Sistemi: Render uyanık mı?
+    async function pingServer(originalFetch) {
+        const retries = 4;
+        for (let i = 0; i < retries; i++) {
+            try {
+                const healthRes = await originalFetch(`${API_BASE || ""}/api/health`, { method: "GET" });
+                if (healthRes.ok) return true;
+                throw new Error("Sunucu uyanmadı");
+            } catch (err) {
+                if (i === retries - 1) return false;
+                
+                if (!coldStartWarningShown && typeof window.showToast === "function") {
+                    coldStartWarningShown = true;
+                    window.showToast("🚀 Motorlar Isıtılıyor (Bu işlem yaklaşık 15-30 saniye sürebilir)...", "info");
+                    setTimeout(() => { coldStartWarningShown = false; }, 30000);
+                }
+                
+                const backoffTime = 3000 * Math.pow(2, i); // 3s, 6s, 12s
+                console.warn(`[Kapı Zili] Sunucu uykuda. ${backoffTime/1000}s sonra tekrar deneniyor...`);
+                await new Promise(r => setTimeout(r, backoffTime));
+            }
+        }
+        return false;
+    }
 
     const originalFetch = window.fetch;
     window.fetch = async function(...args) {
         let [resource, config] = args;
+        
         // Sadece kendi API'mize giden istekleri yakala
         if (typeof resource === "string" && resource.includes("/api/")) {
             config = config || {};
@@ -14,31 +40,79 @@
             }
             args[1] = config;
 
-            // 🕰️ SRE Cold Start Warning Timer
-            let isSlow = false;
-            const timer = setTimeout(() => {
-                isSlow = true;
-                if (!coldStartWarningShown && typeof window.showToast === "function") {
-                    coldStartWarningShown = true;
-                    window.showToast("🚀 Sunucu uyandırılıyor olabilir (Render Cold Start), lütfen 15-30 sn bekleyin...", "info");
-                    
-                    // 30 saniye boyunca tekrar uyarı verilmesini engelle
-                    setTimeout(() => { coldStartWarningShown = false; }, 30000);
-                }
-            }, 3000); // 3 sn yanıt gelmezse uyarı göster
+            // Ping-First: Eğer ağır bir istekse (POST/PUT vs ve health değilse), önce kapıyı çal.
+            if (config.method && ["POST", "PUT"].includes(config.method.toUpperCase()) && !resource.includes("/health")) {
+                 const isAwake = await pingServer(originalFetch);
+                 if (!isAwake) {
+                     throw new Error("Sunucu uyandırılamadı (Vercel Timeout veya Render Down). Lütfen daha sonra tekrar deneyin.");
+                 }
+            }
 
-            try {
-                const response = await originalFetch.apply(this, args);
-                clearTimeout(timer);
-                return response;
-            } catch (err) {
-                clearTimeout(timer);
-                throw err;
+            const retries = 3;
+            // İlk istek genel ağ hatası verirse standart retry algısı:
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await originalFetch.apply(this, args);
+                    
+                    if (response.ok || ![502, 503, 504].includes(response.status)) {
+                        return response;
+                    }
+                    throw new Error(`Status: ${response.status}`);
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    const backoffTime = 2000 * Math.pow(2, i);
+                    await new Promise(r => setTimeout(r, backoffTime));
+                }
             }
         }
+        
         return originalFetch.apply(this, args);
     };
 })();
+
+// ═══════════════════════════════════════
+// ASYNC JOB POLLING ENGINE (Vercel Timeout Bypass)
+// ═══════════════════════════════════════
+window.pollJobResult = async function(jobId, pollingInterval = 3000) {
+    if (!jobId) throw new Error("Job ID eksik");
+    
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 40; // Maksimum 2 dakika tahammül (40 * 3 sn = 120s). Sonsuz döngü kalkanı.
+        
+        const intervalChecker = setInterval(async () => {
+             attempts++;
+             if (attempts > maxAttempts) {
+                  clearInterval(intervalChecker);
+                  reject(new Error("Zaman aşımı: Sunucu görevi belirtilen sürede (2dk) tamamlayamadı. Sistem meşgul olabilir."));
+                  return;
+             }
+             
+             try {
+                  const res = await fetch(`${API_BASE}/api/status/${jobId}`);
+                  if (res.status === 404) {
+                       clearInterval(intervalChecker);
+                       reject(new Error("Arkaplan görevi (Job) zaman aşımına uğradı veya bulunamadı."));
+                       return;
+                  }
+                  
+                  const data = await res.json();
+                  
+                  if (data.status === "COMPLETED") {
+                       clearInterval(intervalChecker);
+                       resolve(data.result);
+                  } else if (data.status === "ERROR") {
+                       clearInterval(intervalChecker);
+                       reject(new Error(data.error || "Arkaplan görevinde sunucu hatası."));
+                  }
+                  // PENDING veya RUNNING ise beklemeye devam et
+             } catch (err) {
+                  // status api'sine erişirken ağ hatası olduysa tolere et, poll etmeye devam et
+                  console.warn("[Polling API Error]", err);
+             }
+        }, pollingInterval);
+    });
+};
 
 // ═══════════════════════════════════════
 // AI WIZARD

@@ -21,6 +21,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["Analysis"])
 
+@router.get("/status/{job_id}")
+async def get_background_job_status(job_id: str):
+    """
+    Vercel Timeout (10s) sınırını delmek için kullanılan Polling rotası.
+    Arkaplandaki (Redis) görevin tamamlanıp tamamlanmadığını söyler.
+    """
+    from backend.core.job_queue import get_job_status
+    status_data = get_job_status(job_id)
+    if status_data.get("status") == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail="Job not found or expired.")
+    return status_data
+
+
 async def check_double_submit(request: Request, payload_dict: dict, name: str):
     """Mükerrer istekleri engellemek için 5 saniyelik idempotens süzgeci."""
     from backend.core import redis_cache
