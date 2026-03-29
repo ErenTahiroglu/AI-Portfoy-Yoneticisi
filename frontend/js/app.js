@@ -8,7 +8,7 @@ import { toggleNotifications, markAllAlertsRead, fetchAutonomousAlerts } from '.
 import { openMetricModal } from './components/Modals.js';
 import { showComparison } from './components/Comparison.js';
 import { initCopilot, renderMacroAI } from './components/Chat.js';
-import { setupBacktestBindings, fetchAndRenderSignals, setupOptimization, setupRiskAnalysis, setupPaperTrades } from './components/Analysis.js';
+import { setupBacktestBindings, setupOptimization, setupRiskAnalysis, setupPaperTrades } from './components/Analysis.js';
 import { initAdminDashboard } from './components/AdminDashboard.js';
 import { runWizard } from './services/WizardService.js';
 import { updateHeroCards, showEmptyPortfolioState, hideEmptyPortfolioState } from './components/HeroCardsComponent.js';
@@ -50,7 +50,7 @@ const AppState = createStore({
 });
 window.AppState = AppState;
 
-AppState.subscribe((prop, val, oldValue) => {
+AppState.subscribe((prop, val, _oldValue) => {
     if (prop === "viewMode") {
         document.body.classList.toggle("professional-mode", val === "pro");
         localStorage.setItem("viewMode", val);
@@ -76,7 +76,7 @@ AppState.subscribe((prop, val, oldValue) => {
         if (resultsSection) resultsSection.classList.remove("hidden");
 
         window.lastResults = val;
-        try { renderHeatmap(val); renderScenarios(val); } catch (e) { }
+        try { renderHeatmap(val); renderScenarios(val); } catch (e) { /* render errors ignored */ }
     }
 
     if (prop === "extras") {
@@ -89,9 +89,9 @@ AppState.subscribe((prop, val, oldValue) => {
                 if (scoreVal) scoreVal.textContent = val.weighted_return_5y;
                 if (scoreBadge) scoreBadge.classList.remove("hidden");
             }
-        } catch (e) { }
+        } catch (e) { /* score calculation ignored */ }
 
-        try { renderExtras(val); updateHeroCards(AppState.results, val); } catch (e) { }
+        try { renderExtras(val); updateHeroCards(AppState.results, val); } catch (e) { /* extras render errors ignored */ }
 
         try {
             if (val.optimized_weights) {
@@ -100,7 +100,7 @@ AppState.subscribe((prop, val, oldValue) => {
                 const optWrap = document.getElementById("optimization-wrap");
                 if (optWrap) optWrap.classList.add("hidden");
             }
-        } catch (e) { }
+        } catch (e) { /* optimization render errors ignored */ }
     }
 });
 
@@ -314,10 +314,7 @@ setTimeout(() => {
     };
 }, 1000);
 
-function renderResults(data) {
-    AppState.results = data.results || [];
-    if (data.extras) AppState.extras = data.extras;
-}
+// [REMOVED] renderResults has been replaced by reactive AppState.results updates.
 
 // ── Secret Admin Bypass Trigger (5-clicks on title) ──────────────────────
 let secretClicks = 0;
