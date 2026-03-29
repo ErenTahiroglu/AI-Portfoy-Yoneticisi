@@ -6,7 +6,7 @@
  * kart DOM'larını flash animasyonla günceller.
  *
  * Kullanım:
- *   import { initLivePrices, subscribeTickers } from './livePrices.js';
+ *   import { initLivePrices, subscribeTickers } from './network/livePrices.js';
  *   initLivePrices();
  *   subscribeTickers(['AAPL', 'TSLA', 'GOOGL']);
  */

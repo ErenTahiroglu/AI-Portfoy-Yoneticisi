@@ -73,7 +73,7 @@ def register_websocket_routes(app, router=None):
              return
 
         # Token Doğrulama
-        from backend.api.auth import verify_token_string
+        from backend.infrastructure.auth import verify_token_string
         try:
              verify_token_string(token)
         except Exception as e:

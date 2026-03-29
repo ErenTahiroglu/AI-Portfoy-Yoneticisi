@@ -2,8 +2,8 @@ import json
 import logging
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from backend.core.graph.agent_states import GraphState
-from backend.core.llm_factory import get_quick_think_llm, get_deep_think_llm
+from backend.engine.agent_states import GraphState
+from backend.infrastructure.llm_factory import get_quick_think_llm, get_deep_think_llm
 
 logger = logging.getLogger(__name__)
 

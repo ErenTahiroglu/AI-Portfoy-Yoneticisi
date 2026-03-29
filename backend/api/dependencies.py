@@ -3,15 +3,13 @@ import httpx
 from fastapi import Request, HTTPException, Depends
 from datetime import datetime, timedelta
 
-from backend.core.analysis_engine import AnalysisEngine
-from backend.api.auth import verify_jwt
+from backend.services.chat_orchestrator import orchestrator
+from backend.infrastructure.auth import verify_jwt
 
-# Singleton instance of analysis engine
-engine = AnalysisEngine()
+def get_orchestrator():
+    """Dependency Injection provider for ChatOrchestrator."""
+    return orchestrator
 
-def get_engine() -> AnalysisEngine:
-    """Dependency Injection provider for AnalysisEngine."""
-    return engine
 
 async def check_llm_quota(request: Request, payload=Depends(verify_jwt)):
     """Kullanıcının LLM token kullanım miktarını kontrol eder, limit aşımında 402 döner."""

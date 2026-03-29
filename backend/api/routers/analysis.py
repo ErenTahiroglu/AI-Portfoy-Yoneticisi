@@ -10,10 +10,10 @@ from typing import List, Optional
 import pandas as pd
 
 from backend.api.models import AnalysisRequest, PortfolioOptimizeRequest, PortfolioRiskRequest
-from backend.api.rate_limiter import limiter
-from backend.api.auth import verify_jwt, SUPABASE_JWT_SECRET
+from backend.infrastructure.limiter import limiter
+from backend.infrastructure.auth import verify_jwt, SUPABASE_JWT_SECRET
 import jwt
-from backend.api.dependencies import get_engine
+from backend.api.dependencies import get_orchestrator
 from backend.api.utils import process_tickers_with_weights, tr_lower
 from backend.data.constants import POPULAR_TICKERS
 
@@ -27,7 +27,7 @@ async def get_background_job_status(job_id: str):
     Vercel Timeout (10s) sınırını delmek için kullanılan Polling rotası.
     Arkaplandaki (Redis) görevin tamamlanıp tamamlanmadığını söyler.
     """
-    from backend.core.job_queue import get_job_status
+    from backend.infrastructure.job_queue import get_job_status
     status_data = get_job_status(job_id)
     if status_data.get("status") == "NOT_FOUND":
         raise HTTPException(status_code=404, detail="Job not found or expired.")
@@ -36,8 +36,8 @@ async def get_background_job_status(job_id: str):
 
 async def check_double_submit(request: Request, payload_dict: dict, name: str):
     """Mükerrer istekleri engellemek için 5 saniyelik idempotens süzgeci."""
-    from backend.core import redis_cache
-    from backend.api.rate_limiter import _extract_user_id
+    from backend.infrastructure import redis_cache
+    from backend.infrastructure.limiter import _extract_user_id
     
     auth = request.headers.get("Authorization")
     user_id = _extract_user_id(auth) or (request.client.host if request.client else "unknown")
@@ -82,8 +82,7 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
             except Exception:
                 pass 
 
-    from backend.core.graph.trading_graph import compile_trading_graph
-    graph = compile_trading_graph()
+    from backend.services.chat_orchestrator import orchestrator
 
     async def event_generator():
         semaphore = asyncio.Semaphore(2) # Parallel limit for Free Tier
@@ -97,13 +96,12 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
                         "model_name": request.model,
                         "lang": request.lang,
                         "user_id": user_id,
-                        # Analysis Mode Flags
                         "check_financials": request.check_financials,
                         "check_islamic": request.check_islamic
                     }
-                    # Graph invoke
-                    result = await graph.ainvoke(input_state)
-                    # OutputMapperNode formats the data into "final_report"
+                    # Synchronized Bridge: Direct ainvoke
+                    result = await orchestrator.ainvoke(input_state)
+                    # OutputMapper formats for frontend
                     legacy_res = result.get("final_report", {})
                     return ticker, legacy_res, None
                 except Exception as e:

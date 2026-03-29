@@ -4,7 +4,8 @@ import httpx
 import logging
 from datetime import datetime, timezone
 
-from backend.core.analysis_engine import AnalysisEngine
+from backend.services.chat_orchestrator import orchestrator
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ def dlq_guard(func):
         except Exception as e:
             logger.error(f"🚨 [DLQ Trigger] Görev Hatası ({ticker}): {e}")
             try:
-                from backend.core.redis_cache import cache_get, cache_set
+                from backend.infrastructure.redis_cache import cache_get, cache_set
                 dlq_key = "dlq:failed_jobs"
                 failed_jobs = cache_get(dlq_key) or {}
                 
@@ -47,9 +48,17 @@ def dlq_guard(func):
     return wrapper
 
 @dlq_guard
-async def _process_single_ticker(engine, ticker, client, headers, user_id, weight, chat_id):
+async def _process_single_ticker(ticker, client, headers, user_id, weight, chat_id):
     """Her hisseyi otonom tarayan ana görev mantığı sarmalı."""
-    res = await asyncio.to_thread(engine._analyze_single, ticker)
+    input_state = {
+        "ticker": ticker,
+        "messages": [f"Otonom tarama: {ticker}"],
+        "check_financials": True,
+        "check_islamic": True
+    }
+    result = await orchestrator.ainvoke(input_state)
+    res = result.get("final_report", {})
+
     if not res or ("error" in res and res["error"]):
         return {"error": res.get("error", "Boş yanıt")}
         
@@ -100,7 +109,7 @@ async def start_alert_scheduler():
         return
 
     logger.info("Autonomous Scheduler: Otonom tetikleyici aktif. 12 Saatte bir çalışacak.")
-    engine = AnalysisEngine()
+
     
     headers = {
         "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
@@ -140,7 +149,8 @@ async def start_alert_scheduler():
                         weight = float(item.get("weight", 1.0)) if isinstance(item, dict) else 1.0
                         
                         # 🛡️ DECORATED EXECTION
-                        res = await _process_single_ticker(engine, ticker, client, headers, user_id, weight, chat_id)
+                        res = await _process_single_ticker(ticker, client, headers, user_id, weight, chat_id)
+
                         
                         if "status" in res and res["status"] == "ok":
                             portfolio_return_sum += res["return_sum"]

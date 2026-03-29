@@ -3,7 +3,7 @@ import time
 import logging
 import os
 import psutil
-from backend.core.graph.trading_graph import compile_trading_graph
+from backend.engine.trading_graph import compile_trading_graph
 
 logger = logging.getLogger(__name__)
 

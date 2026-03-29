@@ -1,16 +1,16 @@
 import logging
 from langgraph.graph import START, END, StateGraph
 
-from backend.core.graph.agent_states import GraphState
-from backend.core.llm_factory import get_quick_think_llm
+from backend.engine.agent_states import GraphState
+from backend.infrastructure.llm_factory import get_quick_think_llm
 
-from backend.core.agents.data_nodes import (
+from backend.nodes.data_nodes import (
     market_data_node,
     islamic_node,
     news_node
 )
-from backend.core.graph.circuit_breaker import evaluate_risk_circuit_breaker
-from backend.core.agents.adversarial_agents import (
+from backend.engine.circuit_breaker import evaluate_risk_circuit_breaker
+from backend.nodes.adversarial_agents import (
     bull_researcher_node,
     bear_researcher_node,
     research_manager_node,
@@ -161,7 +161,22 @@ async def output_mapper_node(state: GraphState) -> dict:
     }
 
 
-# ── 🧩 Puzzle Mimari: Node Registry (Dinamik Kayıt Defteri) ────────────────
+async def data_sync_node(state: GraphState) -> dict:
+    """
+    📡 [DataSyncNode]: Paralel dalların (Market, Islamic, News) 
+    birleştiği senkronizasyon noktası. Fan-In pattern.
+    """
+    logger.info("📡 Veri toplama dalları birleşiyor...")
+    return {"messages": ["Paralel veri analizi tamamlandı, sentez aşamasına geçiliyor."]}
+
+
+async def data_join_and_circuit_node(state: GraphState) -> dict:
+    """
+    🔄 [DataJoinAndCircuit]: Veri bütünlüğü kontrolü ve döngü sayacı.
+    """
+    turn_count = state.get("turn_count", 0)
+    return {"turn_count": turn_count + 1}
+
 # Her bir düğüm (Node) kendi fonksiyonunu, takip eden kenarlarını (Edges)
 # ve Koşullu Yönlendirme (Conditional Edges) mantığını burada tanımlar.
 # Bu yapı sayesinde yeni bir Ajan/DataNode eklemek için compile() koduna 
@@ -186,11 +201,11 @@ NODE_REGISTRY = {
         "edges": ["DataSyncNode"]
     },
     "DataSyncNode": {
-        "func": lambda state: {"msg": "📡 Paralel veri toplama tamamlandı. Bütünleştirme yapılıyor."},
+        "func": data_sync_node,
         "edges": ["DataJoinAndCircuit"]
     },
     "DataJoinAndCircuit": {
-        "func": lambda state: {"turn_count": state.get("turn_count", 0) + 1},
+        "func": data_join_and_circuit_node,
         "edges": ["Bull Researcher"]
     },
     "Bull Researcher": {

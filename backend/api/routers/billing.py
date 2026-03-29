@@ -6,7 +6,7 @@ import hmac
 from fastapi import APIRouter, HTTPException, Depends, Request, Header
 from datetime import datetime
 
-from backend.api.auth import verify_jwt
+from backend.infrastructure.auth import verify_jwt
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ async def billing_webhook(
          raise HTTPException(status_code=400, detail="Invalid payload: Missing event_id or user_id")
 
     # 3. 🛡️ Idempotency / Double Submit Check (Redis)
-    from backend.core.redis_cache import cache_get, cache_set
+    from backend.infrastructure.redis_cache import cache_get, cache_set
     processed_key = f"webhook:processed:{event_id}"
     if cache_get(processed_key):
          logger.info(f"Billing Webhook: Event {event_id} already processed. Skipping.")

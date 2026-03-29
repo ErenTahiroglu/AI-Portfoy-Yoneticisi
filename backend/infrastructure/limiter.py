@@ -54,7 +54,7 @@ class RateLimiter:
         self.lock = asyncio.Lock()
 
     async def check(self, request: Request):
-        from backend.core import redis_cache
+        from backend.infrastructure import redis_cache
 
         # ── Kimlik Anahtarı Belirleme (Proxy Trust Hardening) ──────────────
         auth_header = request.headers.get("Authorization")

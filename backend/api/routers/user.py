@@ -3,7 +3,7 @@ import os
 import httpx
 from fastapi import APIRouter, HTTPException, Depends, Request
 from backend.api.models import UserSettingsRequest, OnboardingProfileRequest
-from backend.api.auth import verify_jwt
+from backend.infrastructure.auth import verify_jwt
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +264,7 @@ async def logout(request: Request):
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
         try:
-             from backend.core.redis_cache import cache_set
+             from backend.infrastructure.redis_cache import cache_set
              # Token'ı 24 Saatliğine kara listeye al (Max TTL simülasyonu)
              cache_set(f"jwt_blacklist:{token}", "true", ttl=86400)
              logger.info(f"User JWT blacklisted successfully on logout.")
@@ -288,7 +288,7 @@ async def export_data(request: Request):
 
     try:
         import httpx
-        from backend.core.scheduler import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+        from backend.infrastructure.scheduler import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
         
         headers = {
             "apikey": SUPABASE_SERVICE_ROLE_KEY,

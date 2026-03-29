@@ -43,7 +43,8 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ## 📝 Son Değişiklikler (Changelog)
 
-* **v10.5 (Current):** **SRE Hardening & Zero-Trust CI.** `pytest-socket` tabanlı katı ağ izolasyonu (Network Block) ve asenkron sızıntı koruması eklendi. "Sadece İslami Analiz" modu için Puzzle mimarisi ve API maliyetlerini %90 düşüren **Erken Çıkış (Early Exit)** mantığı devreye alındı. Otonom Web Components (`AnalysisCard`) mimarisine geçiş tamamlandı.
+* **v11.0 (Current):** **Puzzle Framework Release.** Tamamen modüler, ölçeklenebilir ve SRP (Single Responsibility) uyumlu yeni mimari geçişi tamamlandı. Backend (`nodes/`, `engine/`, `infrastructure/`, `services/`) ve Frontend (`core/`, `network/`, `components/`) dizinleri normalize edildi. `ChatOrchestrator` ve `BaseComponent` ile otonom veri akışı sağlandı.
+* **v10.5:** **SRE Hardening & Zero-Trust CI.** `pytest-socket` tabanlı katı ağ izolasyonu (Network Block) ve asenkron sızıntı koruması eklendi. "Sadece İslami Analiz" modu için Puzzle mimarisi ve API maliyetlerini %90 düşüren **Erken Çıkış (Early Exit)** mantığı devreye alındı. Otonom Web Components (`AnalysisCard`) mimarisine geçiş tamamlandı.
 * **v10.1:** **Free-Tier SRE & Ölçeklenebilirlik Optimizasyonu.** Vercel 10s Timeout limitleri için Upstash Redis tabanlı Asenkron Polling (HTTP 202 Job Queue) mimarisine geçildi.
 * **v10.0:** **Kurumsal Gözlemlenebilirlik ve PnL (Shadow Tracking).** Tamamen izole Supabase pg_cron tabanlı T+n sanal kâr/zarar ölçüm motoru ve `/metrics` Prometheus telemetri altyapısı kuruldu.
 * **v9.0:** **Yönlü Graf (LangGraph) Multi-Agent** kurgusuna geçildi! Bull vs Bear tartışma döngüleri, Devre Kesici (Circuit Breaker) kalkanı ve Shadow Deployment (Gölge Dağıtım) mekanizması ile sıfır riskli paralel geçiş operasyonu. Kapsamlı otonomi ve Fan-Out Fan-In veri toplayıcılar eklendi.
@@ -55,15 +56,29 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ---
 
-## 🏗️ Mimari Yapı (Monorepo)
+## 🏗️ Mimari Yapı (Puzzle Framework)
 
-* **`/frontend`**: Vanilla Javascript, CSS3 ve HTML5. Dinamik yükleme modals ve Cold Start UI toleransları.
-* **`/backend`**: FastAPI (Python 3.11). Asenkron I/O akışları ve arka plan metrik işleyiciler. İzolasyonlu proxy operasyonları.
-* **`tests/ui/`**: Puppeteer tabanlı otonom ekran görüntüsü ve görsel test otomasyonu.
-* **`brand_assets/`**: Kurumsal logo, renk paletleri ve font guideline kalkanı.
-* **`.claudemd`**: AI Workspace kalkanı, teknoloji yığını ve kesin mimari sınır kısıtlamaları.
-* **🧩 Modüler Mimari (Puzzle)**: `services/` ve `components/` katmanları ile tam SRP (Single Responsibility) uyumu.
-* **🗄️ Database Migrations**: Alembic ile versiyonlanmış veritabanı şeması (Supabase entegrasyonu).
+Proje, **Monorepo** yapısında olup hem backend hem frontend tarafında modüler **Puzzle** mimarisini kullanır:
+
+### 🧩 Backend (FastAPI)
+
+* **`/backend/nodes/`**: AI Ajanları ve veri toplama düğümleri.
+* **`/backend/engine/`**: LangGraph iş akışları, State yönetimi ve Optimizasyon motoru.
+* **`/backend/infrastructure/`**: Auth, LLM Factory, Redis Cache, Scheduler ve Limiter gibi temel yapı taşları.
+* **`/backend/services/`**: `ChatOrchestrator` gibi üst düzey iş mantığı sarmalları.
+* **`/backend/api/`**: FastAPI Router'lar ve Model tanımları.
+
+### 🎨 Frontend (Vanilla JS)
+
+* **`/frontend/js/core/`**: Uygulama durumu (`state.js`), i18n ve yapılandırma.
+* **`/frontend/js/network/`**: API istemcisi ve Supabase entegrasyonu.
+* **`/frontend/js/components/`**: `BaseComponent` tabanlı reactive Web Components (`<x-hero-cards>`, `<x-analysis-grid>`).
+
+### 🛠️ Tooling & DevOps
+
+* **`tests/`**: Pytest ve Puppeteer tabanlı otonom testler.
+* **`migrations/`**: Alembic ile versiyonlanmış veritabanı şeması.
+* **`brand_assets/`**: Kurumsal görsel kimlik kalkanı.
 
 ---
 

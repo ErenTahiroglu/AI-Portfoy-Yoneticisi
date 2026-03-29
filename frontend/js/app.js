@@ -13,7 +13,7 @@ import { initAdminDashboard } from './components/AdminDashboard.js';
 import { runWizard } from './services/WizardService.js';
 import { updateHeroCards, showEmptyPortfolioState, hideEmptyPortfolioState } from './components/HeroCardsComponent.js';
 import { renderHeatmap } from './components/HeatmapComponent.js';
-import { setupAuthModal, updateAuthUI } from './supabaseClient.js';
+import { setupAuthModal, updateAuthUI } from './network/supabaseClient.js';
 import { initOnboardingWizard, getUserProfile, skipWizard } from './services/OnboardingWizard.js';
 
 // ── CTA: "İlk Varlığını Ekle" (Empty State butonu) ──

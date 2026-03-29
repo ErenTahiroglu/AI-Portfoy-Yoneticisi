@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from yahooquery import Ticker
 from fastapi import HTTPException
 
-from backend.core.optimization_engine import optimize_portfolio
+from backend.engine.optimization_engine import optimize_portfolio
 from backend.analyzers.risk_analyzer import calculate_portfolio_risk
 
 async def get_returns_df(tickers: List[str]) -> pd.DataFrame:

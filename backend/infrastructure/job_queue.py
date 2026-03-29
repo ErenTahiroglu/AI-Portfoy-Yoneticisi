@@ -2,7 +2,7 @@ import uuid
 import json
 import logging
 from fastapi import BackgroundTasks
-from backend.core import redis_cache
+from backend.infrastructure import redis_cache
 
 logger = logging.getLogger(__name__)
 

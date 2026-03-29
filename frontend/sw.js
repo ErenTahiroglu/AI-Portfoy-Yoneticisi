@@ -6,14 +6,15 @@ const STATIC_ASSETS = [
     './styles.css',
     './manifest.json',
     './logo.png',
-    './js/i18n.js',
+    './js/core/i18n.js',
     './js/utils.js',
     './js/db.js',
-    './js/state.js',
-    './js/api.js',
+    './js/core/state.js',
+    './js/network/api.js',
     './js/charts.js',
     './js/app.js',
-    './js/components/CardComponent.js'
+    './js/components/AnalysisComponents.js',
+    './js/components/DashboardComponents.js'
 ];
 
 self.addEventListener('install', (event) => {

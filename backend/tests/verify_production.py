@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Test Edilecek Modüller
 from backend.analyzers.islamic_analyzer import _get_single_stock_data
 from backend.analyzers.technical_analyzer import run_technical_indicators
-from backend.core.analysis_engine import AnalysisEngine, analyzer_registry
+from backend.infrastructure.analysis_engine import AnalysisEngine, analyzer_registry
 
 class TestProductionIntegrity(unittest.TestCase):
 

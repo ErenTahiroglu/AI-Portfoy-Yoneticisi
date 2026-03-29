@@ -39,7 +39,7 @@ async def test_api_analyze_sse():
 @pytest.mark.asyncio
 async def test_ai_agent_mock_sentiment():
     """Mock Gemini Sentiment test."""
-    from backend.core.ai_agent import analyze_news_sentiment
+    from backend.nodes.ai_agent import analyze_news_sentiment
     
     with patch("langchain_google_genai.ChatGoogleGenerativeAI") as MockLLM:
         mock_instance = MockLLM.return_value
@@ -54,7 +54,7 @@ async def test_ai_agent_mock_sentiment():
 @pytest.mark.asyncio
 async def test_api_news_endpoint():
     """Haber filtreleme API Endpoint testi."""
-    from backend.api.auth import verify_jwt
+    from backend.infrastructure.auth import verify_jwt
     from backend.api.dependencies import check_llm_quota
     
     app.dependency_overrides[verify_jwt] = lambda: {"id": "fake_user"}

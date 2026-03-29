@@ -846,29 +846,8 @@
             </div>
 
             <!-- Hero Cards (Overall Summary) -->
-            <div class="hero-cards-grid hidden" id="hero-cards">
-                <div class="hero-card">
-                    <div class="hero-icon"><i class="fas fa-star"></i></div>
-                    <div class="hero-info">
-                        <span class="hero-label" data-i18n="hero.score">Portföy Skoru</span>
-                        <div class="hero-value" id="hero-score-val">-</div>
-                    </div>
-                </div>
-                <div class="hero-card">
-                    <div class="hero-icon" style="color: var(--success)"><i class="fas fa-arrow-trend-up"></i></div>
-                    <div class="hero-info">
-                        <span class="hero-label" data-i18n="hero.best">En İyi Hisse</span>
-                        <div class="hero-value" id="hero-best-val">-</div>
-                    </div>
-                </div>
-                <div class="hero-card">
-                    <div class="hero-icon" style="color: var(--danger)"><i class="fas fa-shield-virus"></i></div>
-                    <div class="hero-info">
-                        <span class="hero-label" data-i18n="hero.risk">Risk Seviyesi</span>
-                        <div class="hero-value" id="hero-risk-val">-</div>
-                    </div>
-                </div>
-            </div>
+            <x-hero-cards id="hero-cards"></x-hero-cards>
+
 
             <!-- Heatmap (Treemap) -->
             <div id="portfolio-heatmap-wrap" class="hidden" style="margin-bottom:2rem;">
@@ -1259,14 +1238,14 @@
     <script src="js/i18n.js?v=4.1"></script>
     <script src="js/utils.js?v=4.1"></script>
     <script src="js/db.js?v=4.1"></script>
-    <script src="js/state.js"></script>
+    <script src="js/core/state.js"></script>
     <script src="js/components/ProgressBar.js"></script>
     <script src="js/components/CardComponent.js" type="module"></script>
     <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <script src="js/charts.js?v=4.1"></script>
     <!-- Supabase Auth / DB Client -->
-    <script type="module" src="js/supabaseClient.js"></script>
+    <script type="module" src="js/network/supabaseClient.js"></script>
     <!-- Main Orchestrator -->
     <script type="module" src="js/components/AnalysisComponents.js"></script>
     <script type="module" src="js/app.js?v=5.1"></script>

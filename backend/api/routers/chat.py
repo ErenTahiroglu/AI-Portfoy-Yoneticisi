@@ -4,9 +4,9 @@ import re
 from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from backend.api.models import ChatRequest, NewsRequest
-from backend.api.rate_limiter import limiter
-from backend.api.auth import verify_jwt
-from backend.core.execution_engine import execute_paper_trades
+from backend.infrastructure.limiter import limiter
+from backend.infrastructure.auth import verify_jwt
+from backend.engine.execution_engine import execute_paper_trades
 from backend.api.dependencies import check_llm_quota
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ async def analyze_macro_endpoint(request: Request):
         user = getattr(request.state, "user", None)
         user_id = user["sub"] if user else None
 
-        from backend.core.ai_agent import generate_macro_advice
+        from backend.nodes.ai_agent import generate_macro_advice
 
         def event_generator():
             try:
@@ -60,8 +60,8 @@ async def wizard_api(request: Request, background_tasks: BackgroundTasks):
         user = getattr(request.state, "user", None)
         user_id = user["sub"] if user else None
             
-        from backend.core.ai_agent import generate_wizard_portfolio
-        from backend.core.job_queue import spawn_background_job
+        from backend.nodes.ai_agent import generate_wizard_portfolio
+        from backend.infrastructure.job_queue import spawn_background_job
         
         # OOM/Timeout crash protection: Background spawn
         job_id = spawn_background_job(background_tasks, generate_wizard_portfolio, prompt, api_key, model, lang, user_id=user_id)

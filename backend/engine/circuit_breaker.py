@@ -1,5 +1,5 @@
 import logging
-from backend.core.graph.agent_states import GraphState
+from backend.engine.agent_states import GraphState
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
 
-from backend.core.scheduler import start_alert_scheduler
+from backend.infrastructure.scheduler import start_alert_scheduler
 from backend.api.websocket import register_websocket_routes
 from backend.utils.logger import setup_logging, CorrelationIdMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 
 
 # ── Lifespan (Background Tasks) ───────────────────────────────────────────
-from backend.core.redis_cache import cache_close
-from backend.core.http_client import init_global_http_client, close_global_http_client
+from backend.infrastructure.redis_cache import cache_close
+from backend.infrastructure.http_client import init_global_http_client, close_global_http_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -128,14 +128,14 @@ async def health_check():
     health_status = {"status": "ok", "redis": "connected", "supabase": "connected"}
     
     # 1. Redis Check
-    from backend.core.redis_cache import cache_is_redis_active
+    from backend.infrastructure.redis_cache import cache_is_redis_active
     if not cache_is_redis_active():
         health_status["redis"] = "disconnected (fallback active)"
 
     # 2. Supabase Check
     try:
         import httpx
-        from backend.core.scheduler import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+        from backend.infrastructure.scheduler import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
         headers = {
             "apikey": SUPABASE_SERVICE_ROLE_KEY,
             "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"

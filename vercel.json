@@ -1,7 +1,6 @@
 {
   "version": 2,
   "name": "ai-portfoy-yoneticisi-ui",
-  "framework": "static",
   "public": true,
   "cleanUrls": true,
   "trailingSlash": false,

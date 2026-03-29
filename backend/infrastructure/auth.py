@@ -19,7 +19,7 @@ def verify_token_string(token: str) -> dict:
 
     # 🛡️ REDIS BLOCKLIST KONTROLÜ
     try:
-         from backend.core.redis_cache import cache_get
+         from backend.infrastructure.redis_cache import cache_get
          # Token çalıntı/kapatılmış mı sorgula
          if cache_get(f"jwt_blacklist:{token}"):
               logger.warning("Zero Trust: Revoked token presented.")
