@@ -1,90 +1,44 @@
-# ═══════════════════════════════════════════════════
-# Portföy Analiz Platformu — .gitignore
-# ═══════════════════════════════════════════════════
-
-# Environments & Keys
-.env
-.env.local
-api_keys.json
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 .venv/
-env/
 venv/
 ENV/
+env/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node/Frontend
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+.eslintcache
 
-# Python Cache & Build
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-build/
-dist/
-*.spec
-*.pyc
-prometheus_multiproc_dir/
-
-# IDE and Editor files
-.vscode/
-.idea/
-.pyre_configuration
-*.code-workspace
-*.swp
-*.swo
-
-# User Output / Reports (Generated files)
-*.xlsx
-*.csv
-*.docx
-*.pdf
-results/
-reports/
-
-# Logs & Debug
+# SRE & Metrics
+backend/tests/performance_report.txt
+backend/tests/memory_log.txt
 *.log
-error.txt
-traceback.txt
-tefas_log.txt
 
-# Large Data & Binary
-playwright-browsers/
-backend/data/*.json
-!backend/data/market_metadata.json
-py-yfinance/
-
-# Platform & Deployment
+# Secrets & Local Config
+.env
+.env.local
+.vscode/
 .DS_Store
 Thumbs.db
-desktop.ini
-.vercel/
-.gemini/
-.agents/
-.agent/
 
-# Test Scripts & Temporary
-/test_*.py
-/test_*.json
-.pytest_cache/
-htmlcov/
-find_api.py
-*remote.py
-fintables.html
-Full_File_List.txt
-test_output.txt
-
-# Debug & Scratch files
-debug_*.py
-*debug*.py
-out.txt
-
-# Database files
-*.db
-*.sqlite3
-
-# Puppeteer & Automated Testing
-.cache/
-/tests/ui/screenshots/*.png
-!/tests/ui/screenshots/.gitkeep
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+Network Trash Folder
+Temporary Items
+.apdisk

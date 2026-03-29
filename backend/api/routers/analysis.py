@@ -54,8 +54,8 @@ async def check_double_submit(request: Request, payload_dict: dict, name: str):
     await asyncio.to_thread(redis_cache.cache_set, key, 1, ttl=5) # 5 sny kilit
 
 @router.post("/analyze", dependencies=[Depends(limiter.check)])
-async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depends(get_engine)):
-    """Ticker listesiyle portföy analizi (SSE / Streaming)."""
+async def analyze_portfolio(request: AnalysisRequest, req: Request):
+    """Ticker listesiyle portföy analizi (LangGraph Engine - Streaming)."""
     if not request.tickers:
         raise HTTPException(status_code=400, detail="No tickers provided")
     if request.use_ai and not request.api_key:
@@ -65,7 +65,7 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depen
     if not parsed_tickers:
         raise HTTPException(status_code=400, detail="No valid tickers provided")
 
-    # Optional Auth for Token Logging
+    # Auth for Token Logging & Quota check
     user_id = None
     auth_header = req.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
@@ -74,7 +74,6 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depen
             try:
                 payload = jwt.decode(token, SUPABASE_JWT_SECRET, algorithms=["HS256"], options={"verify_aud": True}, audience="authenticated")
                 user_id = payload.get("sub")
-                
                 if request.use_ai:
                      from backend.api.dependencies import check_llm_quota
                      await check_llm_quota(req, payload=payload)
@@ -83,31 +82,37 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depen
             except Exception:
                 pass 
 
+    from backend.core.graph.trading_graph import compile_trading_graph
+    graph = compile_trading_graph()
+
     async def event_generator():
-        semaphore = asyncio.Semaphore(2)  # Render 512MB limit için
-        async def analyze_with_semaphore(ticker):
+        semaphore = asyncio.Semaphore(2) # Parallel limit for Free Tier
+        async def run_graph_task(ticker):
             async with semaphore:
                 try:
-                    res = await asyncio.to_thread(
-                        engine._analyze_single,
-                        ticker,
-                        check_islamic=request.check_islamic,
-                        check_financials=request.check_financials,
-                        use_ai=request.use_ai,
-                        api_key=request.api_key,
-                        model=request.model,
-                        lang=request.lang,
-                        user_id=user_id
-                    )
-                    return ticker, res, None
+                    input_state = {
+                        "ticker": ticker,
+                        "messages": [f"{ticker} analizi başlatıldı."],
+                        "api_key": request.api_key,
+                        "model_name": request.model,
+                        "lang": request.lang,
+                        "user_id": user_id,
+                        # Analysis Mode Flags
+                        "check_financials": request.check_financials,
+                        "check_islamic": request.check_islamic
+                    }
+                    # Graph invoke
+                    result = await graph.ainvoke(input_state)
+                    # OutputMapperNode formats the data into "final_report"
+                    legacy_res = result.get("final_report", {})
+                    return ticker, legacy_res, None
                 except Exception as e:
                     return ticker, None, e
 
-        tasks = [asyncio.create_task(analyze_with_semaphore(t)) for t in parsed_tickers]
+        tasks = [asyncio.create_task(run_graph_task(t)) for t in parsed_tickers]
         try:
             for coro in asyncio.as_completed(tasks):
                 if await req.is_disconnected():
-                    logger.warning("🚫 SSE istemci bağlantısı koptu.")
                     for t in tasks: t.cancel()
                     break
                 ticker, res, err = await coro
@@ -117,7 +122,7 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request, engine=Depen
                     res["weight"] = weights_map.get(ticker, 1.0)
                     yield f"data: {json.dumps(res)}\n\n"
         except Exception as e:
-            logger.error(f"SSE Hatası: {e}")
+            logger.error(f"Graph SSE Error: {e}")
         finally:
             gc.collect()
 

@@ -58,7 +58,7 @@ from pydantic import BaseModel, Field
 from typing import List
 
 class SummarizedDebate(BaseModel):
-    korunan_metrikler: List[str] = Field(description="Her iki tartışma dalından (Bull/Bear veya Risk) gelen kesin rakamsal veriler (RSI, vaR, % büyüme vb.)")
+    korunan_metrikler: List[str] = Field(description="Rakamlar ve metrikler. Finansal veri yoksa boş liste döndürün.")
     boga_argumanlari: List[str] = Field(description="İyimser/Agresif tarafın temel argüman maddeleri")
     ayi_argumanlari: List[str] = Field(description="Kötümser/Defansif tarafın temel argüman ve risk maddeleri")
     uzlasma_noktalari: str = Field(description="Tarafların ortak kabullendiği piyasa gerçekleri")
@@ -115,75 +115,171 @@ async def summarizer_node(state: GraphState) -> dict:
         "messages": ["[HOLD] Şema doğrulama (Validation) kalıcı olarak çöktü. Tüm kararlar iptal edildi."]
     }
 
+import re
+async def intent_detector_node(state: GraphState) -> dict:
+    """
+    🎯 [IntentNode]: Business Logic sığınağı.
+    Router'daki kirli Regex'ler buraya taşınmıştır.
+    """
+    messages = state.get("messages", [])
+    user_msg = messages[-1] if messages else ""
+    
+    match_current = re.search(r'Mevcut Varlık Dağılımım:\s*(\{.*?\})', user_msg)
+    match_optimal = re.search(r'Matematiksel Optimum Dağılım:\s*(\{.*?\})', user_msg)
+    
+    if match_current and match_optimal:
+        try:
+             import json
+             curr_weights = json.loads(match_current.group(1).replace("'", '"'))
+             opt_weights = json.loads(match_optimal.group(1).replace("'", '"'))
+             return {
+                 "intent": "trade",
+                 "execution_payload": {"current": curr_weights, "optimal": opt_weights}
+             }
+        except Exception:
+             pass
+             
+    return {"intent": "analyze", "execution_payload": {}}
+
+async def output_mapper_node(state: GraphState) -> dict:
+    """
+    🧹 [OutputMapperNode]: Legacy Uyumluluk Katmanı.
+    GraphState (JSON) yapısını eski frontend'in beklediği formata dönüştürür.
+    """
+    return {
+        "final_report": {
+            "summary": state.get("messages")[-1] if state.get("messages") else "",
+            "trade_decision": state.get("final_trade_decision"),
+            "ticker": state.get("ticker"),
+            "market_data": state.get("market_report", {}).get("market_data"),
+            "islamic_report": state.get("islamic_report"),
+            "klines": state.get("market_report", {}).get("klines", []),
+            "intent": state.get("intent"),
+            "check_financials": state.get("check_financials", True),
+            "check_islamic": state.get("check_islamic", True)
+        }
+    }
+
+
+# ── 🧩 Puzzle Mimari: Node Registry (Dinamik Kayıt Defteri) ────────────────
+# Her bir düğüm (Node) kendi fonksiyonunu, takip eden kenarlarını (Edges)
+# ve Koşullu Yönlendirme (Conditional Edges) mantığını burada tanımlar.
+# Bu yapı sayesinde yeni bir Ajan/DataNode eklemek için compile() koduna 
+# dokunmaya gerek kalmaz; sadece bu listeye ekleme yapmak yeterlidir.
+# ─────────────────────────────────────────────────────────────────────────
+
+NODE_REGISTRY = {
+    "IntentNode": {
+        "func": intent_detector_node,
+        "edges": ["MarketNode", "IslamicNode", "NewsNode"]
+    },
+    "MarketNode": {
+        "func": market_data_node,
+        "edges": ["DataSyncNode"]
+    },
+    "IslamicNode": {
+        "func": islamic_node,
+        "edges": ["DataSyncNode"]
+    },
+    "NewsNode": {
+        "func": news_node,
+        "edges": ["DataSyncNode"]
+    },
+    "DataSyncNode": {
+        "func": lambda state: {"msg": "📡 Paralel veri toplama tamamlandı. Bütünleştirme yapılıyor."},
+        "edges": ["DataJoinAndCircuit"]
+    },
+    "DataJoinAndCircuit": {
+        "func": lambda state: {"turn_count": state.get("turn_count", 0) + 1},
+        "edges": ["Bull Researcher"]
+    },
+    "Bull Researcher": {
+        "func": bull_researcher_node,
+        "edges": ["Bear Researcher"]
+    },
+    "Bear Researcher": {
+        "func": bear_researcher_node,
+        "conditional_edges": {
+            "router": route_investment_debate,
+            "mapping": {
+                "Bull Researcher": "Bull Researcher",
+                "Research Manager": "Research Manager"
+            }
+        }
+    },
+    "Research Manager": {
+        "func": research_manager_node,
+        "edges": ["Trader"]
+    },
+    "Trader": {
+        "func": trader_node,
+        "conditional_edges": {
+            "router": route_circuit_breaker,
+            "mapping": {
+                "Aggressive Analyst": "Aggressive Analyst",
+                "Portfolio Manager": "Portfolio Manager" 
+            }
+        }
+    },
+    "Aggressive Analyst": {
+        "func": aggressive_analyst_node,
+        "edges": ["Conservative Analyst"]
+    },
+    "Conservative Analyst": {
+        "func": conservative_analyst_node,
+        "edges": ["Neutral Analyst"]
+    },
+    "Neutral Analyst": {
+        "func": neutral_analyst_node,
+        "conditional_edges": {
+            "router": route_risk_debate,
+            "mapping": {
+                "Aggressive Analyst": "Aggressive Analyst",
+                "Portfolio Manager": "Portfolio Manager"
+            }
+        }
+    },
+    "Portfolio Manager": {
+        "func": portfolio_manager_node,
+        "edges": ["SummarizerPruner"]
+    },
+    "SummarizerPruner": {
+        "func": summarizer_node,
+        "edges": ["OutputMapper"]
+    },
+    "OutputMapper": {
+        "func": output_mapper_node,
+        "edges": [END]
+    }
+}
 
 def compile_trading_graph():
+    """
+    🏗️ [The Builder]: Registry'den Graf Ören Döngü.
+    Hiçbir düğüm veya kenar ismine bağımlı değildir.
+    """
     workflow = StateGraph(GraphState)
     
-    workflow.add_node("MarketNode", market_data_node)
-    workflow.add_node("IslamicNode", islamic_node)
-    workflow.add_node("NewsNode", news_node)
-    
-    async def join_and_circuit_node(state: GraphState) -> dict:
-        t = state.get("turn_count", 0)
-        return {"turn_count": t + 1}
+    # 1. Düğümleri (Nodes) Ekle
+    for node_name, config in NODE_REGISTRY.items():
+        workflow.add_node(node_name, config["func"])
         
-    workflow.add_node("DataJoinAndCircuit", join_and_circuit_node)
+    # 2. Giriş (Entry Points)
+    workflow.add_edge(START, "IntentNode")
     
-    workflow.add_node("Bull Researcher", bull_researcher_node)
-    workflow.add_node("Bear Researcher", bear_researcher_node)
-    workflow.add_node("Research Manager", research_manager_node)
-    workflow.add_node("Trader", trader_node)
-    
-    workflow.add_node("Aggressive Analyst", aggressive_analyst_node)
-    workflow.add_node("Conservative Analyst", conservative_analyst_node)
-    workflow.add_node("Neutral Analyst", neutral_analyst_node)
-    workflow.add_node("Portfolio Manager", portfolio_manager_node)
-    workflow.add_node("SummarizerPruner", summarizer_node)
-
-    workflow.add_edge(START, "MarketNode")
-    workflow.add_edge(START, "IslamicNode")
-    workflow.add_edge(START, "NewsNode")
-    
-    workflow.add_edge("MarketNode", "DataJoinAndCircuit")
-    workflow.add_edge("IslamicNode", "DataJoinAndCircuit")
-    workflow.add_edge("NewsNode", "DataJoinAndCircuit")
-    
-    workflow.add_edge("DataJoinAndCircuit", "Bull Researcher")
-    workflow.add_edge("Bull Researcher", "Bear Researcher")
-
-    workflow.add_conditional_edges(
-        "Bear Researcher",
-        route_investment_debate,
-        {
-            "Bull Researcher": "Bull Researcher",
-            "Research Manager": "Research Manager"
-        }
-    )
-    
-    workflow.add_edge("Research Manager", "Trader")
-    
-    workflow.add_conditional_edges(
-        "Trader",
-        route_circuit_breaker,
-        {
-            "Aggressive Analyst": "Aggressive Analyst",
-            "Portfolio Manager": "Portfolio Manager" 
-        }
-    )
-    
-    workflow.add_edge("Aggressive Analyst", "Conservative Analyst")
-    workflow.add_edge("Conservative Analyst", "Neutral Analyst")
-    
-    workflow.add_conditional_edges(
-        "Neutral Analyst",
-        route_risk_debate,
-        {
-            "Aggressive Analyst": "Aggressive Analyst",
-            "Portfolio Manager": "Portfolio Manager"
-        }
-    )
-    
-    workflow.add_edge("Portfolio Manager", "SummarizerPruner")
-    workflow.add_edge("SummarizerPruner", END)
-    
+    # 3. Kenarları (Edges) ve Koşulları (Conditionals) Registry'den Çekip Ör
+    for node_name, config in NODE_REGISTRY.items():
+        # Statik Kenarlar
+        for dest in config.get("edges", []):
+            workflow.add_edge(node_name, dest)
+            
+        # Koşullu Kenarlar (Conditional Edges)
+        cond = config.get("conditional_edges")
+        if cond:
+            workflow.add_conditional_edges(
+                node_name,
+                cond["router"],
+                cond["mapping"]
+            )
+            
     return workflow.compile()

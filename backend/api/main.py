@@ -42,20 +42,25 @@ logger = logging.getLogger(__name__)
 
 # ── Lifespan (Background Tasks) ───────────────────────────────────────────
 from backend.core.redis_cache import cache_close
+from backend.core.http_client import init_global_http_client, close_global_http_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # API kalktığında HTTP Client havuzunu başlat
+    init_global_http_client()
+    
     # API kalktığında otonom tarayıcıyı ayağa kaldır
     task = asyncio.create_task(start_alert_scheduler())
     yield
     # API kapandığında memory leak olmaması için iptal et
     task.cancel()
-    # Redis kapat (Graceful Shutdown)
+    # Redis ve HTTP havuzunu kapat (Graceful Shutdown)
     try:
+        await close_global_http_client()
         cache_close()
-        logger.info("✅ Redis session safely closed.")
+        logger.info("✅ Redis & HTTP Sessions safely closed.")
     except Exception as e:
-         logger.warning(f"Error during Redis close: {e}")
+         logger.warning(f"Error during shutdown closures: {e}")
 
 # ── FastAPI Uygulaması ────────────────────────────────────────────────────
 is_prod = os.getenv("ENVIRONMENT", "production").lower() == "production"

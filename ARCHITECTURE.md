@@ -9,18 +9,21 @@
 Sistem 3 temel katmandan oluşur:
 
 ### 🌟 A. Sunum Katmanı (Frontend - Vercel)
-*   **Teknoloji:** Vanilla JS, HTML5, CSS3, Chart.js.
-*   **Görev:** Kullanıcının portföyünü görselleştirmek, AI chatbot ile konuşmasını sağlamak ve canlı fiyatları yansıtmak.
-*   **Özellik:** API_BASE dinamik yönetimi ve **Render Cold Start** koruma mekanizmalarına sahiptir.
+
+* *Teknoloji:* Vanilla JS, HTML5, CSS3, Chart.js.
+* *Görev:* Kullanıcının portföyünü görselleştirmek, AI chatbot ile konuşmasını sağlamak ve canlı fiyatları yansıtmak.
+* *Özellik:* API_BASE dinamik yönetimi ve **Render Cold Start** koruma mekanizmalarına sahiptir.
 
 ### ⚙️ B. Mantık Katmanı (Backend - Render)
-*   **Teknoloji:** FastAPI (Python), httpx, ASGI (Uvicorn).
-*   **Görev:** Analitik hesaplamalar, AI Ajan orkestrasyonu, veri proxy'liği ve WebSocket canlı akışı yönetimi.
-*   **Güvenlik:** JWT tabanlı Sıfır Güven (Zero-Trust) IAM, Rate Limiter ve Mutex Cache kalkanları Backend'ten yönetilir.
+
+* *Teknoloji:* FastAPI (Python), httpx, ASGI (Uvicorn).
+* *Görev:* Analitik hesaplamalar, AI Ajan orkestrasyonu, veri proxy'liği ve WebSocket canlı akışı yönetimi.
+* *Güvenlik:* JWT tabanlı Sıfır Güven (Zero-Trust) IAM, Rate Limiter ve Mutex Cache kalkanları Backend'ten yönetilir.
 
 ### 🗄️ C. Veri Katmanı (Data Lake - Supabase & Redis)
-*   **Supabase (PostgreSQL + PostgREST):** Kullanıcı portföyleri, geçmiş snapshotlar ve loglar burada tutulur. Erişimler Backend proxy üzerinden stateless HTTP REST ile HTTPS güvenliğiyle gerçekleşir.
-*   **Redis (Upstash):** Dağıtık önbellek (Cache), API hız sınırlaması (Rate Limit) ve token revokasyonu (Blocklist) için kullanılır.
+
+* *Supabase (PostgreSQL + PostgREST):* Kullanıcı portföyleri, geçmiş snapshotlar ve loglar burada tutulur. Erişimler Backend proxy üzerinden stateless HTTP REST ile HTTPS güvenliğiyle gerçekleşir.
+* *Redis (Upstash):* Dağıtık önbellek (Cache), API hız sınırlaması (Rate Limit) ve token revokasyonu (Blocklist) için kullanılır.
 
 ---
 
@@ -30,23 +33,23 @@ Sistem 3 temel katmandan oluşur:
 
 Kullanıcı arayüzden **"Portföyümü Analiz Et"** butonuna bastığında veri şu yollardan geçer:
 
-1.  **İstemci (Vercel):** İstek ön yüz üzerinden fırlatılır. `X-Correlation-ID` başlığı eklenir (Tracing).
-2.  **Güvenlik Kapısı (CORS & Rate Limiter):** Render'a ulaşan istek CORS whitelist süzgecinden geçer. Redis üzerindeki IP bazlı **Rate Limiter** hızı doğrular.
-3.  **Kimlik Doğrulama (Auth):** `verify_jwt` middleware'i, Supra Auth JWT tokenı doğrular ve kullanıcının oturumunun Redis **Blocklist**'te olup olmadığına bakar.
-4.  **Önbellek Sorgulama (Cache):** Analiz sonucu talep edilmeden önce Redis Cache sorgulanır. Cache Miss olursa **Mutex Locking** devreye girerek Cache Stampede önlenir.
-5.  **Analitik & AI Orkestrasyonu (`ai_agent.py`):**
-    *   Sistem kullanıcının portföy kurgusunu alır.
-    *   **Dinamik Sağlayıcı (Multi-Provider):** Gelen `model_name` prefix'ine göre **Gemini** veya **Groq** (Llama/Mixtral) motorları dinamik sarmalanır.
-    *   Hassas değerler prompt öncesi **Maskelenir (PII Sanitization)**.
-    *   İçerikler `<news_item>` etiketleriyle beslenerek **Indirect Prompt Injection** engellenir.
-6.  **Nihai Sonuç:** Yapay zeka orkestratörü (CIO) çıktı üretir ve Frontend'e basar. İstek veritabanına loglanır.
+1. *İstemci (Vercel):* İstek ön yüz üzerinden fırlatılır. `X-Correlation-ID` başlığı eklenir (Tracing).
+2. *Güvenlik Kapısı (CORS & Rate Limiter):* Render'a ulaşan istek CORS whitelist süzgecinden geçer. Redis üzerindeki IP bazlı **Rate Limiter** hızı doğrular.
+3. *Kimlik Doğrulama (Auth):* `verify_jwt` middleware'i, Supra Auth JWT tokenı doğrular ve kullanıcının oturumunun Redis **Blocklist**'te olup olmadığına bakar.
+4. *Önbellek Sorgulama (Cache):* Analiz sonucu talep edilmeden önce Redis Cache sorgulanır. Cache Miss olursa **Mutex Locking** devreye girerek Cache Stampede önlenir.
+5. *Analitik & AI Orkestrasyonu (`ai_agent.py`):*
+   * Sistem kullanıcının portföy kurgusunu alır.
+   * **Dinamik Sağlayıcı (Multi-Provider):** Gelen `model_name` prefix'ine göre **Gemini** veya **Groq** (Llama/Mixtral) motorları dinamik sarmalanır.
+   * Hassas değerler prompt öncesi **Maskelenir (PII Sanitization)**.
+   * İçerikler `<news_item>` etiketleriyle beslenerek **Indirect Prompt Injection** engellenir.
+6. *Nihai Sonuç:* Yapay zeka orkestratörü (CIO) çıktı üretir ve Frontend'e basar. İstek veritabanına loglanır.
 
 ---
 
 ## 🛡️ 3. SRE ve Hata Toleransı
 
-*   **Circuit Breaker (Şalter):** Dış finansal API (Polygon vb.) çöktüğünde sistem kilitlenmez, Falling-back modeline geçilir.
-*   **Stateless Scaling:** Backend kurgusu RAM'de session tutmaz, bu sayede Render üzerinde yatayda sonsuz çoğaltılabilir (Scale-out).
+* *Circuit Breaker (Şalter):* Dış finansal API (Polygon vb.) çöktüğünde sistem kilitlenmez, Falling-back modeline geçilir.
+* *Stateless Scaling:* Backend kurgusu RAM'de session tutmaz, bu sayede Render üzerinde yatayda sonsuz çoğaltılabilir (Scale-out).
 
 ---
 
@@ -55,15 +58,27 @@ Kullanıcı arayüzden **"Portföyümü Analiz Et"** butonuna bastığında veri
 Kod tabanının sürdürülebilirliği (Maintainability) ve Tek Sorumluluk Prensibi (SRP) için sistem monolitik yapılardan arındırılmıştır.
 
 ### 🏛️ A. Frontend Modülerliği (`frontend/js/`)
-- **`services/`**: Ağ/Fetch (Network) ve harici API (örneğin AI Sihirbazı) orkestrasyonunu üstlenir.
-  - *Örn:* `WizardService.js`, `NewsService.js`, `ExportService.js`
-- **`components/`**: DOM manipülasyonu, HTML şablonları (Templates) ve UI render işlemlerini izole eder.
-  - *Örn:* `TechnicalsComponent.js`, `HeatmapComponent.js`
-- **`state/` (`app.js`):** Sayfa yaşam döngüsünü ve component'lerin reaktif re-render mekanizmalarını birbirine bağlar.
+
+* *services/:* Ağ/Fetch (Network) ve harici API (örneğin AI Sihirbazı) orkestrasyonunu üstlenir.
+  * *Örn:* `WizardService.js`, `NewsService.js`, `ExportService.js`
+* *components/:* DOM manipülasyonu, HTML şablonları (Templates) ve UI render işlemlerini izole eder.
+  * *Örn:* `TechnicalsComponent.js`, `HeatmapComponent.js`
+* *state/ (`app.js`):* Sayfa yaşam döngüsünü ve component'lerin reaktif re-render mekanizmalarını birbirine bağlar.
+
+### 🧪 5. Zero Trust Testing & SRE Guard
+
+Platformun CI/CD süreçleri, "Zero Trust" (Sıfır Güven) prensibiyle test edilir. Bu sayede üretim hataları ve maliyet sızıntıları (API/Token leak) engellenir.
+
+* *Ağ İzolasyonu (Network Sandbox):* `pytest-socket` eklentisiyle test ortamında `localhost` (127.0.0.1) dışındaki tüm dış ağ erişimi kilitlenmiştir.
+* *LLM Mocking:* Tüm LangChain invocation'ları (`ainvoke`) `conftest.py` üzerinden global olarak mocklanır. Gerçek bir API çağrısı yapılmaya çalışıldığında sistem anında `SocketBlockedError` fırlatır.
+* *Performans Kalkanı (Performance Gate):* Tam kapsamlı bir analiz süreci 20 saniyeyi geçerse CI pipeline'ı otomatik olarak durdurulur (**Hard-fail**). Her PR'da RAM tüketimi ölçülür ve 512MB (Render) sınırına yaklaşıldığında uyarı verilir.
+
+---
 
 ### 🏛️ B. Backend Modülerliği (`backend/`)
-- **`services/`**: Router'lar üzerindeki ağır veri işleme/birleştirme logic’lerini soyutlar.
-  - *Örn:* `analysis_service.py` (DataFrame inşası ve Ticker analiz sarmalları)
-- **`api/routers/`**: Sadece HTTP endpoint trafiğini ve double-submit korumasını yönetir.
-- **`core/` & `analyzers/`**: Ağır matematiksel modelleri (Risk/Optimizasyon) barındıran çekirdek kütüphanedir.
 
+* *services/:* Router'lar üzerindeki ağır veri işleme/birleştirme logic’lerini soyutlar.
+  * *Örn:* `analysis_service.py` (DataFrame inşası ve Ticker analiz sarmalları)
+* *api/routers/:* Sadece HTTP endpoint trafiğini ve **Idempotency** (Double-submit) korumasını yönetir.
+* *core/graph/:* **LangGraph** tabanlı çoklu-ajan orkestrasyonunu (Puzzle Engine) barındırır.
+* *core/agents/:* Otonom veri toplayıcıları (Data Nodes) ve LLM araştırmacılarını (Adversarial Agents) içerir.

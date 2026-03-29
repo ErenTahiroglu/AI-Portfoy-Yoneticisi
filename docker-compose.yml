@@ -3,26 +3,33 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile # Assuming a Dockerfile exists there or in root
+    container_name: ai-portfolio-backend
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
-      - ./backend:/app
-    environment:
-      - ENVIRONMENT=development
-      - TEMP_ADMIN_PASSWORD=${TEMP_ADMIN_PASSWORD:-Admin123!}
-      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc_dir
-    restart: unless-stopped
+      - ./backend:/app/backend
+    command: uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Frontend is served by the backend or separately (Vercel)
-  # To run locally with full stack:
-  # frontend:
-  #   image: nginx:alpine
-  #   volumes:
-  #     - ./frontend:/usr/share/nginx/html
-  #   ports:
-  #     - "3000:80"
+  frontend:
+    image: nginx:alpine
+    container_name: ai-portfolio-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
 
+  redis:
+    image: redis:alpine
+    container_name: ai-portfolio-redis
+    ports:
+      - "6379:6379"
+
+networks:
+  default:
+    name: ai-portfolio-network

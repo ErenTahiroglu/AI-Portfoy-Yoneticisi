@@ -1,0 +1,13 @@
+{
+  "site_package_search_strategy": "all",
+  "search_path": [
+    "/Users/eren/repos/AI-Portfoy-Yoneticisi",
+    "/Users/eren/repos/AI-Portfoy-Yoneticisi/.venv/lib/python3.11/site-packages"
+  ],
+  "source_directories": ["/Users/eren/repos/AI-Portfoy-Yoneticisi"],
+  "exclude": [
+    ".venv/.*",
+    "tests/.*",
+    ".git/.*"
+  ]
+}

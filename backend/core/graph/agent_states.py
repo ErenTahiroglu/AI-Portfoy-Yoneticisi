@@ -7,13 +7,20 @@ def merge_dicts(left: dict, right: dict) -> dict:
     left.update(right)
     return left
 
+def sliding_window_reducer(left: list, right: list) -> list:
+    if not left: left = []
+    if not right: right = []
+    # Maximum 5 messages kept in RAM to prevent OOM
+    combined = left + right
+    return combined[-5:]
+
 class GraphState(TypedDict):
     ticker: str
     market: str
     company_of_interest: str
     turn_count: int
     
-    messages: Annotated[List[str], operator.add]
+    messages: Annotated[List[str], sliding_window_reducer]
     
     market_report: Annotated[Dict, merge_dicts]
     fundamentals_report: Annotated[Dict, merge_dicts]
@@ -28,3 +35,11 @@ class GraphState(TypedDict):
     
     risk_debate_state: Annotated[Dict, merge_dicts]
     final_trade_decision: str
+    
+    # Intent & Execution Metadata
+    intent: str # "analyze" | "trade" | "unknown"
+    execution_payload: Annotated[Dict[str, Any], merge_dicts]
+
+    # Analysis Mode Flags (Modular Analysis)
+    check_financials: bool
+    check_islamic: bool

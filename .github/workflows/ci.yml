@@ -8,22 +8,78 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  MOCK_LLM: true
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Run ESLint (JS Verification)
+        run: npm run lint
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-asyncio
+          pip install pytest pytest-asyncio psutil memory-profiler pytest-socket
 
-      - name: Run tests
-        run: python -m pytest backend/tests/ -v
+      - name: Run Zero Trust Tests (SRE Guard Locked)
+        run: |
+          # pytest-socket kalkanı --disable-socket ile her sızıntıyı kilitler.
+          # Sadece 127.0.0.1 ve localhost erişilebilir kalır.
+          python -m pytest backend/tests/ -v --disable-socket --allow-hosts=127.0.0.1,localhost
+
+      - name: Upload Performance Artifact
+        if: always()
+        uses: actions/checkout@v4 # Re-checkout if needed or use existing workspace
+        continue-on-error: true
+        run: |
+          # Performans raporlarını CI eserlerine ekle
+          if [ -f backend/tests/performance_report.txt ]; then
+            echo "✅ Performance report found."
+          else
+            echo "❌ Performance report not found."
+          fi
+
+      - name: Archive Performance Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-metrics
+          path: backend/tests/performance_report.txt

@@ -1,0 +1,36 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "globals": {
+    "HTMLElement": "readonly",
+    "customElements": "readonly",
+    "shadowRoot": "readonly",
+    "marked": "readonly",
+    "AppState": "readonly",
+    "Chart": "readonly",
+    "t": "readonly",
+    "getLang": "readonly",
+    "fmtNum": "readonly",
+    "colorClass": "readonly",
+    "openMetricModal": "readonly",
+    "createTVChart": "readonly",
+    "createRadarChart": "readonly",
+    "createGaugeChart": "readonly"
+  },
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-console": "off",
+    "no-inner-declarations": "off"
+  },
+  "plugins": [
+    "html"
+  ]
+}

@@ -1190,55 +1190,8 @@
                 </div>
             </div>
 
-            <!-- Summary Table -->
-            <div class="summary-table-wrap">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                    <h3 data-i18n="results.summary" style="margin-bottom:0;"><i class="fas fa-table"></i> Portföy Özeti
-                    </h3>
-                    <div id="portfolio-score-badge" class="score-badge hidden"
-                        style="background:var(--success); color:white; padding:0.4rem 0.8rem; border-radius:0.5rem; font-weight:600; font-size:0.9rem;">
-                        <span data-i18n="results.weightedReturn">Ağırlıklı Getiri (5Y)</span>: %<span
-                            id="weighted-return-val">0</span>
-                    </div>
-                </div>
-                <div class="table-scroll">
-                    <table class="summary-table">
-                        <thead>
-                            <tr>
-                                <th data-i18n="th.ticker">Hisse / Fon</th>
-                                <th class="pro-only" data-i18n="th.market">Pazar</th>
-                                <th class="pro-only" data-i18n="th.weight">Ağırlık</th>
-                                <th data-i18n="th.price">Son Fiyat</th>
-                                <th data-i18n="th.change">Değişim %</th>
-                                <th data-i18n="th.compliance">Katılım</th>
-                                <th data-i18n="th.status">Durum</th>
-                                <th class="pro-only" title="Fiyat/Kazanç Oranı. Hissenin ne kadar pahalı/ucuz olduğunu gösterir."
-                                    data-i18n-title="tooltip.pe"
-                                    style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">
-                                    P/E <i class="fas fa-question-circle"
-                                        style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
-                                <th class="pro-only" title="Piyasa Değeri / Defter Değeri. Şirketin özsermayesine oranla fiyatı."
-                                    data-i18n-title="tooltip.pb"
-                                    style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">
-                                    P/B <i class="fas fa-question-circle"
-                                        style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
-                                <th class="pro-only" title="Oynaklık ölçüsü. Piyasa 1'dir. 1'den büyükse piyasadan daha hareketlidir."
-                                    data-i18n-title="tooltip.beta"
-                                    style="cursor:help; border-bottom:1px dashed var(--text-muted); padding-bottom:0.2rem;">
-                                    Beta <i class="fas fa-question-circle"
-                                        style="font-size:0.75rem;opacity:0.6;margin-left:2px;"></i></th>
-                            </tr>
-                        </thead>
-                        <tbody id="summary-table-body"></tbody>
-                    </table>
-                </div>
-                <!-- Save Portfolio Tool -->
-                <div style="display:flex; justify-content:flex-end; margin-top:0.75rem;">
-                    <button class="btn btn-secondary" id="save-supa-portfolio-btn" style="padding:0.5rem 1rem; font-weight:600; font-size:0.85rem; border-radius:6px; display:flex; align-items:center; gap:6px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#10b981; cursor:pointer;">
-                        <i class="fas fa-save"></i> 💾 Portföyümü Kaydet
-                    </button>
-                </div>
-            </div>
+            <!-- Summary Table (Reactive Component) -->
+            <x-analysis-table id="summary-table-root"></x-analysis-table>
 
             <!-- Portfolio Extras: Sector + Correlation + Monte Carlo -->
             <div class="extras-grid" id="extras-grid">
@@ -1266,8 +1219,8 @@
                 <div id="comparison-content"></div>
             </div>
 
-            <!-- Individual Result Cards -->
-            <div class="results-grid" id="results-grid"></div>
+            <!-- Individual Result Cards (Reactive Component) -->
+            <x-analysis-grid id="results-grid"></x-analysis-grid>
 
             <!-- Sponsor Section -->
             <div class="sponsors-footer" style="margin-top: 3rem; text-align: center; padding: 2rem; background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
@@ -1314,7 +1267,9 @@
     <script src="js/charts.js?v=4.1"></script>
     <!-- Supabase Auth / DB Client -->
     <script type="module" src="js/supabaseClient.js"></script>
-    <script type="module" src="js/app.js?v=4.1"></script>
+    <!-- Main Orchestrator -->
+    <script type="module" src="js/components/AnalysisComponents.js"></script>
+    <script type="module" src="js/app.js?v=5.1"></script>
     <script>
         // Service Worker unregistration to prevent caching bugs
         if ('serviceWorker' in navigator) {

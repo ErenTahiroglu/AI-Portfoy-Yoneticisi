@@ -1,4 +1,5 @@
 # AI-Portfoy-Yoneticisi Geliştirme Kuralları
+
 - **Mimari:** Backend Python/FastAPI, Frontend sadece Vanilla JS, HTML ve CSS.
 - **Yasaklar:** React, Vue, Tailwind, Bootstrap veya başka harici CSS/JS framework'leri KULLANMA.
 - **Frontend Konumu:** Tüm frontend kodları `frontend/` klasöründedir.

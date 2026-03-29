@@ -1,0 +1,47 @@
+import pytest
+import socket
+import httpx
+import requests
+
+def test_sync_network_block_firewall():
+    """
+    SRE Firewall Verification: 
+    Senkron (requests) dış ağ çağrılarının engellendiğini ve 
+    SocketBlockedError (veya sarmalanmış hata) fırlatıldığını doğrular.
+    """
+    with pytest.raises(Exception) as excinfo:
+         # Bilinçli olarak Google'a gitmeye çalış
+         requests.get("https://google.com", timeout=1)
+    
+    # pytest-socket hata mesajlarında genellikle 'A socket.socket.connect call to...' ifadesi yer alır.
+    assert "socket" in str(excinfo.value).lower() or "blocked" in str(excinfo.value).lower()
+
+@pytest.mark.asyncio
+async def test_async_network_block_firewall():
+    """
+    Asenkron (httpx) dış ağ çağrılarının engellendiğini doğrular.
+    Bu, asenkron event loop'ların (uvloop/asyncio) delinmediğinin kanıtıdır.
+    """
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(Exception) as excinfo:
+            await client.get("https://alpha-vantage.co/query", timeout=1)
+            
+    assert "socket" in str(excinfo.value).lower() or "blocked" in str(excinfo.value).lower()
+
+def test_localhost_allow_access():
+    """
+    Localhost erişiminin (Redis/Local API) kısıtlanmadığını doğrular.
+    """
+    # --allow-hosts=127.0.0.1,localhost sayesinde bu hata fırlatmamalıdır.
+    # (Not: Eğer arkada servis yoksa ConnectionRefusedError alabiliriz ama 
+    #  SocketBlockedError ALMAMALIYIZ)
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.1)
+        s.connect(("127.0.0.1", 9999)) # Boş bir yerel port
+    except ConnectionRefusedError:
+        # Bu beklenen bir ağ hatasıdır (Bloklama değil kanal reddi)
+        pass
+    except Exception as e:
+        if "socket" in str(e).lower() and "blocked" in str(e).lower():
+            pytest.fail("❌ Localhost erişimi yanlışlıkla engellendi!")

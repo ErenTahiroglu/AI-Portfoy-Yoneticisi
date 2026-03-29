@@ -90,56 +90,31 @@ async def news_api(request: NewsRequest):
 
 @router.post("/chat", dependencies=[Depends(check_llm_quota)])
 async def chat_api(request: Request, body: ChatRequest, background_tasks: BackgroundTasks):
-    """Floating Copilot Chatbot Endpoint with downstream Execution trigger (HTTP 202 Polling)."""
+    """Floating Copilot Chatbot Endpoint (Thin Facade Bridge)."""
     if not body.api_key:
         raise HTTPException(status_code=400, detail="API key is required")
+        
     try:
         user = getattr(request.state, "user", None)
         user_id = user["sub"] if user else None
 
-        from backend.core.ai_agent import generate_chat_response
-        from backend.core.job_queue import spawn_background_job
+        from backend.services.chat_orchestrator import orchestrator
         from fastapi.responses import JSONResponse
         
-        # Wrapper since chat requires paper trade downstream execution
-        async def _chat_worker():
-            reply = await generate_chat_response(body.messages, body.portfolio_context, body.api_key, body.model, body.lang, user_id=user_id, user_profile=body.user_profile)
-             
-            # Shadow Trigger inside worker
-            try:
-                from backend.core.graph.shadow_mode import run_shadow_graph
-                await run_shadow_graph(reply, body.portfolio_context, "BIST_HINT")
-            except Exception as e:
-                logger.error(f"Shadow Trigger failed: {e}")
-                
-            # Execute trades pattern matcher
-            if user_id and body.messages:
-                 user_msg = ""
-                 for msg in reversed(body.messages):
-                      if msg.get("role") == "user":
-                           user_msg = msg.get("content", "")
-                           break
-                 
-                 import re
-                 match_current = re.search(r'Mevcut Varlık Dağılımım:\s*(\{.*?\})', user_msg)
-                 match_optimal = re.search(r'Matematiksel Optimum Dağılım:\s*(\{.*?\})', user_msg)
-                 
-                 if match_current and match_optimal:
-                      import json
-                      try:
-                           curr_weights = json.loads(match_current.group(1).replace("'", '"'))
-                           opt_weights = json.loads(match_optimal.group(1).replace("'", '"'))
-                           
-                           order_log = await execute_paper_trades(curr_weights, opt_weights, user_id)
-                           reply += f"\n\n---\n**📊 [Sanal Emir İletim Sistemi]**\n{order_log}"
-                      except Exception as ex:
-                           logger.error(f"Paper trade execution from CIO failed: {ex}")
-            return {"reply": reply}
-
-        job_id = spawn_background_job(background_tasks, _chat_worker)
+        # OOM/Timeout protection: Background spawn
+        job_id = spawn_background_job(
+            background_tasks, 
+            orchestrator.process_chat,
+            body.messages,
+            body.portfolio_context,
+            body.api_key,
+            body.model,
+            body.lang,
+            user_id=user_id,
+            user_profile=body.user_profile
+        )
+        
         return JSONResponse(status_code=202, content={"status": "accepted", "job_id": job_id})
     except Exception as e:
-        error_msg = str(e)
-        if "429" in error_msg or "quota" in error_msg.lower() or "limit" in error_msg.lower():
-             raise HTTPException(status_code=429, detail="API kota sınırına ulaşıldı veya Rate limit aşıldı. Lütfen daha sonra tekrar deneyin.")
-        raise HTTPException(status_code=500, detail=error_msg)
+        logger.error(f"Chat API Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

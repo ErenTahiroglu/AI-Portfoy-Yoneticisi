@@ -40,22 +40,34 @@ export async function runWizard() {
             body: JSON.stringify({ prompt: promptText, api_key: apiKey, model: currModel, lang: getLang() })
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Makine öğrenimi servisi yanıt vermedi");
-
-        if (data.portfolio && Array.isArray(data.portfolio)) {
-            const tickerString = data.portfolio.map(p => `${p.ticker}:${p.weight}`).join(", ");
-            document.getElementById("ticker-input").value = tickerString;
-            showToast("Yapay Zeka portföyünüzü hazırladı! Analiz başlıyor...", "success");
-
-            document.getElementById("ticker-input").scrollIntoView({ behavior: "smooth", block: "center" });
-
-            setTimeout(() => {
-                const analyzeBtn = document.getElementById("analyze-btn");
-                if (analyzeBtn) analyzeBtn.click();
-            }, 800);
+        const initialData = await res.json();
+        
+        if (res.status === 202 && initialData.job_id) {
+             // Polling devrede (Vercel kalkanı)
+             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Zeka Motoru Çalışıyor (Arkaplan)...`;
+             
+             try {
+                 const data = await window.pollJobResult(initialData.job_id, 3000);
+                 
+                 if (data.portfolio && Array.isArray(data.portfolio)) {
+                     const tickerString = data.portfolio.map(p => `${p.ticker}:${p.weight}`).join(", ");
+                     document.getElementById("ticker-input").value = tickerString;
+                     showToast("Yapay Zeka portföyünüzü hazırladı! Analiz başlıyor...", "success");
+         
+                     document.getElementById("ticker-input").scrollIntoView({ behavior: "smooth", block: "center" });
+         
+                     setTimeout(() => {
+                         const analyzeBtn = document.getElementById("analyze-btn");
+                         if (analyzeBtn) analyzeBtn.click();
+                     }, 800);
+                 } else {
+                     showToast("Geçerli bir portföy döndürülemedi.", "error");
+                 }
+             } catch (pollErr) {
+                 showToast(`Sihirbaz Hatası: ${pollErr.message}`, "error");
+             }
         } else {
-            showToast("Geçerli bir portföy döndürülemedi.", "error");
+            throw new Error(initialData.detail || "Makine öğrenimi servisi yanıt vermedi");
         }
     } catch (err) {
         showToast(`Sihirbaz Hatası: ${err.message}`, "error");

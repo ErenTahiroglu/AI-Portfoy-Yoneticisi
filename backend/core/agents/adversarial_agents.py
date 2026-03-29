@@ -28,10 +28,14 @@ async def bull_researcher_node(state: GraphState) -> dict:
     reports_str = _stringify_state_reports(state)
     history = state.get("investment_debate_state", {}).get("history", [])
     
+    mode = "ISLAMIC-ONLY" if not state.get("check_financials", True) else "FULL-ANALYSIS"
+    
     prompt = f"""
-    Sen 'Bull (İyimser) Araştırmacı' ajansın. Görevin: {ticker} sembolü için piyasada sadece GÜÇLÜ FIRSATLARI ve BÜYÜME POTANSİYELİNİ acımasızca savunmak.
-    Kötü verileri bile 'geçici bir dip' veya 'alım fırsatı' olarak yorumla. Riskleri tamamen göz ardı et demiyorum, ancak bardağın tamamen dolu tarafına odaklan.
-    Eğer Bear ajanı daha önce sana karşı argüman sunduysa (Aşağıdaki geçmişe bak), onun zayıf noktalarını çürütmeye çalış.
+    Sen 'Bull (İyimser) Araştırmacı' ajansın. 
+    [MOD]: {mode}
+    
+    Görevin: {ticker} sembolü için piyasada sadece GÜÇLÜ FIRSATLARI ve BÜYÜME POTANSİYELİNİ savunmak.
+    {'NOT: Finansal veriler (RSI, Fiyat vb.) bu modda devre dışıdır. Sadece İslami uygunluk ve haber duyarlılığına odaklan.' if mode == "ISLAMIC-ONLY" else ''}
     
     [VERİ TABANIN]:
     {reports_str}
@@ -58,10 +62,14 @@ async def bear_researcher_node(state: GraphState) -> dict:
     reports_str = _stringify_state_reports(state)
     history = state.get("investment_debate_state", {}).get("history", [])
     
+    mode = "ISLAMIC-ONLY" if not state.get("check_financials", True) else "FULL-ANALYSIS"
+    
     prompt = f"""
-    Sen 'Bear (Kötümser) Araştırmacı' ajansın. Görevin: {ticker} sembolündeki GİZLİ TEHLİKELERİ, DEĞERLEME BALONLARINI ve EN KÖTÜ SENARYOLARI acımasızca ortaya çıkarmak.
-    İyi gelen verilerin bile 'suni bir köpük', 'tek seferlik kâr' veya 'fiyatlanmış bir beklenti' olduğunu savun. Bardağın tamamen boş tarafına odaklan.
-    Eğer Bull ajanı pembe tablolar çizdiyse, onun argümanlarını sert rasyonel verilerle ez.
+    Sen 'Bear (Kötümser) Araştırmacı' ajansın. 
+    [MOD]: {mode}
+    
+    Görevin: {ticker} sembolündeki GİZLİ TEHLİKELERİ ve EN KÖTÜ SENARYOLARI ortaya çıkarmak.
+    {'NOT: Finansal metrikler kapalıdır. İslami risklere ve olumsuz haber başlıklarına odaklan.' if mode == "ISLAMIC-ONLY" else ''}
     
     [VERİ TABANIN]:
     {reports_str}
@@ -158,10 +166,14 @@ async def portfolio_manager_node(state: GraphState) -> dict:
     {'RİSK TARTIŞMASI DEVRE KESİCİ (CIRCUIT BREAKER) TARAFINDAN ESNESİL (BYPASS) EDİLDİ NEDENİ: ' + cb_reason if skip_risk else 'AĞIR RİSK TARTIŞMASI SONUÇLARI: ' + chr(10).join(risk_debate)}
     """
     
+    mode = "ISLAMIC-ONLY" if not state.get("check_financials", True) else "FULL-ANALYSIS"
+    
     prompt = f"""
     Sen BAŞ YATIRIM YÖNETİCİSİSİN (Portfolio Manager - CIO).
-    Alt ajanlarının ürettiği yatırım kararını, yatırım planını ve risk tartışmalarını inceleyerek NİHAİ BAĞLAYICI EMRİ (Final Decision) ver.
-    Müşteriye/Kullanıcıya son olarak iletilecek şık ve eyleme dökülebilir tavsiye metnini oluştur.
+    [MOD]: {mode}
+    
+    Alt ajanlarının ürettiği yatırım kararını inceleyerek NİHAİ BAĞLAYICI EMRİ ver.
+    {'NOT: Bu analiz İslami odaklıdır. Teknik göstergelerin yokluğunu bir eksiklik olarak görme, fıkhi uyuma ve duyarlılığa odaklan.' if mode == "ISLAMIC-ONLY" else ''}
     
     [TÜM BAĞLAM VE GEÇMİŞ]:
     {context}

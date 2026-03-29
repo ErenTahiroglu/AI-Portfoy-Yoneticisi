@@ -68,22 +68,13 @@ AppState.subscribe((prop, val, oldValue) => {
     }
 
     if (prop === "results") {
-        const grid = document.getElementById("results-grid");
-        const summaryBody = document.getElementById("summary-table-body");
         const resultsSection = document.getElementById("results");
         if (!val || val.length === 0) {
-            if (grid) grid.innerHTML = "";
-            if (summaryBody) summaryBody.innerHTML = "";
             if (resultsSection) resultsSection.classList.add("hidden");
             return;
         }
         if (resultsSection) resultsSection.classList.remove("hidden");
 
-        if (!(oldValue && val.length > oldValue.length)) {
-            if (grid) grid.innerHTML = "";
-            if (summaryBody) summaryBody.innerHTML = "";
-            val.forEach((res, idx) => appendResultItem(res, idx, grid, summaryBody));
-        }
         window.lastResults = val;
         try { renderHeatmap(val); renderScenarios(val); } catch (e) { }
     }
@@ -115,34 +106,14 @@ AppState.subscribe((prop, val, oldValue) => {
 
 // ── Yardımcı Render Fonksiyonu ───────────────────────────────────────────
 window.renderSingleCard = function(item) {
-    const grid = document.getElementById("results-grid");
-    const summaryBody = document.getElementById("summary-table-body");
+    // Reaktif bileşenler AppState.subscribe üzerinden otomatik render aldığı için
+    // burada manuel appendResultItem çağrısına gerek kalmadı.
+    // Sadece skeleton temizliği yapıyoruz.
     const resultsSection = document.getElementById("results");
-
     if (resultsSection) resultsSection.classList.remove("hidden");
 
     const skeleton = document.getElementById(`skeleton-${item.ticker}`);
     if (skeleton) skeleton.remove();
-
-    const idx = AppState.results.length; 
-    appendResultItem(item, idx, grid, summaryBody);
-}
-
-async function appendResultItem(res, idx, grid, summaryBody) {
-    const { createCard, createSummaryRow } = await import('./components/CardComponent.js');
-    if (summaryBody) summaryBody.appendChild(createSummaryRow(res));
-    if (grid) {
-        const { card, chartId } = createCard(res, idx);
-        grid.appendChild(card);
-        if (res.error) return;
-
-        setTimeout(() => {
-            if (typeof createTVChart === "function") createTVChart(chartId, res);
-            if (res.radar_score && typeof createRadarChart === "function") createRadarChart(`radar-${chartId}`, res);
-            if (res.technicals && res.technicals.gauge_score !== undefined && typeof createGaugeChart === "function") createGaugeChart(`gauge-${chartId}`, res.technicals.gauge_score, `gauge-lbl-${chartId}`, `gauge-val-${chartId}`);
-            if (res.technicals && res.technicals.relative_performance && typeof createRelativePerformanceChart === "function") createRelativePerformanceChart(`relperf-${chartId}`, res.technicals.relative_performance);
-        }, 50);
-    }
 }
 
 // ── DOMContentLoaded Event Listener ──────────────────────────────────────

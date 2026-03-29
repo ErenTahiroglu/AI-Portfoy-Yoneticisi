@@ -85,6 +85,7 @@ yahooquery==2.4.1
 zstandard==0.25.0
 pytest==8.1.1
 pytest-asyncio==0.23.6
+pytest-socket==0.7.0
 alembic==1.13.1
 supabase==2.28.3
 
