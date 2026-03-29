@@ -68,6 +68,9 @@ app = FastAPI(
     redoc_url=None if is_prod else "/redoc"
 )
 
+from prometheus_fastapi_instrumentator import Instrumentator
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
 # ── Middleware: No-Cache ──────────────────────────────────────────────────
 class NoCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):

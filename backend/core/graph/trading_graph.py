@@ -85,17 +85,35 @@ async def summarizer_node(state: GraphState) -> dict:
     llm = get_quick_think_llm(model_name="gemini-2.5-flash")
     structured_llm = llm.with_structured_output(SummarizedDebate)
     
-    try:
-        res = await structured_llm.ainvoke(prompt)
-        summary_text = f"[SIKIŞTIRILMIŞ BAĞLAM]\nMetrikler: {res.korunan_metrikler}\nBoğa: {res.boga_argumanlari}\nAyı: {res.ayi_argumanlari}\nUzlaşma: {res.uzlasma_noktalari}"
-        logger.info("[PRUNING] State context strictly compressed via Pydantic Schema.")
-        
-        return {
-            "messages": [summary_text]
-        }
-    except Exception as e:
-        logger.error(f"Summarizer failed: {e}")
-        return {}
+    from pydantic import ValidationError
+    from backend.api.metrics import SUMMARIZER_VALIDATION_ERROR_TOTAL
+    import json
+    
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            res = await structured_llm.ainvoke(prompt)
+            summary_text = f"[SIKIŞTIRILMIŞ BAĞLAM]\nMetrikler: {res.korunan_metrikler}\nBoğa: {res.boga_argumanlari}\nAyı: {res.ayi_argumanlari}\nUzlaşma: {res.uzlasma_noktalari}"
+            logger.info("[PRUNING] State context strictly compressed via Pydantic Schema.")
+            
+            return {
+                "messages": [summary_text]
+            }
+        except ValidationError as ve:
+            logger.warning(f"Summarizer Schema Validation Error (Attempt {attempt+1}/{max_retries}): {ve}")
+            SUMMARIZER_VALIDATION_ERROR_TOTAL.labels(agent_node="SummarizerNode").inc()
+            # Feed the error back to the LLM
+            prompt += f"\n\n[SİSTEM UYARISI - ÖNCEKİ DENEME BAŞARISIZ]: Lütfen JSON şemasına tam uyunuz. Aldığınız Hata: {ve}"
+        except Exception as e:
+            logger.error(f"Summarizer failed unexpectedly: {e}")
+            break
+
+    # If all retries failed, force HOLD state to prevent corrupted context propagation
+    logger.error("🛑 Summarizer failed to validate schema after max retries. Forcing secure HOLD mode.")
+    return {
+        "final_trade_decision": "[HOLD] Sistem güvenlik amacıyla işlemi askıya aldı (JSON Context Error).",
+        "messages": ["[HOLD] Şema doğrulama (Validation) kalıcı olarak çöktü. Tüm kararlar iptal edildi."]
+    }
 
 
 def compile_trading_graph():
