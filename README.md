@@ -62,7 +62,6 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 * **🧩 Modüler Mimari (Puzzle)**: `services/` ve `components/` katmanları ile tam SRP (Single Responsibility) uyumu.
 * **🗄️ Database Migrations**: Alembic ile versiyonlanmış veritabanı şeması (Supabase entegrasyonu).
 
-
 ---
 
 ## 🚀 Başlangıç & Kurulum (Lokal)
@@ -103,6 +102,7 @@ npm install
 # 2. Otonom Ekran Görüntüsü Botunu Çalıştırın
 npm run test:ui
 ```
+
 *Görsel çıktılar `tests/ui/screenshots/` klasörüne kaydedilir.*
 
 ---
