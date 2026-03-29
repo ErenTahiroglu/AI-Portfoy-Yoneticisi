@@ -30,6 +30,8 @@ backend/tests/memory_log.txt
 # Secrets & Local Config
 .env
 .env.local
+.env.*
+!.env.example
 .vscode/
 .DS_Store
 Thumbs.db

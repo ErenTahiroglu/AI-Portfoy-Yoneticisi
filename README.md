@@ -104,8 +104,8 @@ Tüm platformu tek satır kodla ayağa kaldırabilirsiniz:
 docker-compose up --build
 ```
 
-* **API Gateway:** `http://localhost:8000`
-* **Statik UI Dağılımı:** `http://localhost:8000/ui`
+* **API Gateway (Backend):** `http://localhost:8000`
+* **Statik UI Dağılımı (Frontend):** Vercel üzerinden veya lokal server (`http://localhost:3000`) ile.
 
 ---
 
