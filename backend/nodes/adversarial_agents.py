@@ -111,7 +111,8 @@ async def research_manager_node(state: GraphState) -> dict:
     return {
         "investment_debate_state": {
             "judge_decision": content
-        }
+        },
+        "turn_count": 0  # Reset for Risk debate
     }
 
 async def trader_node(state: GraphState) -> dict:

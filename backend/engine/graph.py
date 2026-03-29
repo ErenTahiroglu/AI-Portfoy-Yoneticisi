@@ -112,7 +112,8 @@ async def summarizer_node(state: GraphState) -> dict:
     logger.error("🛑 Summarizer failed to validate schema after max retries. Forcing secure HOLD mode.")
     return {
         "final_trade_decision": "[HOLD] Sistem güvenlik amacıyla işlemi askıya aldı (JSON Context Error).",
-        "messages": ["[HOLD] Şema doğrulama (Validation) kalıcı olarak çöktü. Tüm kararlar iptal edildi."]
+        "messages": ["[HOLD] Şema doğrulama (Validation) kalıcı olarak çöktü. Tüm kararlar iptal edildi."],
+        "turn_count": 0  # Reset for Risk debate
     }
 
 import re
@@ -172,9 +173,19 @@ async def data_sync_node(state: GraphState) -> dict:
 
 async def data_join_and_circuit_node(state: GraphState) -> dict:
     """
-    🔄 [DataJoinAndCircuit]: Veri bütünlüğü kontrolü ve döngü sayacı.
+    🔄 [DataJoinAndCircuit]: Yatırım münazarası döngü sayacı.
     """
     turn_count = state.get("turn_count", 0)
+    return {"turn_count": turn_count + 1}
+
+async def risk_join_and_circuit_node(state: GraphState) -> dict:
+    """
+    🛡️ [RiskJoinAndCircuit]: Risk münazarası döngü sayacı.
+    """
+    turn_count = state.get("turn_count", 0)
+    # Eğer ilk defa giriliyorsa (Yatırım'dan geliniyorsa) 100 bandına alabiliriz
+    # veya sadece artırabiliriz. Burada MAX_TURNS ortak kullanıldığı için 
+    # Risk döngüsünün başında turn_count'u resetlemek en iyisidir.
     return {"turn_count": turn_count + 1}
 
 # Her bir düğüm (Node) kendi fonksiyonunu, takip eden kenarlarını (Edges)
@@ -217,7 +228,7 @@ NODE_REGISTRY = {
         "conditional_edges": {
             "router": route_investment_debate,
             "mapping": {
-                "Bull Researcher": "Bull Researcher",
+                "Bull Researcher": "DataJoinAndCircuit",
                 "Research Manager": "Research Manager"
             }
         }
@@ -231,7 +242,7 @@ NODE_REGISTRY = {
         "conditional_edges": {
             "router": route_circuit_breaker,
             "mapping": {
-                "Aggressive Analyst": "Aggressive Analyst",
+                "Aggressive Analyst": "RiskJoinAndCircuit",
                 "Portfolio Manager": "Portfolio Manager" 
             }
         }
@@ -244,12 +255,16 @@ NODE_REGISTRY = {
         "func": conservative_analyst_node,
         "edges": ["Neutral Analyst"]
     },
+    "RiskJoinAndCircuit": {
+        "func": risk_join_and_circuit_node,
+        "edges": ["Aggressive Analyst"]
+    },
     "Neutral Analyst": {
         "func": neutral_analyst_node,
         "conditional_edges": {
             "router": route_risk_debate,
             "mapping": {
-                "Aggressive Analyst": "Aggressive Analyst",
+                "Aggressive Analyst": "RiskJoinAndCircuit",
                 "Portfolio Manager": "Portfolio Manager"
             }
         }
