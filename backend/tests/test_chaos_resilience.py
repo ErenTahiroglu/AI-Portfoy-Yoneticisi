@@ -197,9 +197,11 @@ async def test_datasync_fan_in_race_condition():
         "ticker": "TSLA"
     }
     
-    # DataSyncNode'un veriyi bozmadan veya eksik bırakmadan geçtiğini doğrula
+    # DataSyncNode'un gelişiyle beraber izlenebilirlik mesajı döndüğünü doğrula
     result = await data_sync_node(state)
     
-    assert result == {}, "DataSyncNode sadece senkronizasyon noktasıdır, state'i null-out etmemeli (return {})."
+    expected_msg = "Paralel veri analizi tamamlandı, sentez aşamasına geçiliyor."
+    assert result.get("messages") == [expected_msg], f"DataSyncNode'un dönüş mesajı beklenenden farklı: {result}"
+    
     # LangGraph'ın fan-in mantığı state'leri otomatik birleştirir, 
     # DataSyncNode'un burada çökmemesi yeterlidir.

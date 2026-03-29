@@ -3,6 +3,8 @@ import time
 import logging
 import os
 import psutil
+from unittest.mock import patch, MagicMock
+from langchain_community.chat_models import FakeListChatModel
 from backend.engine.graph import compile_trading_graph
 
 logger = logging.getLogger(__name__)
@@ -18,22 +20,28 @@ async def test_full_analysis_performance_gate():
     1. Analiz süresi 20 saniyeyi geçerse fail eder (Vercel/Render limitleri).
     2. RAM kullanımı ölçülür ve raporlanır (Artifact).
     """
-    graph = compile_trading_graph()
+    # Create a fake LLM response for all adversarial agents
+    fake_llm = FakeListChatModel(responses=['{"decision": "BUY", "reason": "Mocked performance test"}'])
     
-    start_mem = get_process_memory()
-    start_time = time.time()
-    
-    # Mock input
-    input_state = {
-        "ticker": "AAPL",
-        "check_financials": True,
-        "check_islamic": True,
-        "api_key": "MOCK_KEY",
-        "model_name": "gemini-2.5-flash"
-    }
-    
-    # Run graph
-    result = await graph.ainvoke(input_state)
+    with patch("backend.infrastructure.llm_factory.get_quick_think_llm", return_value=fake_llm), \
+         patch("backend.infrastructure.llm_factory.get_deep_think_llm", return_value=fake_llm):
+        
+        graph = compile_trading_graph()
+        
+        start_mem = get_process_memory()
+        start_time = time.time()
+        
+        # Mock input
+        input_state = {
+            "ticker": "AAPL",
+            "check_financials": True,
+            "check_islamic": True,
+            "api_key": "MOCK_KEY",
+            "model_name": "gemini-2.5-flash"
+        }
+        
+        # Run graph
+        result = await graph.ainvoke(input_state)
     
     end_time = time.time()
     end_mem = get_process_memory()

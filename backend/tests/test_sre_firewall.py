@@ -26,7 +26,15 @@ async def test_async_network_block_firewall():
         with pytest.raises(Exception) as excinfo:
             await client.get("https://alpha-vantage.co/query", timeout=1)
             
-    assert "socket" in str(excinfo.value).lower() or "blocked" in str(excinfo.value).lower()
+    # Python 3.12+ TaskGroups (veya LangGraph paralel düğümleri) hatayı ExceptionGroup içine alabilir.
+    full_error_text = str(excinfo.value).lower()
+    
+    # Eğer ExceptionGroup ise içindeki hataları da kontrol et
+    if hasattr(excinfo.value, "exceptions"):
+        for sub_e in excinfo.value.exceptions:
+            full_error_text += " " + str(sub_e).lower()
+
+    assert "socket" in full_error_text or "blocked" in full_error_text
 
 def test_localhost_allow_access():
     """
