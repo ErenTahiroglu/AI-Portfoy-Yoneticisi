@@ -1,6 +1,6 @@
 # 📈 AI-Portföy-Yöneticisi (AI Portfolio Manager)
 
-**Yapay Zeka Destekli, Kurumsal Standartlarda Akıllı Portföy Analiz ve Risk Yönetimi Platformu**
+## Yapay Zeka Destekli, Kurumsal Standartlarda Akıllı Portföy Analiz ve Risk Yönetimi Platformu
 
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-blue?style=flat-square&logo=vercel)](https://vercel.com)
 [![Render](https://img.shields.io/badge/Backend-Render-black?style=flat-square&logo=render)](https://render.com)
@@ -43,6 +43,7 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ## 📝 Son Değişiklikler (Changelog)
 
+* **v1.2.8:** Güvenli Yönetici Başlatma (Admin Bootstrap) ve Genişletilmiş JWT Yaşam Döngüsü yapılandırması.
 * **v1.2.5:** Yönetici yetki izolasyonu (Admin Bypass Fix) ve görsel bildirim katmanı eklendi.
 * **v1.2.0:** Landing page tasarımı yenilendi, UX akışları optimize edildi.
 * **v1.1.5:** Güvenlik katmanı (Behavioral Brake) iyileştirildi, loglama mekanizması güçlendirildi.
@@ -68,17 +69,23 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 Sistemi bilgisayarınızda ayağa kaldırmak için aşağıdaki adımları izleyin:
 
 ### 1. Dosya Hazırlığı (.env)
+
 Kök dizindeki şablonu kopyalayarak `.env` dosyanızı oluşturun ve anahtarları doldurun:
+
 ```bash
 cp .env.example .env
 ```
-> **Gerekli Temel Anahtarlar:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `UPSTASH_REDIS_REST_URL`.
+
+> **Gerekli Temel Anahtarlar:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `GEMINI_API_KEY`, `UPSTASH_REDIS_REST_URL`.
 
 ### 2. Docker İle Hızlı Kurulum
+
 Tüm platformu tek satır kodla ayağa kaldırabilirsiniz:
+
 ```bash
 docker-compose up --build
 ```
+
 * **API Gateway:** `http://localhost:8000`
 * **Statik UI Dağılımı:** `http://localhost:8000/ui`
 
@@ -100,6 +107,7 @@ npm run test:ui
 ---
 
 ## 🤝 İletişim & Destek
-*   **Sponsorluk:** Katkıda bulunmak için [GitHub Sponsor](https://github.com/sponsors/ErenTahiroglu) sayfasını ziyaret edebilirsiniz.
+
+* **Sponsorluk:** Katkıda bulunmak için [GitHub Sponsor](https://github.com/sponsors/ErenTahiroglu) sayfasını ziyaret edebilirsiniz.
 
 Saygılarımızla.

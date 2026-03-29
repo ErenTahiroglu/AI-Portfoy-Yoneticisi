@@ -13,6 +13,7 @@ services:
       - ./backend:/app
     environment:
       - ENVIRONMENT=development
+      - TEMP_ADMIN_PASSWORD=${TEMP_ADMIN_PASSWORD:-Admin123!}
     restart: unless-stopped
 
   # Frontend is served by the backend or separately (Vercel)
