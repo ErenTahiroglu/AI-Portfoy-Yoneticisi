@@ -40,6 +40,9 @@ class GraphState(TypedDict):
     intent: str # "analyze" | "trade" | "unknown"
     execution_payload: Annotated[Dict[str, Any], merge_dicts]
 
+    # Final Analysis Result
+    final_report: Annotated[Dict, merge_dicts]
+
     # Analysis Mode Flags (Modular Analysis)
     check_financials: bool
     check_islamic: bool
