@@ -43,6 +43,7 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ## 📝 Son Değişiklikler (Changelog)
 
+* **v9.0 (Current):** **Yönlü Graf (LangGraph) Multi-Agent** kurgusuna geçildi! Bull vs Bear tartışma döngüleri, Devre Kesici (Circuit Breaker) kalkanı ve Shadow Deployment (Gölge Dağıtım) mekanizması ile sıfır riskli paralel geçiş operasyonu. Kapsamlı otonomi ve Fan-Out Fan-In veri toplayıcılar eklendi.
 * **v1.2.8:** Güvenli Yönetici Başlatma (Admin Bootstrap) ve Genişletilmiş JWT Yaşam Döngüsü yapılandırması.
 * **v1.2.5:** Yönetici yetki izolasyonu (Admin Bypass Fix) ve görsel bildirim katmanı eklendi.
 * **v1.2.0:** Landing page tasarımı yenilendi, UX akışları optimize edildi.

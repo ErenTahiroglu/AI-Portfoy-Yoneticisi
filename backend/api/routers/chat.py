@@ -1,7 +1,7 @@
 import logging
 import json
 import re
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from backend.api.models import ChatRequest, NewsRequest
 from backend.api.rate_limiter import limiter
@@ -84,7 +84,7 @@ async def news_api(request: NewsRequest):
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/chat", dependencies=[Depends(check_llm_quota)])
-async def chat_api(request: Request, body: ChatRequest):
+async def chat_api(request: Request, body: ChatRequest, background_tasks: fastapi.BackgroundTasks):
     """Floating Copilot Chatbot Endpoint with downstream Execution trigger."""
     if not body.api_key:
         raise HTTPException(status_code=400, detail="API key is required")
@@ -94,6 +94,16 @@ async def chat_api(request: Request, body: ChatRequest):
 
         from backend.core.ai_agent import generate_chat_response
         reply = await generate_chat_response(body.messages, body.portfolio_context, body.api_key, body.model, body.lang, user_id=user_id, user_profile=body.user_profile)
+        
+        # --- SHADOW DEPLOYMENT TRIGGER ---
+        # Portfolio_context'ten veya mesajdan tahmini bir ticker yakalayabiliriz. Şimdilik Genel Context
+        # Fire-and-forget: Kullanıcı bu işlemi asenkron beklemez (Latency 0 ms)
+        try:
+            from backend.core.graph.shadow_mode import run_shadow_graph
+            background_tasks.add_task(run_shadow_graph, reply, body.portfolio_context, "BIST_HINT")
+        except Exception as e:
+            logger.error(f"Shadow Trigger failed: {e}")
+        # ---------------------------------
         
         if user_id and body.messages:
              user_msg = ""
