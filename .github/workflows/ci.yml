@@ -65,9 +65,8 @@ jobs:
           # Sadece 127.0.0.1 ve localhost erişilebilir kalır.
           python -m pytest backend/tests/ -v --disable-socket --allow-hosts=127.0.0.1,localhost
 
-      - name: Upload Performance Artifact
+      - name: Check Performance Artifact
         if: always()
-        uses: actions/checkout@v4 # Re-checkout if needed or use existing workspace
         continue-on-error: true
         run: |
           # Performans raporlarını CI eserlerine ekle
