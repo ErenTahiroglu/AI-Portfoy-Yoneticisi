@@ -84,7 +84,7 @@ async def news_api(request: NewsRequest):
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/chat", dependencies=[Depends(check_llm_quota)])
-async def chat_api(request: Request, body: ChatRequest, background_tasks: fastapi.BackgroundTasks):
+async def chat_api(request: Request, body: ChatRequest, background_tasks: BackgroundTasks):
     """Floating Copilot Chatbot Endpoint with downstream Execution trigger."""
     if not body.api_key:
         raise HTTPException(status_code=400, detail="API key is required")
