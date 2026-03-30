@@ -89,27 +89,12 @@ pytest-socket==0.7.0
 alembic==1.13.1
 supabase==2.28.3
 
-# v6.3: GitHub Actions CI & Core Logic Verified
-
-# v6.4: Optimizer & ML Hardening
-
-# v7.3: Telegram Push & Portfolio Optimization
-
-# v7.4: Risk Analyzer & Stress Testing
-
 yfinance==0.2.40
 pandas==2.2.1
 numpy==1.26.4
 PyJWT>=2.10.1
 
-# v7.5: Multi-Agent Architecture (Analyst/Researcher/CIO)
-# v7.6: Advanced Risk Metrics (VaR & MaxDD)
-# v7.7: Paper Trading Execution Logging Engine
-# v7.8: Autonomous Background Alerting System
-# v8.0: SOLID FastAPI Routers & ES6 Modular Frontend
 langgraph>=0.2.0
 
-# v9.0: Gözlemlenebilirlik (Observability) & Shadow metrics
 prometheus-client==0.24.1
 prometheus-fastapi-instrumentator==7.1.0
-

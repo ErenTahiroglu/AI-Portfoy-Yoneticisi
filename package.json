@@ -1,6 +1,6 @@
 {
   "name": "ai-portfoy-yoneticisi",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "**Yapay Zeka Destekli, Kurumsal Standartlarda Akıllı Portföy Analiz ve Risk Yönetimi Platformu**",
   "main": "index.js",
   "scripts": {

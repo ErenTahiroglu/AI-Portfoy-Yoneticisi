@@ -33,6 +33,8 @@
     "loadApiKeys": "readonly",
     "saveApiKeys": "readonly",
     "showToast": "readonly",
+    "initOnboardingWizard": "readonly",
+    "getUserProfile": "readonly",
     "currentLang": "readonly",
     "setLanguage": "readonly",
     "checkServerHealth": "readonly",
@@ -42,7 +44,8 @@
     "createStore": "readonly",
     "XLSX": "readonly",
     "html2canvas": "readonly",
-    "decryptData": "readonly",
+    "decryptApiKey": "readonly",
+    "encryptApiKey": "readonly",
     "API_BASE": "readonly",
     "IS_LOCAL": "readonly"
   },

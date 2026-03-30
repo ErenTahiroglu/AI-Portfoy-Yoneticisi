@@ -245,6 +245,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btn-run-wizard").addEventListener("click", runWizard);
     document.getElementById("compare-btn").addEventListener("click", showComparison);
 
+    // Mobile Menu Toggle
+    const mobBtn = document.getElementById("mobile-menu-btn");
+    const sidebar = document.getElementById("sidebar");
+    const mainContent = document.querySelector(".main-content");
+    
+    if (mobBtn && sidebar) {
+        mobBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle("open");
+        });
+
+        // Close sidebar when clicking main content (on mobile)
+        if (mainContent) {
+            mainContent.addEventListener("click", () => {
+                if (window.innerWidth <= 1000) {
+                    sidebar.classList.remove("open");
+                }
+            });
+        }
+
+        // Close sidebar on Esc
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && sidebar.classList.contains("open")) {
+                sidebar.classList.remove("open");
+            }
+        });
+    }
+
     setupAutocomplete();
     initCopilot();
 });
