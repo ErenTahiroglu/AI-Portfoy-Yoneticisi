@@ -1,7 +1,9 @@
+/* global LightweightCharts, Chart */
 // ═══════════════════════════════════════
 // CHART HELPERS
 // ═══════════════════════════════════════
 let tvChartInstances = {};
+let chartInstances = {};
 
 function destroyChart(id) {
     if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
@@ -18,6 +20,7 @@ function getChartColors() {
 // ═══════════════════════════════════════
 // TRADINGVIEW LIGHTWEIGHT CHARTS
 // ═══════════════════════════════════════
+window.createTVChart = createTVChart;
 function createTVChart(containerId, res) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -29,7 +32,7 @@ function createTVChart(containerId, res) {
                 tvChartInstances[containerId]._resizeObserver.disconnect();
             }
             tvChartInstances[containerId].remove(); 
-        } catch (e) {}
+        } catch (e) { /* ignore */ }
         delete tvChartInstances[containerId];
     }
     container.innerHTML = "";
@@ -133,7 +136,7 @@ function createBacktestChart(containerId, simData) {
                 tvChartInstances[containerId]._resizeObserver.disconnect();
             }
             tvChartInstances[containerId].remove(); 
-        } catch (e) {}
+        } catch (e) { /* ignore */ }
         delete tvChartInstances[containerId];
     }
     container.innerHTML = "";
@@ -224,6 +227,7 @@ function updateBacktestMetrics(simData) {
     if (sharpeEl) sharpeEl.innerText = simData.metrics.sharpe !== undefined ? simData.metrics.sharpe.toFixed(2) : "-";
 }
 
+window.createReturnChart = createReturnChart;
 function createReturnChart(canvasId, fin) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !fin) return;
@@ -835,7 +839,7 @@ function createEquityCurveChart(containerId, snapData) {
     if (!container || !snapData || snapData.length === 0) return;
 
     if (tvChartInstances[containerId]) {
-        try { tvChartInstances[containerId].remove(); } catch (e) {}
+        try { tvChartInstances[containerId].remove(); } catch (e) { /* ignore */ }
         delete tvChartInstances[containerId];
     }
     container.innerHTML = "";
