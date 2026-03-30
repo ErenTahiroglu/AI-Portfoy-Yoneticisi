@@ -27,7 +27,7 @@ def get_deep_think_llm(model_name: str = "gemini-2.5-pro", temperature: float = 
     Derin muhakeme yeteneğine sahip, sentezci ve yönetici (CIO/PM/Judge) ajanlar için ağır model.
     """
     if not api_key:
-        api_key = os.getenv("GOOGLE_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
     if "llama" in model_name.lower() or "mixtral" in model_name.lower():
         from langchain_groq import ChatGroq

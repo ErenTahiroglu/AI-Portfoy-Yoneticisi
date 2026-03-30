@@ -199,12 +199,15 @@ const TRANSLATIONS = {
     },
 };
 
+window.currentLang = currentLang;
 let currentLang = localStorage.getItem("lang") || "tr";
 
+window.t = t;
 function t(key) {
     return TRANSLATIONS[currentLang]?.[key] || TRANSLATIONS.tr[key] || key;
 }
 
+window.setLanguage = setLanguage;
 function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem("lang", lang);
@@ -226,11 +229,13 @@ function setLanguage(lang) {
     }
 }
 
+window.toggleLanguage = toggleLanguage;
 function toggleLanguage() {
     setLanguage(currentLang === "tr" ? "en" : "tr");
 }
 
 // Get current language helper
+window.getLang = getLang;
 function getLang() {
     return currentLang;
 }

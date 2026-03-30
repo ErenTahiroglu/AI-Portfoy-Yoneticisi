@@ -124,7 +124,6 @@ function runPVSimulationJS(results, payload) {
     const periodReturns = [];
     for (let t = 1; t < balanceHistory.length; t++) periodReturns.push((balanceHistory[t] / balanceHistory[t-1]) - 1);
     const meanRet = periodReturns.reduce((a, b) => a + b, 0) / periodReturns.length;
-    const downsideDev = Math.sqrt(periodReturns.map(v => v < 0 ? Math.pow(v, 2) : 0).reduce((a, b) => a + b, 0) / periodReturns.length);
     const stdDev = Math.sqrt(periodReturns.map(v => Math.pow(v - meanRet, 2)).reduce((a, b) => a + b, 0) / periodReturns.length);
 
     return {

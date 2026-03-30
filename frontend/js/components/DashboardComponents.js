@@ -41,7 +41,7 @@ export class HeroCards extends BaseComponent {
         }
     }
 
-    onStateChange(prop, val) {
+    onStateChange(prop, _val) {
         if (prop === "results" || prop === "extras") {
             this.update(window.AppState.results, window.AppState.extras);
         }

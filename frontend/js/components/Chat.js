@@ -128,6 +128,7 @@ export function initCopilot() {
                 body: JSON.stringify(payload)
             });
             
+            let reply = "";
             const initialData = await res.json();
             if (res.status === 202 && initialData.job_id) {
                  // Polling başlat (Vercel kalkanı)
@@ -135,7 +136,7 @@ export function initCopilot() {
                  
                  loadDiv.remove();
                  
-                 const reply = jobData.result || jobData.reply || jobData.response;
+                 reply = jobData.result || jobData.reply || jobData.response;
                  if (reply) {
                      appendMsg(reply, false);
                      chatHistory.push({ role: "assistant", content: reply });
@@ -146,13 +147,13 @@ export function initCopilot() {
                  loadDiv.remove();
                  if (!res.ok) throw new Error(initialData.detail || "API Hatası");
                  
-                 const reply = initialData.result || initialData.reply || initialData.response;
+                 reply = initialData.result || initialData.reply || initialData.response;
                  appendMsg(reply, false);
                  chatHistory.push({ role: "assistant", content: reply });
             }
 
             // ── Telemetry: AI Frenini Yakala ──
-            if ((reply.includes("beklemek ister misiniz") || reply.includes("panikle satmak")) && userProfile?.level === "beginner") {
+            if (reply && (reply.includes("beklemek ister misiniz") || reply.includes("panikle satmak")) && userProfile?.level === "beginner") {
                 window.lastAiMessageWasBrake = true;
             }
         } catch(err) {
@@ -211,7 +212,7 @@ export async function renderMacroAI(chunk, isDone) {
 
     if (isDone) {
         if (typeof marked !== "undefined") {
-            try { contentDiv.innerHTML = marked.parse(macroBuffer); } catch (e) {}
+            try { contentDiv.innerHTML = marked.parse(macroBuffer); } catch (e) { /* ignore */ }
         }
         if (typeof showToast === "function") showToast("Makro AI Analizi Hazır!", "success");
     }

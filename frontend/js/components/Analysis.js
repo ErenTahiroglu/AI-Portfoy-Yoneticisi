@@ -30,9 +30,7 @@ export function setupBacktestBindings() {
                 }
                 try {
                     if (typeof createBacktestChart === "function") createBacktestChart("bt-chart-container", simRes);
-                } catch (e) {
-                    console.error("Backtest chart error on adjust:", e);
-                }
+                } catch (e) { /* ignore */ }
             }
         }
     }
@@ -304,7 +302,7 @@ export function setupPaperTrades() {
                    const date = new Date(t.timestamp).toLocaleDateString("tr-TR", { hour: '2-digit', minute: '2-digit' });
                    return `<tr><td>${date}</td><td><strong>${t.symbol}</strong></td><td class="${t.order_type === 'BUY' ? 'positive' : 'negative'}">${t.order_type === 'BUY' ? 'ALIM' : 'SATIŞ'}</td><td>%${t.target_weight}</td></tr>`;
               }).join("");
-         } catch (e) {}
+         } catch (e) { /* ignore */ }
     }
     if (refreshBtn) refreshBtn.addEventListener("click", loadTrades);
     setTimeout(loadTrades, 1500);

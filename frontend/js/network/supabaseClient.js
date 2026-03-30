@@ -85,7 +85,7 @@ export async function signOut() {
 export async function getUser() {
     if (!supabase) return null;
     try {
-        const { data, error } = await supabase.auth.getUser();
+        const { data } = await supabase.auth.getUser();
         if (data?.user) return data.user;
     } catch (e) {
         console.warn("Auth check failed:", e);
@@ -101,10 +101,10 @@ export async function getUser() {
 export async function getValidSession() {
     try {
         if (supabase) {
-            const { data, error } = await supabase.auth.getSession();
+            const { data } = await supabase.auth.getSession();
             if (data?.session) return data.session;
         }
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 
     if (typeof localStorage !== "undefined" && localStorage.getItem("admin_bypass") === "true") {
         return { 
@@ -354,7 +354,7 @@ export async function loadPortfolio() {
     let offlineData = null;
     if (typeof localStorage !== "undefined") {
         const cached = localStorage.getItem(`offline_portfolio_${user.id}`);
-        if (cached) { try { offlineData = JSON.parse(cached); } catch (e) {} }
+        if (cached) { try { offlineData = JSON.parse(cached); } catch (e) { /* ignore */ } }
     }
     try {
         const session = await getValidSession();

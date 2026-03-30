@@ -46,10 +46,10 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ## 📝 Son Değişiklikler (Changelog)
 
-* **v11.3 (Current): Project Audit & Cleanup.** Centralized all frontend components to use a single `window.API_BASE` from `config.js`. Fixed naming inconsistencies in background job polling (`result` vs `reply`). Verified `X-Correlation-ID` traceability across the stack. Purged legacy `simulator.py` and modernized the test suite.
-* **v11.2:** **Hybrid Redis & Persistence.** Added standard TCP Redis support for local Docker compatibility. Completed Supabase SQL schema with missing telemetry and portfolio tables. Hardened JWT authentication layer and Redis failover logic.
-* **v11.1:** **Market Search & Stability.** ABD borsaları (NYSE, NASDAQ, AMEX) için genişletilmiş arama filtresi eklendi. Analiz sırasında oluşan "innerHTML" crash hatası temizlendi. `cdn.jsdelivr.net` için CSP tanımları güncellendi. Eksik tablolar için `background_connectivity_test.py` ve `supabase_setup.sql` hazırlandı.
-* **v11.0:** **Mobile-First UX Refactor.** Tamamen modüler "Puzzle" mimarisi üzerine inşa edilen yeni arayüz; **1000px Auto-Collapse** (Otomatik Sidebar Gizleme), Mobil Hamburger Menüsü (Slide-out Drawer) ve **Tam Tema Senkronizasyonu** (Sidebar & İçerik) özelliklerini içerir. Sidebar genişliği ergonomi için **260px** olarak güncellendi.
+* **v1.1.3 (Current): Hardening & Stability.** Finalized modular architecture, resolved frontend linting warnings, and synchronized production configuration files across Render, Vercel, and Docker.
+* **v1.1.2: Hybrid Redis & Persistence.** Added standard TCP Redis support for local Docker compatibility. Completed Supabase SQL schema with missing telemetry and portfolio tables.
+* **v1.1.1: Market Search & Stability.** Extended search filters for US exchanges (NYSE, NASDAQ, AMEX). Fixed innerHTML crashes during analysis.
+* **v1.1.0: Mobile-First UX Refactor.** Completely modular "Puzzle" architecture with Auto-Collapse sidebar and theme synchronization.
 * **v10.8:** **Security & CSP Hardening.** Vercel üzerinden sunulan `Content-Security-Policy` (CSP) katmanı; FontAwesome, TradingView, Render API ve GitHub Frame izinleri için optimize edildi.
 * **v10.5:** **SRE Hardening & Zero-Trust CI.** `pytest-socket` tabanlı katı ağ izolasyonu (Network Block) ve asenkron sızıntı koruması eklendi. "Sadece İslami Analiz" modu için Puzzle mimarisi ve API maliyetlerini %90 düşüren **Erken Çıkış (Early Exit)** mantığı devreye alındı.
 * **v10.1:** **Free-Tier SRE & Ölçeklenebilirlik Optimizasyonu.** Vercel 10s Timeout limitleri için Upstash Redis tabanlı Asenkron Polling (HTTP 202 Job Queue) mimarisine geçildi.

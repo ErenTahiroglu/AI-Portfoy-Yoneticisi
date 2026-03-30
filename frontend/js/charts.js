@@ -1,4 +1,3 @@
-/* global LightweightCharts, Chart */
 // ═══════════════════════════════════════
 // CHART HELPERS
 // ═══════════════════════════════════════
@@ -256,6 +255,7 @@ function createReturnChart(canvasId, fin) {
 // ═══════════════════════════════════════
 // RENDER PORTFOLIO EXTRAS
 // ═══════════════════════════════════════
+window.renderExtras = renderExtras;
 function renderExtras(extras) {
     if (!extras) return;
 
@@ -381,7 +381,6 @@ function renderExtras(extras) {
     }
 
     // Factor Regression
-    const factorCard = document.getElementById("pv-factor-card");
     const factorContent = document.getElementById("pv-factor-content");
     if (factorContent) {
         if (extras.factor_regression) {
@@ -403,11 +402,6 @@ function renderExtras(extras) {
 }
 
 // ═══════════════════════════════════════
-// HERO CARDS
-// ═══════════════════════════════════════
-// updateHeroCards has been moved to components/HeroCardsComponent.js
-
-// ═══════════════════════════════════════
 // HEATMAP (TREEMAP)
 // ═══════════════════════════════════════
 // renderHeatmap has been moved to components/HeatmapComponent.js
@@ -415,6 +409,7 @@ function renderExtras(extras) {
 // ═══════════════════════════════════════
 // SCENARIOS & DIVIDEND CALCULATOR
 // ═══════════════════════════════════════
+window.renderScenarios = renderScenarios;
 function renderScenarios(results) {
     const wrap = document.getElementById("scenarios-wrap");
     if (!results || results.length === 0) {
@@ -525,6 +520,7 @@ function renderScenarios(results) {
 // ═══════════════════════════════════════
 // OPTIMIZATION
 // ═══════════════════════════════════════
+window.renderOptimization = renderOptimization;
 function renderOptimization(optGroups, results) {
     const wrap = document.getElementById("optimization-wrap");
     const container = document.getElementById("opt-bars");
@@ -550,7 +546,7 @@ function renderOptimization(optGroups, results) {
     container.innerHTML = html;
     
     // Initially render
-    switchOptTab('max_sharpe', container.querySelector('.opt-tabs button'));
+    if (typeof window.switchOptTab === "function") window.switchOptTab('max_sharpe', container.querySelector('.opt-tabs button'));
 }
 
 window.switchOptTab = function(type, btnObj) {
@@ -605,6 +601,7 @@ window.switchOptTab = function(type, btnObj) {
 // NEW PRO UX CHARTS
 // ═══════════════════════════════════════
 
+window.createRadarChart = createRadarChart;
 function createRadarChart(canvasId, result) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !result.radar_score || result.error) return;
@@ -657,6 +654,7 @@ function createRadarChart(canvasId, result) {
     });
 }
 
+window.createGaugeChart = createGaugeChart;
 function createGaugeChart(canvasId, score, labelId, valId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || score === undefined || score === null) return;
@@ -705,6 +703,7 @@ function createGaugeChart(canvasId, score, labelId, valId) {
     });
 }
 
+window.createRelativePerformanceChart = createRelativePerformanceChart;
 function createRelativePerformanceChart(canvasId, relPerfData) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !relPerfData) return;
@@ -784,6 +783,7 @@ function createRelativePerformanceChart(canvasId, relPerfData) {
 // ═══════════════════════════════════════
 // OPTIMIZATION CHART (Phase 6)
 // ═══════════════════════════════════════
+window.renderOptChart = renderOptChart;
 function renderOptChart(id, curWeights, optWeights) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
@@ -834,6 +834,7 @@ function renderOptChart(id, curWeights, optWeights) {
 // ═══════════════════════════════════════
 // EQUITY CURVE CHART (Portfolio Snapshots)
 // ═══════════════════════════════════════
+window.createEquityCurveChart = createEquityCurveChart;
 function createEquityCurveChart(containerId, snapData) {
     const container = document.getElementById(containerId);
     if (!container || !snapData || snapData.length === 0) return;

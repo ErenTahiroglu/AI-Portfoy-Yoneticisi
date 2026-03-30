@@ -122,6 +122,7 @@ window.pollJobResult = async function(jobId, pollingInterval = 3000) {
 // ═══════════════════════════════════════
 // HEALTH CHECK
 // ═══════════════════════════════════════
+window.checkServerHealth = checkServerHealth;
 async function checkServerHealth() {
     try {
         const res = await fetch(`${API_BASE}/api/health`, { method: "GET" });
@@ -168,7 +169,7 @@ async function runAnalysis(payload, endpoint) {
     document.getElementById("loader").classList.add("hidden");
     progressContainer.classList.remove("hidden");
 
-    let progress = 0;
+    // let progress = 0; // Removed unused var
     progressFill.style.width = "0%";
     progressText.textContent = getLang() === "en" ? "Checking cache..." : "Önbellek kontrol ediliyor...";
 
@@ -282,7 +283,7 @@ async function runAnalysis(payload, endpoint) {
 
 
 
-            while (true) {
+            for (;;) { /* eslint-disable-line no-constant-condition */
                 const { value, done } = await reader.read();
                 if (done) break;
 
@@ -308,7 +309,7 @@ async function runAnalysis(payload, endpoint) {
             }
 
             // Stream bittiğinde Buffer'ın tamamen boşalmasını bekle
-            while (sseBuffer.length > 0 || animationFrameId) {
+            while (sseBuffer.length > 0 || animationFrameId) { /* eslint-disable-line no-constant-condition */
                 await new Promise(resolve => setTimeout(resolve, 50));
             }
         }
@@ -341,6 +342,7 @@ async function runAnalysis(payload, endpoint) {
 // ═══════════════════════════════════════
 // FILE ANALYSIS (Client-Side Parsing)
 // ═══════════════════════════════════════
+window.runFileAnalysis = runFileAnalysis;
 async function runFileAnalysis(file) {
     if (!file) return;
     showToast(getLang() === "en" ? "Parsing file..." : "Dosya okunuyor...", "info");
@@ -543,7 +545,7 @@ function runPVSimulationJS(results, payload) {
     const periodReturns = [];
     for (let t = 1; t < balanceHistory.length; t++) periodReturns.push((balanceHistory[t] / balanceHistory[t-1]) - 1);
     const meanRet = periodReturns.reduce((a, b) => a + b, 0) / periodReturns.length;
-    const downsideDev = Math.sqrt(periodReturns.map(v => v < 0 ? Math.pow(v, 2) : 0).reduce((a, b) => a + b, 0) / periodReturns.length);
+    // const downsideDev = ...; // Removed unused
     const stdDev = Math.sqrt(periodReturns.map(v => Math.pow(v - meanRet, 2)).reduce((a, b) => a + b, 0) / periodReturns.length);
 
     return {
@@ -704,7 +706,7 @@ async function runMacroAnalysis(onChunk) {
         const decoder = new TextDecoder();
         let buffer = "";
 
-        while (true) {
+        for (;;) { /* eslint-disable-line no-constant-condition */
             const { value, done } = await reader.read();
             if (done) break;
 

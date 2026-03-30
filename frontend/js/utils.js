@@ -1,11 +1,12 @@
-const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-let lastResults = null;
-let lastExtras = null;
-let chartInstances = {};
+// const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+// let lastResults = null;
+// let lastExtras = null;
+// let chartInstances = {};
 
 // ═══════════════════════════════════════
 // TOAST NOTIFICATIONS
 // ═══════════════════════════════════════
+window.showToast = showToast;
 function showToast(message, type = "info") {
     const container = document.getElementById("toast-container");
     const icons = { success: "fa-check-circle", error: "fa-exclamation-circle", warning: "fa-exclamation-triangle", info: "fa-info-circle" };
@@ -19,6 +20,7 @@ function showToast(message, type = "info") {
 // ═══════════════════════════════════════
 // THEME TOGGLE
 // ═══════════════════════════════════════
+window.initTheme = initTheme;
 function initTheme() {
     const saved = localStorage.getItem("theme");
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -28,6 +30,7 @@ function initTheme() {
     updateThemeIcon(themeToApply);
 }
 
+window.toggleTheme = toggleTheme;
 function toggleTheme() {
     const current = document.documentElement.getAttribute("data-theme");
     const next = current === "light" ? "dark" : "light";
@@ -81,6 +84,7 @@ function renderWatchlists() {
     });
 }
 
+window.saveCurrentPortfolio = saveCurrentPortfolio;
 function saveCurrentPortfolio() {
     const input = document.getElementById("ticker-input").value.trim();
     if (!input) { showToast(t("toast.enterTickers"), "warning"); return; }
@@ -103,6 +107,7 @@ function saveCurrentPortfolio() {
 let autocompleteTimeout = null;
 const autocompleteCache = {};
 
+window.setupAutocomplete = setupAutocomplete;
 function setupAutocomplete() {
     const textarea = document.getElementById("ticker-input");
     const dropdown = document.getElementById("autocomplete-dropdown");
@@ -330,6 +335,7 @@ function setupAutocomplete() {
 // ═══════════════════════════════════════
 // COLLAPSIBLE SECTIONS
 // ═══════════════════════════════════════
+window.toggleCollapsible = toggleCollapsible;
 function toggleCollapsible(header) {
     header.classList.toggle("open");
     header.nextElementSibling.classList.toggle("open");
@@ -345,6 +351,7 @@ function formatMarketCap(val) {
     if (val >= 1e6) return (val / 1e6).toFixed(1) + "M";
     return val.toLocaleString();
 }
+window.fmtNum = fmtNum;
 function fmtNum(val, suffix = "") {
     if (val === undefined || val === null || val === "-") return "-";
     const num = typeof val === "number" ? val : parseFloat(val);
@@ -361,6 +368,7 @@ function fmtNum(val, suffix = "") {
          return num.toFixed(2) + suffix;
     }
 }
+window.colorClass = colorClass;
 function colorClass(val) {
     if (val === undefined || val === null) return "";
     return val >= 0 ? "positive" : "negative";
@@ -377,6 +385,7 @@ async function getEncKey() {
     return key;
 }
 
+window.encryptApiKey = encryptApiKey;
 async function encryptApiKey(plaintext) {
     if (!plaintext) return "";
     const key = await getEncKey();
@@ -387,6 +396,7 @@ async function encryptApiKey(plaintext) {
     return btoa(String.fromCharCode(...combined));
 }
 
+window.decryptApiKey = decryptApiKey;
 async function decryptApiKey(b64) {
     if (!b64) return "";
     try {
@@ -399,6 +409,7 @@ async function decryptApiKey(b64) {
     } catch { return ""; }
 }
 
+window.saveApiKeys = saveApiKeys;
 async function saveApiKeys() {
     const gemini = document.getElementById("api-key").value;
     const av = document.getElementById("av-api-key").value;
@@ -414,6 +425,7 @@ async function saveApiKeys() {
     }
 }
 
+window.loadApiKeys = loadApiKeys;
 async function loadApiKeys() {
     const gk = await decryptApiKey(localStorage.getItem("_gk") || "");
     const ak = await decryptApiKey(localStorage.getItem("_ak") || "");
@@ -432,6 +444,7 @@ async function loadApiKeys() {
 // ═══════════════════════════════════════
 // TICKER QUICK VIEW MODAL
 // ═══════════════════════════════════════
+window.showTickerQuickModal = showTickerQuickModal;
 async function showTickerQuickModal(ticker) {
     let overlay = document.getElementById("ticker-modal-overlay");
     if (!overlay) {

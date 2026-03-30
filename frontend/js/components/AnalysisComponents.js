@@ -57,7 +57,6 @@ export class AnalysisCard extends HTMLElement {
             const det = res.compliance_details;
             const hVal = Number(det.haram_income?.value || 0);
             const dVal = Number(det.debt?.value || 0);
-            const lVal = Number(det.liquidity?.value || 0);
 
             compHTML = `
                 <div class="compliance-bars">

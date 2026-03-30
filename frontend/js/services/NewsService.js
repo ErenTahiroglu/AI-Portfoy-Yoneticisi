@@ -24,7 +24,7 @@ export async function loadNews(results) {
         try {
             const sp = JSON.parse(await decryptData(localStorage.getItem("settingsParams")));
             aKey = sp.geminiApiKey || "";
-        } catch { }
+        } catch (e) { /* ignore */ }
     }
     const currModel = localStorage.getItem("ai_model") || "gemini-2.5-flash";
 

@@ -18,7 +18,7 @@ export class BaseComponent extends HTMLElement {
         }
     }
 
-    onStateChange(prop, val) {
+    onStateChange(_prop, _val) {
         // To be overridden by subclasses
     }
 
