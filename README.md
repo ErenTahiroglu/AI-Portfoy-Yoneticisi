@@ -47,7 +47,8 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 ## 📝 Son Değişiklikler (Changelog)
 
 * **v11.0 (Current):** **Puzzle Framework Release.** Tamamen modüler, ölçeklenebilir ve SRP (Single Responsibility) uyumlu yeni mimari geçişi tamamlandı. Backend (`nodes/`, `engine/`, `infrastructure/`, `services/`) ve Frontend (`core/`, `network/`, `components/`) dizinleri normalize edildi. `ChatOrchestrator` ve `BaseComponent` ile otonom veri akışı sağlandı.
-* **v10.5:** **SRE Hardening & Zero-Trust CI.** `pytest-socket` tabanlı katı ağ izolasyonu (Network Block) ve asenkron sızıntı koruması eklendi. "Sadece İslami Analiz" modu için Puzzle mimarisi ve API maliyetlerini %90 düşüren **Erken Çıkış (Early Exit)** mantığı devreye alındı. Otonom Web Components (`AnalysisCard`) mimarisine geçiş tamamlandı.
+* **v10.8:** **Security & CSP Hardening.** Vercel üzerinden sunulan `Content-Security-Policy` (CSP) katmanı; FontAwesome, TradingView, Render API ve GitHub Frame izinleri için optimize edildi. 404 hataları temizlendi ve otonom Web Components (`AnalysisCard`, `AnalysisGrid`) tam entegrasyonu sağlandı.
+* **v10.5:** **SRE Hardening & Zero-Trust CI.** `pytest-socket` tabanlı katı ağ izolasyonu (Network Block) ve asenkron sızıntı koruması eklendi. "Sadece İslami Analiz" modu için Puzzle mimarisi ve API maliyetlerini %90 düşüren **Erken Çıkış (Early Exit)** mantığı devreye alındı.
 * **v10.1:** **Free-Tier SRE & Ölçeklenebilirlik Optimizasyonu.** Vercel 10s Timeout limitleri için Upstash Redis tabanlı Asenkron Polling (HTTP 202 Job Queue) mimarisine geçildi.
 * **v10.0:** **Kurumsal Gözlemlenebilirlik ve PnL (Shadow Tracking).** Tamamen izole Supabase pg_cron tabanlı T+n sanal kâr/zarar ölçüm motoru ve `/metrics` Prometheus telemetri altyapısı kuruldu.
 * **v9.0:** **Yönlü Graf (LangGraph) Multi-Agent** kurgusuna geçildi! Bull vs Bear tartışma döngüleri, Devre Kesici (Circuit Breaker) kalkanı ve Shadow Deployment (Gölge Dağıtım) mekanizması ile sıfır riskli paralel geçiş operasyonu. Kapsamlı otonomi ve Fan-Out Fan-In veri toplayıcılar eklendi.
@@ -75,7 +76,7 @@ Proje, **Monorepo** yapısında olup hem backend hem frontend tarafında modüle
 
 * **`/frontend/js/core/`**: Uygulama durumu (`state.js`), i18n ve yapılandırma.
 * **`/frontend/js/network/`**: API istemcisi ve Supabase entegrasyonu.
-* **`/frontend/js/components/`**: `BaseComponent` tabanlı reactive Web Components (`<x-hero-cards>`, `<x-analysis-grid>`).
+* **`/frontend/js/components/`**: `BaseComponent` tabanlı reactive Web Components (`<x-hero-cards>`, `<x-analysis-grid>`, `<x-analysis-table>`).
 
 ### 🛠️ Tooling & DevOps
 

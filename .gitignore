@@ -22,6 +22,21 @@ yarn-debug.log*
 yarn-error.log*
 .eslintcache
 
+# OS & AI-Portfoy-Manager
+.DS_Store
+.antigravityignore
+.gemini/
+.agent/
+.agents/
+_agent/
+_agents/
+brain/
+implementation_plan.md
+task.md
+walkthrough.md
+test_report.html
+tests/ui/screenshots/*.png
+
 # SRE & Metrics
 backend/tests/performance_report.txt
 backend/tests/memory_log.txt

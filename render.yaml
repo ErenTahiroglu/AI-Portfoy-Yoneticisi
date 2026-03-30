@@ -24,5 +24,7 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
       - key: PROMETHEUS_MULTIPROC_DIR
         value: "/tmp/prometheus_multiproc_dir"
