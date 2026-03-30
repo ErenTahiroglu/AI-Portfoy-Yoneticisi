@@ -98,11 +98,7 @@ export function openPaywallModal() {
               const session = await window.SupabaseAuth.getValidSession();
               if(!session) return;
               
-              const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-                  ? "http://localhost:8000" 
-                  : "https://ai-portfoy-yoneticisi.onrender.com";
-
-              const resp = await fetch(`${API_BASE}/api/billing/upgrade`, {
+              const resp = await fetch(`${window.API_BASE}/api/billing/upgrade`, {
                   method: "POST",
                   headers: { "Authorization": `Bearer ${session.access_token}` }
               });

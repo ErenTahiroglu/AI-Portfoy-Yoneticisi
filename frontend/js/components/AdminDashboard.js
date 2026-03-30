@@ -44,12 +44,8 @@ async function checkAdminAccess() {
         if (!session || !session.access_token) return;
         
         const token = session.access_token;
-        const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-            ? "http://localhost:8000" 
-            : "https://ai-portfoy-yoneticisi.onrender.com";
-
         // Call the endpoint, if 200, reveal button!
-        const resp = await fetch(`${API_BASE}/api/admin/metrics`, {
+        const resp = await fetch(`${window.API_BASE}/api/admin/metrics`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         
@@ -68,11 +64,7 @@ async function loadAdminMetrics() {
         if (!session) return;
         const token = session.access_token;
 
-        const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-            ? "http://localhost:8000" 
-            : "https://ai-portfoy-yoneticisi.onrender.com";
-
-        const resp = await fetch(`${API_BASE}/api/admin/metrics`, {
+        const resp = await fetch(`${window.API_BASE}/api/admin/metrics`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         

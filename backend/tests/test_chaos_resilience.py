@@ -106,49 +106,8 @@ async def test_api_analytics_empty_tickers():
          assert response.status_code in [400, 422]
 
 
-# ── 4. Mock Portfolio: Sıfır Ağırlıklı Portföy (ZeroDivision Guard) ──────────────
-
-def test_zero_weight_portfolio():
-    """Tüm ağırlıklar 0 olduğunda portfolio_simulator çökmemeli, boş dict dönmeli."""
-    import pandas as pd
-    from backend.logic.simulator import run_portfolio_simulation
-    
-    # Mock fiyat verisi: 30 günlük seri
-    dates = pd.date_range("2024-01-01", periods=30)
-    price_df = pd.DataFrame({"AAPL": [150.0 + i for i in range(30)]}, index=dates)
-    
-    # Tüm ağırlıklar sıfır
-    weights = {"AAPL": 0}
-    result = run_portfolio_simulation(price_df, weights)
-    assert result == {}, f"Beklenen boş dict, alınan: {result}"
-
-
-def test_empty_portfolio():
-    """Boş portföyü simülasörü çökmeden boş dict dönmeli."""
-    import pandas as pd
-    from backend.logic.simulator import run_portfolio_simulation
-    
-    result = run_portfolio_simulation(pd.DataFrame(), {})
-    assert result == {}
-
-
-def test_cost_zero_asset():
-    """Maliyeti 0 olan varlık PnL hesabında sıfıra bölme hatası üretmemeli."""
-    import pandas as pd
-    from backend.logic.simulator import run_portfolio_simulation
-    
-    dates = pd.date_range("2024-01-01", periods=30)
-    # Fiyat dizisinde sıfır başlangıç fiyatı
-    prices = [0.0] + [1.0 + i * 0.01 for i in range(29)]
-    price_df = pd.DataFrame({"TSLA": prices}, index=dates)
-    weights = {"TSLA": 100}
-    # Sıfır fiyatlı günde `prev_price > 0` guard devreye girmeli, çökmemeli.
-    result = run_portfolio_simulation(price_df, weights)
-    assert isinstance(result, dict), "Simülasör bir dict dönmeliydi."
-
-
-# [DEPRECATED] Safe API Call logic has been absorbed into LangGraph nodes.
-# Removal of obsolete Unit Test for non-existent safe_api_call.
+# [DEPRECATED] Simulator logic has been moved to Frontend (api.js/runPVSimulationJS).
+# Cleaned up obsolete tests for backend.logic.simulator.
 
 
 # ── 6. Redis Connection Failure & Job Fallback ──────────────────────────────

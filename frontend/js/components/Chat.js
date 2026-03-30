@@ -119,7 +119,7 @@ export function initCopilot() {
                 return;
             }
             
-            const res = await fetch(`${API_BASE}/api/chat`, {
+            const res = await fetch(`${window.API_BASE}/api/chat`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -135,7 +135,7 @@ export function initCopilot() {
                  
                  loadDiv.remove();
                  
-                 const reply = jobData.reply || jobData.response;
+                 const reply = jobData.result || jobData.reply || jobData.response;
                  if (reply) {
                      appendMsg(reply, false);
                      chatHistory.push({ role: "assistant", content: reply });
@@ -146,7 +146,7 @@ export function initCopilot() {
                  loadDiv.remove();
                  if (!res.ok) throw new Error(initialData.detail || "API Hatası");
                  
-                 const reply = initialData.reply || initialData.response;
+                 const reply = initialData.result || initialData.reply || initialData.response;
                  appendMsg(reply, false);
                  chatHistory.push({ role: "assistant", content: reply });
             }

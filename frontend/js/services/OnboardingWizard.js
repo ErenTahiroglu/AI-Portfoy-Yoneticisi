@@ -10,9 +10,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 const PROFILE_KEY = "onboarding_profile";
-const API_BASE    = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:8000"
-    : "https://ai-portfoy-yoneticisi.onrender.com";
 
 // Adım tanımları — sıfır jargon
 const STEPS = [
@@ -218,7 +215,7 @@ async function _saveToServer(profile) {
         const session = await window.SupabaseAuth?.getValidSession?.();
         if (!session) return;
 
-        await fetch(`${API_BASE}/api/onboarding`, {
+        await fetch(`${window.API_BASE}/api/onboarding`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

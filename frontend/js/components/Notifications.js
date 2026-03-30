@@ -2,10 +2,6 @@
 // NOTIFICATION & ALERTS MODULE
 // ═══════════════════════════════════════
 
-const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-    ? "http://localhost:8000" 
-    : "https://ai-portfoy-yoneticisi.onrender.com";
-
 export function toggleNotifications() {
     const dropdown = document.getElementById("notification-dropdown");
     if (dropdown) {
@@ -24,7 +20,7 @@ export async function markAllAlertsRead() {
         const session = await window.SupabaseAuth.getValidSession();
         if (!session) return;
 
-        await fetch(`${API_BASE}/api/alerts/read`, {
+        await fetch(`${window.API_BASE}/api/alerts/read`, {
             method: "POST",
             headers: { 
                 "Authorization": `Bearer ${session.access_token}`,
@@ -52,7 +48,7 @@ export async function fetchAutonomousAlerts() {
         const session = await window.SupabaseAuth.getValidSession();
         if (!session) return;
 
-        const res = await fetch(`${API_BASE}/api/alerts`, {
+        const res = await fetch(`${window.API_BASE}/api/alerts`, {
             headers: { "Authorization": `Bearer ${session.access_token}` }
         });
         

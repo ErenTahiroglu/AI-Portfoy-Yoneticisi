@@ -2,10 +2,6 @@
 // ANALYSIS & BACKTEST MODULE
 // ═══════════════════════════════════════
 
-const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-    ? "http://localhost:8000" 
-    : "https://ai-portfoy-yoneticisi.onrender.com";
-
 export function setupBacktestBindings() {
     const initBalanceInput = document.getElementById("sim-initial-balance");
     const monthlyContInput = document.getElementById("sim-monthly-contribution");
@@ -52,7 +48,7 @@ export async function fetchAndRenderSignals(tickers) {
     if (!container || !widget || !tickers) return;
 
     try {
-        const response = await fetch(`${API_BASE}/api/portfolio-signals?tickers=${encodeURIComponent(tickers)}`);
+        const response = await fetch(`${window.API_BASE}/api/portfolio-signals?tickers=${encodeURIComponent(tickers)}`);
         const data = await response.json();
         
         if (data.length === 0) {
@@ -135,7 +131,7 @@ export function setupOptimization() {
                   return;
               }
 
-              const res = await fetch(`${API_BASE}/api/optimize-portfolio`, {
+              const res = await fetch(`${window.API_BASE}/api/optimize-portfolio`, {
                    method: "POST",
                    headers: {
                         "Authorization": `Bearer ${session.access_token}`,
@@ -160,7 +156,7 @@ Lütfen bu iki dağılımı karşılaştır. Hangilerini satıp hangilerini alma
               
               if (aiText) aiText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI tavsiyesi oluşturuluyor...';
               
-              const aiRes = await fetch(`${API_BASE}/api/chat`, {
+              const aiRes = await fetch(`${window.API_BASE}/api/chat`, {
                    method: "POST",
                    headers: { 
                        "Authorization": `Bearer ${session.access_token}`,
@@ -228,7 +224,7 @@ export function setupRiskAnalysis() {
                   return;
               }
 
-              const res = await fetch(`${API_BASE}/api/risk-analysis`, {
+              const res = await fetch(`${window.API_BASE}/api/risk-analysis`, {
                    method: "POST",
                    headers: {
                         "Authorization": `Bearer ${session.access_token}`,
@@ -263,7 +259,7 @@ export function setupRiskAnalysis() {
               
               const prompt = `Aşağıdaki Portföy Risk İncelemesini değerlendir:\n- Günlük VaR (%95 Güven): %${rx.var_95}\n- Tarihsel Maksimum Düşüş (MaxDD): %${rx.max_drawdown}\n- Portföy Betası: ${rx.weighted_beta}\n- -%20 Piyasa Şoku Efektifi: %${rx.stress_test_shock_drop}`;
 
-              const aiRes = await fetch(`${API_BASE}/api/chat`, {
+              const aiRes = await fetch(`${window.API_BASE}/api/chat`, {
                    method: "POST",
                    headers: { "Authorization": `Bearer ${session.access_token}`, "Content-Type": "application/json" },
                    body: JSON.stringify({ messages: [{ role: "user", content: prompt }] })
@@ -293,7 +289,7 @@ export function setupPaperTrades() {
               const session = await window.SupabaseAuth.getValidSession();
               if (!session) return;
 
-              const res = await fetch(`${API_BASE}/api/paper-trades`, {
+              const res = await fetch(`${window.API_BASE}/api/paper-trades`, {
                    headers: { "Authorization": `Bearer ${session.access_token}` }
               });
               if (!res.ok) return;
