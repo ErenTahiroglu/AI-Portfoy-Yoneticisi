@@ -151,67 +151,65 @@ async def get_portfolio_signals(tickers: str = ""):
 async def search_tickers(q: str = ""):
     q = q.strip().upper()
     if not q: return []
-    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=10&newsCount=0"
+    
     import httpx
     from backend.data.constants import POPULAR_TICKERS
-
+    
     local_matches = []
-    # 1. Local Lookup
+    yahoo_matches = []
+    
+    # 1. Local Lookup with proper categorization
+    us_popular = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "JPM", "V", "JNJ", "WMT", "PG", "MA", "UNH", "HD", "DIS", "BAC", "KO", "PEP", "NFLX", "INTC", "AMD", "CRM", "AVGO", "COST", "ABBV", "MRK", "TMO", "ACN", "LLY", "PYPL", "NKE", "ADBE", "CSCO", "ORCL", "TXN"]
+    bist_popular = ["THYAO", "ASELS", "GARAN", "AKBNK", "YKBNK", "EREGL", "BIMAS", "SAHOL", "KCHOL", "SISE", "TUPRS", "FROTO", "TOASO", "TCELL", "PGSUS", "TAVHL", "EKGYO", "KOZAL", "SASA", "TTKOM", "ARCLK", "MGROS", "PETKM", "SOKM", "VESTL", "HALKB", "VAKBN", "GUBRF", "KOZAA", "ODAS", "KRDMD", "AEFES", "ENKAI", "DOHOL", "ISCTR", "ALARK"]
+    
     for ticker, name in POPULAR_TICKERS.items():
         if q in ticker.upper() or q in name.upper():
-            local_matches.append({
-                "symbol": ticker,
-                "name": name,
-                "exchDisp": "TEFAS" if len(ticker) == 3 or ticker in ["TP2", "AKB", "ZP8", "IPB", "AFA", "YAY", "TI2"] else ("BIST" if len(ticker) == 5 else "Popular")
-            })
+            exch_label = "US" if ticker in us_popular else ("BIST" if ticker in bist_popular else "TEFAS")
+            local_matches.append({"symbol": ticker, "name": name, "exchDisp": exch_label})
 
-    speculative_matches = []
-    # 2. Speculative TEFAS match (3-char alphanumeric)
-    if len(q) == 3 and q.isalnum():
-        if not any(m["symbol"] == q for m in local_matches):
-            speculative_matches.append({
-                "symbol": q,
-                "name": f"{q} TEFAS Fonu",
-                "exchDisp": "TEFAS"
-            })
-
-    # 3. Yahoo Finance Search
+    # 2. Yahoo Finance Search
+    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=10&newsCount=0"
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             headers = {"User-Agent": "Mozilla/5.0"}
             resp = await client.get(url, headers=headers)
-            if resp.status_code != 200: return (local_matches + speculative_matches)[:10]
-            quotes = resp.json().get("quotes", [])
-            
-            yahoo_matches = []
-            for i in quotes:
-                symbol = i.get("symbol", "").upper()
-                exch = i.get("exchDisp", "").upper()
-                quote_type = i.get("quoteType", "").upper()
-                
-                # TR Filter
-                if symbol.endswith(".IS"):
-                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "BIST"})
-                # Crypto Filter
-                elif quote_type == "CRYPTOCURRENCY" or i.get("typeDisp") == "cryptocurrency":
-                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "Crypto"})
-                # US Filter (NYSE, NASDAQ, AMEX, BATS etc)
-                elif any(u in exch for u in ["NYSE", "NASDAQ", "BATS", "NMS", "NYQ", "NGM", "PCX"]):
-                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": exch})
-                # Fallback for other potential US matches (if it looks like a standard ticker and has a name)
-                elif len(symbol) <= 5 and symbol.isalpha() and not symbol.endswith(".IS") and i.get("shortname"):
-                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname"), "exchDisp": exch or "US"})
-            
-            seen = set()
-            combined = []
-            for m in local_matches + yahoo_matches + speculative_matches:
-                if m["symbol"] not in seen:
-                    seen.add(m["symbol"])
-                    combined.append(m)
-            
-            return combined[:12]
-    except Exception:
-        return (local_matches + speculative_matches)[:10]
+            if resp.status_code == 200:
+                quotes = resp.json().get("quotes", [])
+                for i in quotes:
+                    symbol = i.get("symbol", "").upper()
+                    exch = i.get("exchDisp", "").upper()
+                    quote_type = i.get("quoteType", "").upper()
+                    
+                    if any(m["symbol"] == symbol for m in local_matches): continue
+
+                    if symbol.endswith(".IS"):
+                        yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "BIST"})
+                    elif quote_type == "CRYPTOCURRENCY" or i.get("typeDisp") == "cryptocurrency":
+                        yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "Crypto"})
+                    elif any(u in exch for u in ["NYSE", "NASDAQ", "BATS", "NMS", "NYQ", "NGM", "PCX", "AMEX"]):
+                        yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": exch})
+                    elif i.get("shortname"):
+                         yahoo_matches.append({"symbol": symbol, "name": i.get("shortname"), "exchDisp": exch or "Stock"})
+    except Exception as e:
+        logger.error(f"Yahoo Search error: {e}")
+
+    # 3. Final Combination
+    seen = set()
+    combined = []
+    for m in local_matches + yahoo_matches:
+        if m["symbol"] not in seen:
+            seen.add(m["symbol"])
+            combined.append(m)
+
+    # 4. Speculative TEFAS (As a last resort if strictly 3 letters and NOT found yet)
+    if len(q) == 3 and q.isalpha() and q not in seen:
+        combined.append({
+            "symbol": q,
+            "name": f"{q} TEFAS Fonu (Olası)",
+            "exchDisp": "TEFAS"
+        })
+
+    return combined[:12]
 
 @router.get("/suggest")
 async def suggest_tickers(q: str = ""):

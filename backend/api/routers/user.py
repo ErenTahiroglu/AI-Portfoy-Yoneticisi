@@ -1,6 +1,7 @@
 import logging
 import os
 import httpx
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Request
 from backend.api.models import UserSettingsRequest, OnboardingProfileRequest
 from backend.infrastructure.auth import verify_jwt
@@ -271,7 +272,7 @@ async def logout(request: Request):
         except ImportError:
              logger.warning("Redis support missing, token not listed.")
              
-@router.get("/export-data")
+@router.get("/export-data", dependencies=[Depends(verify_jwt)])
 async def export_data(request: Request):
     """
     Kullanıcının sistemdeki tüm verilerini (KVKK/GDPR Veri Taşınabilirliği) JSON formatında çıktılar.
@@ -368,7 +369,7 @@ async def save_portfolio(request: Request):
         if not supa_url or not supa_key:
             raise HTTPException(status_code=500, detail="DB Config Missing")
 
-        from datetime import datetime, timezone
+        # 🛡️ PostgREST Upsert (Conflict on user_id)
         body = {
             "user_id": user_id,
             "tickers": payload["tickers"],

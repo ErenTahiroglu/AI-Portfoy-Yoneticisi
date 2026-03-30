@@ -21,33 +21,70 @@ CREATE TABLE IF NOT EXISTS public.paper_trades (
     timestamp TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. Portfolio Snapshots Tablosu (Geçmiş Performans Grafiği Verileri)
+-- 3. Portfolio Snapshots Tablosu
 CREATE TABLE IF NOT EXISTS public.portfolio_snapshots (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     timestamp TIMESTAMPTZ DEFAULT now(),
     assets JSONB DEFAULT '[]'::jsonb,
-    total_value DOUBLE PRECISION DEFAULT 0
+    total_value DOUBLE PRECISION DEFAULT 0,
+    cash_balance DOUBLE PRECISION DEFAULT 0
+);
+
+-- 4. Portfolios Tablosu (Güncel Ticker Listesi)
+CREATE TABLE IF NOT EXISTS public.portfolios (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    tickers JSONB DEFAULT '[]'::jsonb,
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 5. Alerts Tablosu (Bildirimler)
+CREATE TABLE IF NOT EXISTS public.alerts (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    ticker TEXT,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 6. LLM Usage Logs (Kota Takibi)
+CREATE TABLE IF NOT EXISTS public.llm_usage_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    model TEXT,
+    prompt_tokens INTEGER,
+    completion_tokens INTEGER,
+    timestamp TIMESTAMPTZ DEFAULT now()
+);
+
+-- 7. User Events (Telemetri / SRE)
+CREATE TABLE IF NOT EXISTS public.user_events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    event_metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- 🔐 RLS (Row Level Security) Politikaları
--- Kullanıcıların sadece kendi verilerini görmesini sağlar.
-
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.paper_trades ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.portfolio_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.portfolios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.llm_usage_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_events ENABLE ROW LEVEL SECURITY;
 
--- User Settings Politikaları
-CREATE POLICY "Users can view own settings" ON public.user_settings FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can update own settings" ON public.user_settings FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own settings" ON public.user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Politikalar (Genel Şablon: Sadece kendi verisini gör/ekle)
+CREATE POLICY "Users can view own data" ON public.portfolios FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own data" ON public.portfolios FOR ALL USING (auth.uid() = user_id);
 
--- Paper Trades Politikaları
-CREATE POLICY "Users can view own trades" ON public.paper_trades FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own trades" ON public.paper_trades FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own alerts" ON public.alerts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own alerts" ON public.alerts FOR UPDATE USING (auth.uid() = user_id);
 
--- Portfolio Snapshots Politikaları
-CREATE POLICY "Users can view own snapshots" ON public.portfolio_snapshots FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own snapshots" ON public.portfolio_snapshots FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own usage" ON public.llm_usage_logs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own events" ON public.user_events FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own events" ON public.user_events FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 🚀 Başarılı! Tablolar oluşturuldu.
+-- 🚀 Başarılı! Tüm tablolar ve SRE kalkanları hazır.

@@ -14,8 +14,11 @@ def verify_token_string(token: str) -> dict:
     WebSocket ve harici akışlar için yardımcı fonksiyondur.
     """
     if not SUPABASE_JWT_SECRET:
-         logger.error("Zero Trust Error: SUPABASE_JWT_SECRET is not set in environment.")
-         raise HTTPException(status_code=500, detail="Server IAM configuration error.")
+         logger.error("❌ SUPABASE_JWT_SECRET is not set. Auth will fail.")
+         raise HTTPException(
+             status_code=500, 
+             detail="Server configuration error: Auth secret missing."
+         )
 
     # 🛡️ REDIS BLOCKLIST KONTROLÜ
     try:
@@ -24,8 +27,10 @@ def verify_token_string(token: str) -> dict:
          if cache_get(f"jwt_blacklist:{token}"):
               logger.warning("Zero Trust: Revoked token presented.")
               raise HTTPException(status_code=401, detail="This session has been signed out.")
-    except ImportError:
-         pass # Redis kurulu değilse geç
+    except Exception as e:
+         # Redis hatası auth akışını bozmamalı (Fallback)
+         logger.warning(f"Auth Redis check failed: {e}. Proceeding with standard JWT check.")
+         pass
 
     try:
         payload = jwt.decode(
@@ -41,7 +46,10 @@ def verify_token_string(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Token has expired. Please sign in again.")
     except jwt.InvalidTokenError as e:
         logger.warning(f"Zero Trust: Invalid token context -> {str(e)}")
-        raise HTTPException(status_code=401, detail="Invalid authentication token.")
+        raise HTTPException(status_code=401, detail=f"Invalid authentication token: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected Auth Error: {e}")
+        raise HTTPException(status_code=401, detail="Authentication processing error.")
 
 
 async def verify_jwt(request: Request):

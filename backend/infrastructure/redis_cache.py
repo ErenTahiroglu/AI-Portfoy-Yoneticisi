@@ -24,23 +24,46 @@ logger = logging.getLogger(__name__)
 # ve polling (Durum kontrol) işlemleri tutarsızlıklarla (404 Not Found) sonuçlanır.
 _LOCAL: dict = {}
 
-# ── Upstash REST Client ───────────────────────────────────────────────────
+# ── Standard Redis (TCP) & Upstash (REST) Client ───────────────────────────
 import httpx
+try:
+    import redis
+except ImportError:
+    redis = None
 
 _UPSTASH_URL: Optional[str] = os.getenv("UPSTASH_REDIS_REST_URL")
 _UPSTASH_TOKEN: Optional[str] = os.getenv("UPSTASH_REDIS_REST_TOKEN")
-_redis_available: bool = False
-_SESSION: Optional[httpx.Client] = None
+_REDIS_URL: Optional[str] = os.getenv("REDIS_URL") # e.g. redis://localhost:6379
 
-if _UPSTASH_URL and _UPSTASH_TOKEN:
+_redis_available: bool = False
+_redis_mode: Optional[str] = None # "standard" or "upstash"
+_SESSION: Optional[httpx.Client] = None
+_REDIS_CONN: Optional[Any] = None
+
+# 1. Try Standard Redis (TCP) - Best for Local/Docker
+if _REDIS_URL and redis:
     try:
+        _REDIS_CONN = redis.from_url(_REDIS_URL, decode_responses=True, socket_timeout=2.0)
+        _REDIS_CONN.ping()
         _redis_available = True
-        _SESSION = httpx.Client(timeout=2.0) # Connection Pool setup
-        logger.info("✅ Upstash Redis bağlantısı (Connection Pool) hazır.")
+        _redis_mode = "standard"
+        logger.info(f"✅ Standard Redis (TCP) bağlantısı hazır: {_REDIS_URL}")
     except Exception as e:
-        logger.warning(f"⚠️ Redis setup error: {e} — in-memory fallback aktif.")
-else:
-    logger.info("ℹ️ UPSTASH_REDIS_REST_URL tanımlı değil — in-memory cache kullanılıyor.")
+        logger.warning(f"⚠️ Standard Redis fail: {e}")
+
+# 2. Try Upstash (REST) - Best for Serverless/Render
+if not _redis_available and _UPSTASH_URL and _UPSTASH_TOKEN:
+    try:
+        _SESSION = httpx.Client(timeout=2.0)
+        _redis_available = True
+        _redis_mode = "upstash"
+        logger.info("✅ Upstash Redis (REST) bağlantısı hazır.")
+    except Exception as e:
+        _redis_available = False
+        logger.warning(f"⚠️ Upstash setup error: {e} — in-memory fallback aktif.")
+
+if not _redis_available:
+    logger.info("ℹ️ Redis tanımlı değil veya bağlanılamadı — in-memory cache kullanılıyor.")
 
 
 def _upstash_headers() -> dict:
@@ -52,20 +75,30 @@ def _upstash_headers() -> dict:
 
 def cache_get(key: str) -> Optional[dict]:
     """Cache'den veri okur. Redis varsa Redis'i, yoksa in-memory'yi kullanır."""
-    if _redis_available and _UPSTASH_URL and _SESSION:
-        try:
-            resp = _SESSION.get(
-                f"{_UPSTASH_URL}/get/{key}",
-                headers=_upstash_headers()
-            )
-            resp.raise_for_status() # Limitlere/hatalara takılırsa in-memory'ye düşür
-            if resp.status_code == 200:
-                result = resp.json().get("result")
-                if result:
-                    logger.debug(f"💾 Redis cache hit: {key}")
-                    return json.loads(result)
-        except Exception as e:
-            logger.warning(f"Redis GET hatası ({key}): {e} — in-memory fallback.")
+    if _redis_available:
+        if _redis_mode == "standard" and _REDIS_CONN:
+            try:
+                res = _REDIS_CONN.get(key)
+                if res:
+                    logger.debug(f"💾 Standard Redis cache hit: {key}")
+                    return json.loads(res)
+            except Exception as e:
+                logger.warning(f"Standard Redis GET error: {e}")
+                
+        elif _redis_mode == "upstash" and _UPSTASH_URL and _SESSION:
+            try:
+                resp = _SESSION.get(
+                    f"{_UPSTASH_URL}/get/{key}",
+                    headers=_upstash_headers()
+                )
+                resp.raise_for_status() # Limitlere/hatalara takılırsa in-memory'ye düşür
+                if resp.status_code == 200:
+                    result = resp.json().get("result")
+                    if result:
+                        logger.debug(f"💾 Upstash Redis cache hit: {key}")
+                        return json.loads(result)
+            except Exception as e:
+                logger.warning(f"Upstash GET hatası ({key}): {e} — in-memory fallback.")
 
     # In-memory fallback
     entry = _LOCAL.get(key)
@@ -81,17 +114,25 @@ def cache_set(key: str, data: dict, ttl: int = 300) -> None:
     """Cache'e veri yazar. Redis varsa Redis'e, her durumda in-memory'ye de yazar."""
     serialized = json.dumps(data, ensure_ascii=False)
 
-    if _redis_available and _UPSTASH_URL and _SESSION:
-        try:
-            resp = _SESSION.post(
-                f"{_UPSTASH_URL}/set/{key}",
-                headers=_upstash_headers(),
-                content=json.dumps([serialized, "EX", ttl])
-            )
-            resp.raise_for_status()
-            logger.debug(f"✍️ Redis cache set: {key} (TTL={ttl}s)")
-        except Exception as e:
-            logger.warning(f"Redis SET hatası ({key}): {e} — sadece in-memory yazıldı.")
+    if _redis_available:
+        if _redis_mode == "standard" and _REDIS_CONN:
+            try:
+                _REDIS_CONN.set(key, serialized, ex=ttl)
+                logger.debug(f"✍️ Standard Redis cache set: {key} (TTL={ttl}s)")
+            except Exception as e:
+                logger.warning(f"Standard Redis SET error: {e}")
+                
+        elif _redis_mode == "upstash" and _UPSTASH_URL and _SESSION:
+            try:
+                resp = _SESSION.post(
+                    f"{_UPSTASH_URL}/set/{key}",
+                    headers=_upstash_headers(),
+                    content=json.dumps([serialized, "EX", ttl])
+                )
+                resp.raise_for_status()
+                logger.debug(f"✍️ Upstash Redis cache set: {key} (TTL={ttl}s)")
+            except Exception as e:
+                logger.warning(f"Upstash SET hatası ({key}): {e} — sadece in-memory yazıldı.")
 
     # Her zaman in-memory'ye de yaz (ultra-hız için L1 cache gibi)
     _LOCAL[key] = {"ts": time.time(), "ttl": ttl, "data": data}
@@ -108,11 +149,16 @@ def cache_set(key: str, data: dict, ttl: int = 300) -> None:
 def cache_delete(key: str) -> None:
     """Belirli bir cache entry'sini geçersiz kılar."""
     _LOCAL.pop(key, None)
-    if _redis_available and _UPSTASH_URL and _SESSION:
-        try:
-            _SESSION.get(f"{_UPSTASH_URL}/del/{key}", headers=_upstash_headers())
-        except Exception:
-            pass
+    if _redis_available:
+        if _redis_mode == "standard" and _REDIS_CONN:
+            try:
+                _REDIS_CONN.delete(key)
+            except Exception: pass
+        elif _redis_mode == "upstash" and _UPSTASH_URL and _SESSION:
+            try:
+                _SESSION.get(f"{_UPSTASH_URL}/del/{key}", headers=_upstash_headers())
+            except Exception:
+                pass
 
 
 def cache_is_redis_active() -> bool:

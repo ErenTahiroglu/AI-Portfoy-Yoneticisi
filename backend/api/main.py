@@ -172,7 +172,6 @@ def read_root():
 base_dir = os.path.dirname(os.path.abspath(__file__))
 # In Monorepo, /frontend is at the root, 2 levels up from backend/api/
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(base_dir)), "frontend")
-LineNumber:86
 
 
 if os.path.exists(frontend_path):
