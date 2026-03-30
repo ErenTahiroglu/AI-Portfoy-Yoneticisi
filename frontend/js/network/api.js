@@ -248,10 +248,7 @@ async function runAnalysis(payload, endpoint) {
             progressFill.style.width = `${Math.min(progress, 100)}%`;
         }
 
-        const grid = document.getElementById("results-grid");
-        resultsSection.classList.remove("hidden");
         grid.innerHTML = ""; 
-        document.getElementById("summary-table-body").innerHTML = "";
 
         const { createSkeletonCard } = await import('./components/CardComponent.js');
         tickers.forEach(t => {

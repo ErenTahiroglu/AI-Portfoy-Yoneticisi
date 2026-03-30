@@ -195,9 +195,12 @@ async def search_tickers(q: str = ""):
                 # Crypto Filter
                 elif quote_type == "CRYPTOCURRENCY" or i.get("typeDisp") == "cryptocurrency":
                     yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "Crypto"})
-                # US Filter
-                elif any(u in exch for u in ["NYSE", "NASDAQ", "BATS"]):
+                # US Filter (NYSE, NASDAQ, AMEX, BATS etc)
+                elif any(u in exch for u in ["NYSE", "NASDAQ", "BATS", "NMS", "NYQ", "NGM", "PCX"]):
                     yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": exch})
+                # Fallback for other potential US matches (if it looks like a standard ticker and has a name)
+                elif len(symbol) <= 5 and symbol.isalpha() and not symbol.endswith(".IS") and i.get("shortname"):
+                    yahoo_matches.append({"symbol": symbol, "name": i.get("shortname"), "exchDisp": exch or "US"})
             
             seen = set()
             combined = []
