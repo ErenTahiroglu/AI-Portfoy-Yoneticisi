@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import logging
+import gc
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +44,6 @@ def optimize_portfolio(returns_df: pd.DataFrame, risk_free_rate: float = 0.0) ->
         mean_returns = returns_df.mean() * 252
         cov_matrix = returns_df.cov() * 252
         
-        mean_returns = returns_df.mean() * 252
-        cov_matrix = returns_df.cov() * 252
-        
         # 3. Monte Carlo Simülasyonu (Numpy Only)
         num_iterations = 5000
         
@@ -84,9 +82,18 @@ def optimize_portfolio(returns_df: pd.DataFrame, risk_free_rate: float = 0.0) ->
         results["max_sharpe"] = format_weights(weights_matrix[max_sharpe_idx])
         results["min_volatility"] = format_weights(weights_matrix[min_vol_idx])
         results["max_return"] = format_weights(weights_matrix[max_ret_idx])
+        
+        # 4. Bellek Temizliği (OOM Önlemi)
+        del weights_matrix
+        del port_returns
+        del port_vols
+        del sharpe_ratios
             
     except Exception as e:
         logger.warning(f"optimize_portfolio sırasında kritik hata oluştu (Numpy): {e}")
         # Hata durumunda results, fonksiyonun başında eşit ağırlıkla tanımlanmış halleriyle kalır.
+    finally:
+        # Zorunlu Garbage Collection
+        gc.collect()
         
     return results

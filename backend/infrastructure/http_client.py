@@ -9,8 +9,9 @@ def init_global_http_client():
     global global_http_client
     if global_http_client is None:
         global_http_client = httpx.AsyncClient(
-            limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
-            timeout=httpx.Timeout(10.0) # Prevent hanging forever
+            # 🛡️ Sıkılaştırılmış Free-Tier Limitleri (Render & Supabase Koruması)
+            limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+            timeout=httpx.Timeout(15.0) # Cold start / Slow response tolerance
         )
 
 async def close_global_http_client():

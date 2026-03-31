@@ -13,13 +13,14 @@
 export class HttpClient {
     constructor(options = {}) {
         this.baseUrl = options.baseUrl || window.API_BASE || '';
-        this.timeout = options.timeout || 30000; // 30s default
+        this.timeout = options.timeout || 60000; // 60s default for Render cold starts
         this.maxRetries = options.maxRetries || 3;
         this.defaultHeaders = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             ...options.headers
         };
+        this.hasWokenUp = false;
     }
 
     /**
@@ -34,6 +35,15 @@ export class HttpClient {
 
         while (attempt <= this.maxRetries) {
             const controller = new AbortController();
+            
+            // 🛡️ Cold Start UI Trigger
+            let wakeUpTimer = null;
+            if (!this.hasWokenUp && typeof window.AppState !== 'undefined' && endpoint.includes('/api/')) {
+                wakeUpTimer = setTimeout(() => {
+                    window.AppState.systemStatus = 'waking_up';
+                }, 3000); // 3 saniye içinde dönmezse uyarı ver
+            }
+
             const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
             try {
@@ -53,6 +63,13 @@ export class HttpClient {
 
                 const response = await fetch(url, fetchOptions);
                 clearTimeout(timeoutId);
+                if (wakeUpTimer) {
+                    clearTimeout(wakeUpTimer);
+                    if (window.AppState?.systemStatus === 'waking_up') {
+                        window.AppState.systemStatus = 'ready';
+                    }
+                }
+                this.hasWokenUp = true; // İlk başarılı istekte flag'i kaldır
 
                 // 2. Handle Success
                 if (response.ok) {
@@ -67,7 +84,10 @@ export class HttpClient {
                 // 3. Handle Retriable Errors (429, 500, 502, 503, 504)
                 const isRetriable = [429, 500, 502, 503, 504].includes(response.status);
                 if (isRetriable && attempt < this.maxRetries) {
-                    const backoff = Math.pow(2, attempt) * 1000;
+                    // Parse Retry-After header if provided by backend
+                    const retryAfter = response.headers.get('Retry-After');
+                    const backoff = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt) * 1000;
+                    
                     console.warn(`[HttpClient] Request failed (${response.status}). Retrying in ${backoff}ms... (Attempt ${attempt + 1}/${this.maxRetries})`);
                     await new Promise(r => setTimeout(r, backoff));
                     attempt++;

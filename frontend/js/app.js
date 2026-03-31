@@ -84,6 +84,12 @@ AppState.subscribe('extras', (val) => {
     }
 });
 
+AppState.subscribe('systemStatus', (val) => {
+    if (val === 'waking_up') {
+        showToast("🚀 Sunucu uyanıyor (Free Tier), bu işlem ilk seferde 30-40 saniye sürebilir...", "info");
+    }
+});
+
 // ── Application Lifecycle ──────────────────────────────────────────────────
 
 class App {

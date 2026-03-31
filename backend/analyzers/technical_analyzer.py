@@ -170,3 +170,19 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
     except Exception as e:
         logger.debug(f"Technical indicators failed for {fetcher_ticker}: {e}")
         raise
+    finally:
+        # 🛡️ Memory Cleanup for Free Tier limits
+        try:
+            del hist
+        except:
+            pass
+        try:
+            del close
+        except:
+            pass
+        try:
+            del df
+        except:
+            pass
+        import gc
+        gc.collect()

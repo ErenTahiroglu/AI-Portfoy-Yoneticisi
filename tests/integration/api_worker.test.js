@@ -17,6 +17,9 @@ class MockWorker {
             this.listeners[type] = this.listeners[type].filter(l => l !== listener);
         }
     }
+    terminate() {
+        // Dummy terminate for tests
+    }
     postMessage(data) {
         // Simulate async worker response
         setTimeout(() => {

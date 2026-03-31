@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portfolio-ai-v5';
+const CACHE_NAME = 'ai-portfoy-v2';
 
 const STATIC_ASSETS = [
     './',
@@ -6,31 +6,45 @@ const STATIC_ASSETS = [
     './styles.css',
     './manifest.json',
     './logo.png',
+    './js/core/config.js',
     './js/core/i18n.js',
+    './js/core/state.js',
+    './js/core/MathEngine.js',
     './js/utils.js',
     './js/db.js',
-    './js/core/state.js',
+    './js/network/HttpClient.js',
     './js/network/api.js',
+    './js/network/supabaseClient.js',
     './js/charts.js',
     './js/app.js',
-    './js/components/AnalysisComponents.js',
-    './js/components/DashboardComponents.js'
+    './js/worker.js'
 ];
 
 self.addEventListener('install', (event) => {
+    // skipWaiting() devralmayı hızlandırır (Beklemeden yeni versiyona geçiş)
+    self.skipWaiting();
+    
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
     );
-    self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+    // Eski önbellekleri acımasızca temizle (Cache Busting)
     event.waitUntil(
-        (async () => {
-            const keys = await caches.keys();
-            await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
-            await self.clients.claim();
-        })()
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log(`[Service Worker] Eski önbellek siliniyor: ${cacheName}`);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => {
+            // Kontrolü hemen ele al
+            return self.clients.claim();
+        })
     );
 });
 

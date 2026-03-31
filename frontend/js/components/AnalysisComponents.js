@@ -154,9 +154,16 @@ export class AnalysisGrid extends BaseComponent {
 
     connectedCallback() {
         if (window.AppState) {
-            window.AppState.subscribe((prop, val) => {
-                if (prop === "results") this.render(val);
+            this._unsubscribe = window.AppState.subscribe("results", (val) => {
+                this.render(val);
             });
+        }
+    }
+
+    disconnectedCallback() {
+        if (this._unsubscribe) {
+            this._unsubscribe();
+            this._unsubscribe = null;
         }
     }
 
@@ -199,9 +206,16 @@ export class AnalysisTable extends BaseComponent {
 
     connectedCallback() {
         if (window.AppState) {
-            window.AppState.subscribe((prop, val) => {
-                if (prop === "results") this.render(val);
+            this._unsubscribe = window.AppState.subscribe("results", (val) => {
+                this.render(val);
             });
+        }
+    }
+
+    disconnectedCallback() {
+        if (this._unsubscribe) {
+            this._unsubscribe();
+            this._unsubscribe = null;
         }
     }
 

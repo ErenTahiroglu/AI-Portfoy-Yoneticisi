@@ -22,7 +22,7 @@ function getWorker() {
 }
 
 /**
- * Communicates with Worker using a Promise-based wrapper
+ * Communicates with Worker using a Promise-based wrapper and terminates it after use.
  */
 function runWorkerTask(type, results, payload) {
     return new Promise((resolve, reject) => {
@@ -31,9 +31,13 @@ function runWorkerTask(type, results, payload) {
         const handler = (e) => {
             if (e.data.type === 'EXTRAS_RESULT') {
                 worker.removeEventListener('message', handler);
+                worker.terminate();
+                analyticsWorker = null; // Reset for next time
                 resolve(e.data.extras);
             } else if (e.data.type === 'ERROR') {
                 worker.removeEventListener('message', handler);
+                worker.terminate();
+                analyticsWorker = null; // Reset for next time
                 reject(new Error(e.data.message));
             }
         };
