@@ -112,3 +112,4 @@ pytest tests/
 Tüm API uç noktaları Rate Limiter ve Idempotency Middleware ile korunmaktadır. Projeye katkıda bulunurken lütfen `ESM` mimarisini bozmamaya ve testleri (`npx vitest run`) geçecek şekilde PR göndermeye özen gösterin.
 
 **Lisans:** MIT
+\n* **Sponsorluk:** Katkıda bulunmak için [GitHub Sponsor](https://github.com/sponsors/ErenTahiroglu) sayfasını ziyaret edebilirsiniz.  
