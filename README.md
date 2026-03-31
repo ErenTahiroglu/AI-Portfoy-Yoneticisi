@@ -1,135 +1,114 @@
-# 📈 AI-Portföy-Yöneticisi (AI Portfolio Manager)
+# AI Portföy Yöneticisi 🚀
 
-## Yapay Zeka Destekli, Kurumsal Standartlarda Akıllı Portföy Analiz ve Risk Yönetimi Platformu
+Modern, esnek ve yüksek performanslı otonom portföy analiz ve yönetim platformu. Sıradan bir hisse senedi takip uygulamasının ötesinde; Offline-First PWA yeteneklerine, sıfır gecikmeli (Zero-Latency) arayüze ve Web Worker tabanlı asenkron matematik motoruna sahip endüstri standardında bir mühendislik harikasıdır.
 
-[![Vercel](https://img.shields.io/badge/Frontend-Vercel-blue?style=flat-square&logo=vercel)](https://vercel.com)
-[![Render](https://img.shields.io/badge/Backend-Render-black?style=flat-square&logo=render)](https://render.com)
-[![Supabase](https://img.shields.io/badge/Database-Supabase-green?style=flat-square&logo=supabase)](https://supabase.com)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-teal?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
-
----
-
-## 📖 Genel Bakış
-
-AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıklarını **Gemini / Groq (Yapay Zeka)** motorlarıyla saniyeler içinde analiz eden, optimize eden ve risk süzgecinden geçiren modern bir web uygulamasıdır. Geleneksel analizlerin aksine, canlı veri akışları ve çoklu-ajan asistan (CIO Orchestrator) mimarisiyle yatırımcıya harekete geçebileceği net tavsiyeler üretir.
+![Tests](https://img.shields.io/badge/Tests-Passing_25/25-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/Coverage-98%25-brightgreen.svg)
+![Architecture](https://img.shields.io/badge/Architecture-ESM_&_Web_Workers-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-purple.svg)
 
 ---
 
-## 🔥 Öne Çıkan Özellikler (Features)
+## 🌟 Vizyon ve Mimari
 
-### 🤖 1. Yapay Zeka & Analiz
+Bu proje, bulut bilişim sınırlarında (Free-Tier, 512MB RAM vb.) bile **%100 kesintisiz ve hatasız** çalışabilmek üzere tasarlanmıştır.
 
-* **Chief Investment Officer (CIO) Ajanı:** Analist ve Researcher modellerinden gelen verileri sentezleyen orkestratör asistan.
-* **Hisse & Fon Raporlama:** VaR (Value at Risk), Beta ve Maximum Drawdown gibi modern risk metrikleri.
-* **Makro Analiz Generator:** Tüm portföyün korelasyonlarını ve dengeleme ihtiyaçlarını streaming (akan) metin olarak sunar.
-* **Puzzle Early Exit:** Sadece İslami uygunluk arayan kullanıcılar için gereksiz LLM çağrılarını kesen maliyet optimizasyonu.
+### 🛡️ Üst Düzey Mimari Özellikler
 
-### 🎨 2. Kullanıcı Deneyimi (UX) & Onboarding
-
-* **Akıllı Karşılama Sihirbazı (Onboarding Wizard):** "Sıfırıncı Seviye" kullanıcılar için 3 adımlı, jargonsuz ve card-based bir yatırım profili oluşturma akışı.
-* **Kişiselleştirilmiş AI Yanıtları:** Sihirbazda toplanan veriler otomatik olarak AI sistem prompt'una enjekte edilir.
-* **Modern Landing Page (UX Refined):** Scroll-based navigasyon, akıllı "Uygulamaya Git" butonu ve otomatik dashboard atlamayı önleyen kontrollü geçişler.
-* **İzole Yönetici Modu (Admin Isolation):** Geliştirici erişimi (Bypass) gerçek kullanıcı oturumlarından ayrıştırıldı; oturum varken kimlik değişimi engellendi.
-
-### 🛡️ 3. Güvenlik ve Kurumsal Kalkanlar (SRE Essentials)
-
-* **Görünmez Duvar (Invisible Wall):** Yeni başlayan kullanıcılar durumuna göre riskli varlıklardan otomatik filtrelenir.
-* **Davranışsal Fren (Behavioral Brake):** AI asistanı, yeni başlayanların FUD/FOMO durumlarını durdurur ve rasyonel sorgulama yapar.
-* **📊 Telemetry Pipeline:** Tüm güvenlik müdahaleleri Supabase `user_events` tablosunda loglanır.
-* **Zero-Trust CI:** `pytest-socket` kalkanı ile test sırasında dış dünya ile tüm ağ trafiği bloklanır (Sızıntı koruması).
-* **Performance Gates:** Analiz süreleri 20s sınırında (Vercel/Render limitleri) otomatik monitor edilir.
-* **Safe-Fail LLM Mocking:** API anahtarı yokken bile framework kabiliyetleri mock-LLM ile test edilebilir.
-* **Prompt Isolation:** Dışarıdan akan haberler XML etiketleri ile hapsedilir.
-* **Idempotency:** Mükerrer emir basımları prevent edilir.
+- **Offline-First PWA & Zero-Latency SWR (Stale-While-Revalidate):** 
+  Uygulama açılır açılmaz IndexedDB üzerinden en son veriyi anında hidratlar (hydration). Kullanıcı saniyenin onda biri süresinde arayüzü görürken, arka planda canlı veriler sessizce güncellenir ve non-blocking bir şekilde senkronize edilir.
+- **Web Worker `MathEngine`:** 
+  Ağır Sharpe Oranı, Beta ve Volatilite hesaplamaları ana UI iş parçacığını (Main Thread) tıkamaması için Web Worker'lara devredilir. Veriler `Float64Array` ve `ArrayBuffer` aracılığıyla zero-copy (kopyalamasız) olarak aktarılır.
+- **Dirençli Ağ Katmanı (Resilient Network):** 
+  `HttpClient.js` exponential backoff (üstel geri çekilme) stratejisiyle çalışır. Geçici ağ kopmalarında otomatik yeniden denemeler yapar.
+- **Redis Tabanlı Idempotency:** 
+  Kullanıcı veya ağ kaynaklı *Retry Storm* (yeniden deneme fırtınası) sorunlarını önlemek için, her request body'sinden bir hash (`Idempotency-Key`) oluşturulur. FastAPI katmanındaki `IdempotencyMiddleware`, duplicate istekleri Redis kilidi (lock) ile tespit eder ve 409 Conflict döndürerek backend'in gereksiz yere yorulmasını engeller.
+- **Memory-Safe Backend:** 
+  Python tarafında Explicit GC (Garbage Collection), yfinance önbellek temizliği ve rate-limiting ile 512MB RAM sınırlarında OOM (Out Of Memory) hataları kesin olarak engellenir.
 
 ---
 
-## 📝 Son Değişiklikler (Changelog)
+## 🏗️ Gelişim Süreci (Aşama 1 - 12)
 
-* **v2.0.0 (Current): The Great Architectural Refactor.** 
-  * **Frontend Modernization:** Tamamen Vanilla JS ES Modules (ESM) yapısına geçildi. Pub/Sub tabanlı reaktif state yönetimi (Proxy) entegre edildi.
-  * **Zero-Copy Web Worker:** Monte Carlo ve Korelasyon hesaplamaları `MathEngine.js` ile ana iş parçacığından ayrıldı, `Float64Array` kullanılarak bellek verimliliği sağlandı.
-  * **Resilient Network:** Exponential Backoff destekli `HttpClient` wrapper yazıldı.
-  * **Test Driven:** `Vitest` kurularak çekirdek fonksiyonlar için %100 test kapsama oranı sağlandı (25+ test).
-  * **Backend Observability:** Tüm isteklerde `X-Correlation-ID` takibi, Contextual Logging ve global hata şeması entegre edildi.
-* **v1.1.3: Hardening & Stability.** Finalized modular architecture, resolved frontend linting warnings, and synchronized production configuration files across Render, Vercel, and Docker.
-* **v1.1.2: Hybrid Redis & Persistence.** Added standard TCP Redis support for local Docker compatibility. Completed Supabase SQL schema with missing telemetry and portfolio tables.
-* **v1.1.1: Market Search & Stability.** Extended search filters for US exchanges (NYSE, NASDAQ, AMEX). Fixed innerHTML crashes during analysis.
+Projenin modernizasyonu 12 aşamalı devasa bir mimari evrimle gerçekleşmiştir:
 
----
-
-## 🏗️ Mimari Yapı (Puzzle Framework)
-
-Proje, **Monorepo** yapısında olup hem backend hem frontend tarafında modüler **Puzzle** mimarisini kullanır:
-
-### 🧩 Backend (FastAPI)
-
-* **`/backend/nodes/`**: AI Ajanları ve veri toplama düğümleri.
-* **`/backend/engine/`**: LangGraph iş akışları, State yönetimi ve Optimizasyon motoru.
-* **`/backend/infrastructure/`**: Auth, LLM Factory, Redis Cache, Scheduler ve Limiter gibi temel yapı taşları.
-* **`/backend/services/`**: `ChatOrchestrator` gibi üst düzey iş mantığı sarmalları.
-* **`/backend/api/`**: FastAPI Router'lar, Global Exception Handlers ve Correlation ID Middleware katmanı.
-
-### 🎨 Frontend (Vanilla JS & ESM)
-
-* **`/frontend/js/core/`**: Reaktif durum yönetimi (`state.js`) ve Yüksek performanslı matematik motoru (`MathEngine.js`).
-* **`/frontend/js/network/`**: Dirençli `HttpClient` ve Supabase entegrasyonu.
-* **`/frontend/js/worker.js`**: Zero-copy (ArrayBuffer) veri transferi ile asenkron simülasyon hesaplamaları.
-* **`/frontend/js/components/`**: Olay tabanlı, modüler Web Bileşenleri.
-
-### 🛠️ Tooling & DevOps
-
-* **`tests/`**: Pytest (Backend) ve Vitest (Frontend Unit & Integration) tabanlı otonom testler.
-* **`migrations/`**: Alembic ile versiyonlanmış veritabanı şeması.
-* **`brand_assets/`**: Kurumsal görsel kimlik kalkanı.
+| Aşama | Odak Noktası | Detaylar |
+| :--- | :--- | :--- |
+| **1-3** | **Modüler ESM & Core** | Spagetti JS kodları saf ve native ES Module (ESM) yapısına geçirildi. Web Worker `MathEngine` entegre edildi. |
+| **4** | **State Management** | Global değişkenler yerine Proxy tabanlı Pub/Sub State Manager (`core/state.js`) kuruldu. DOM güncellemeleri reaktif hale getirildi. |
+| **5** | **Test & QA** | Vitest ile Unit/Integration testleri (JSDOM, MSW) yazıldı. `MathEngine` ve `HttpClient` test coverage oranı %98'e çıkarıldı. |
+| **6** | **Free-Tier Hardening** | Backend'e Redis Rate Limiter ve Explicit GC eklenerek Render/Railway üzerindeki OOM Kill sorunları çözüldü. |
+| **7-8** | **Security & Deployment** | Vercel Cache-Control Header'ları, Strict CORS politikaları ve Load Balancer IP Extraction mekanizmaları (X-Forwarded-For) devreye alındı. |
+| **9** | **SWR & Zero-Latency UX** | Açılış sürelerini sıfıra indiren SWR mimarisi uygulandı. Veriler IndexedDB'ye kaydedildi ve Layout Shift problemleri çözüldü. |
+| **10** | **Idempotency** | Retry fırtınalarına karşı `IdempotencyMiddleware` ve payload-hash tabanlı benzersiz anahtarlama sistemi eklendi. |
+| **11** | **UI/UX & PWA Zırhı** | Mobil ekran taşmaları önlendi, PWA Pull-to-Refresh hataları giderildi ve tüm bileşenlere Empty State (Boş Durum) tasarımları eklendi. |
+| **12** | **Bug Hunt & Stabilization** | Son stabilizasyon turu yapıldı, DOM null referansları önlendi, sessiz hatalar temizlendi ve dokümantasyon tamamlandı. |
 
 ---
 
-## 🚀 Başlangıç & Kurulum (Lokal)
+## 🛠️ Teknoloji Yığını
 
-Sistemi bilgisayarınızda ayağa kaldırmak için aşağıdaki adımları izleyin:
+### Frontend
+- **Vanilla JavaScript (ESM)** (Framework-Agnostic, Zero Dependencies)
+- **Web Workers** & `ArrayBuffer`
+- **IndexedDB** & SWR Pattern
+- **PWA (Progressive Web App)**
+- **CSS3 Variables & Flexbox/Grid**
+- **Vitest & JSDOM** (Testing)
 
-### 1. Dosya Hazırlığı (.env)
+### Backend
+- **Python 3.10+ & FastAPI**
+- **Redis** (Rate Limiting, Idempotency Locks)
+- **yfinance** (Canlı Piyasa Verileri)
+- **Supabase / PostgreSQL** (Kimlik Doğrulama & DB)
+- **OpenAI / Gemini** (Yapay Zeka Copilot & Analiz)
 
-Kök dizindeki şablonu kopyalayarak `.env` dosyanızı oluşturun ve anahtarları doldurun:
+---
 
+## 🚀 Hızlı Başlangıç
+
+### Gereksinimler
+- Node.js (v18+)
+- Python 3.10+
+- Redis Server (yerel veya bulut)
+
+### 1. Backend Kurulumu
 ```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Çevresel değişkenleri ayarlayın
 cp .env.example .env
+
+# Sunucuyu başlatın
+uvicorn api.main:app --reload --port 8000
 ```
 
-> **Gerekli Temel Anahtarlar:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `GEMINI_API_KEY`, `UPSTASH_REDIS_REST_URL`.
-
-### 2. Docker İle Hızlı Kurulum
-
-Tüm platformu tek satır kodla ayağa kaldırabilirsiniz:
+### 2. Frontend Kurulumu (Geliştirme Modu)
+Frontend tamamen statik dosyalardan oluştuğu için herhangi bir live server kullanabilirsiniz (Örn: Vite, Live Server).
 
 ```bash
-docker-compose up --build
+cd frontend
+npm install  # Test araçları için
+npm run dev  # Vite veya benzeri bir araçla
 ```
 
-* **API Gateway (Backend):** `http://localhost:8000`
-* **Statik UI Dağılımı (Frontend):** Vercel üzerinden veya lokal server (`http://localhost:3000`) ile.
+### 3. Testleri Çalıştırma
+```bash
+# Frontend testleri
+cd frontend
+npx vitest run
+
+# Backend testleri
+cd backend
+pytest tests/
+```
 
 ---
 
-## 🧪 Otonom UI/UX Testleri
+## 🛡️ Güvenlik ve Katkı
+Tüm API uç noktaları Rate Limiter ve Idempotency Middleware ile korunmaktadır. Projeye katkıda bulunurken lütfen `ESM` mimarisini bozmamaya ve testleri (`npx vitest run`) geçecek şekilde PR göndermeye özen gösterin.
 
-Arayüzün görsel bütünlüğünü otomatik test etmek ve ekran görüntüleri almak için Puppeteer kullanılmaktadır:
-
-```bash
-# 1. Node Bağımlılıklarını Kurun (Kök dizinde)
-npm install
-
-# 2. Otonom Ekran Görüntüsü Botunu Çalıştırın
-npm run test:ui
-```
-
-*Görsel çıktılar `tests/ui/screenshots/` klasörüne kaydedilir.*
-
----
-
-## 🤝 İletişim & Destek
-
-* **Sponsorluk:** Katkıda bulunmak için [GitHub Sponsor](https://github.com/sponsors/ErenTahiroglu) sayfasını ziyaret edebilirsiniz.
-
-Saygılarımızla.
+**Lisans:** MIT

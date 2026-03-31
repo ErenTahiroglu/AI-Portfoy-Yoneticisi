@@ -48,6 +48,11 @@ backend/tests/memory_log.txt
 .DS_Store
 brand_assets/compressed/
 
+# Deployment & Hosting
+.vercel/
+.vercel
+.render
+
 # Secrets & Local Config
 .env
 .env.local

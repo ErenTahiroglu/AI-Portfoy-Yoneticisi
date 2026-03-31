@@ -72,9 +72,14 @@ async function loadAdminMetrics() {
         const data = await resp.json();
 
         // Populate metrics
-        document.getElementById("admin-total-users").textContent = data.total_users || 0;
-        document.getElementById("admin-total-aum").textContent = data.aum ? `$${data.aum.toLocaleString()}` : "$0";
-        document.getElementById("admin-llm-cost").textContent = data.cost_24h ? `$${data.cost_24h.toFixed(6)}` : "$0";
+        const elTotalUsers = document.getElementById("admin-total-users");
+        if (elTotalUsers) elTotalUsers.textContent = data.total_users || 0;
+
+        const elAum = document.getElementById("admin-total-aum");
+        if (elAum) elAum.textContent = data.aum ? \`$\${data.aum.toLocaleString()}\` : "$0";
+
+        const elCost = document.getElementById("admin-llm-cost");
+        if (elCost) elCost.textContent = data.cost_24h ? \`$\${data.cost_24h.toFixed(6)}\` : "$0";
 
         // Top Users List
         const topUsersList = document.getElementById("admin-top-users");
