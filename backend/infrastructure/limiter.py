@@ -68,7 +68,8 @@ class RateLimiter:
             client_ip = request.headers.get("X-Real-IP")
             if not client_ip:
                  forwarded = request.headers.get("X-Forwarded-For")
-                 client_ip = forwarded.split(",")[-1].strip() if forwarded else (request.client.host if request.client else "unknown")
+                 # X-Forwarded-For format: client, proxy1, proxy2. We need the first one (client).
+                 client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
             
             if client_ip == "unknown":
                 return
