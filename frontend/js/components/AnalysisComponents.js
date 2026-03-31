@@ -169,7 +169,16 @@ export class AnalysisGrid extends BaseComponent {
 
     render(results) {
         this.grid.innerHTML = '';
-        if (!results) return;
+        if (!results || results.length === 0) {
+            this.grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Henüz Analiz Yok</h3>
+                    <p>Portföyünüzü oluşturun veya yukarıdan hisse sembolü girerek ilk analizinizi başlatın.</p>
+                </div>
+            `;
+            return;
+        }
         results.forEach(res => {
             const card = document.createElement('x-analysis-card');
             card.data = res;
@@ -186,15 +195,20 @@ export class AnalysisTable extends BaseComponent {
     constructor() {
         super();
         this.innerHTML = `
-            <div class="summary-container glass-panel">
+            <div class="summary-container glass-panel table-responsive">
                 <table class="summary-table">
                     <thead>
                         <tr>
                             <th>Sembol</th>
+                            <th class="pro-only">Piyasa</th>
+                            <th class="pro-only">Ağırlık</th>
                             <th>Fiyat</th>
                             <th>Değişim</th>
                             <th>Arınma</th>
                             <th>Durum</th>
+                            <th class="pro-only">P/E</th>
+                            <th class="pro-only">P/B</th>
+                            <th class="pro-only">Beta</th>
                         </tr>
                     </thead>
                     <tbody id="comp-summary-body"></tbody>
@@ -221,7 +235,19 @@ export class AnalysisTable extends BaseComponent {
 
     render(results) {
         this.body.innerHTML = '';
-        if (!results) return;
+        if (!results || results.length === 0) {
+            this.body.innerHTML = `
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state" style="min-height: 150px; padding: 2rem;">
+                            <i class="fas fa-table" style="font-size: 2rem;"></i>
+                            <p>Tablo verisi bulunamadı.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
         results.forEach(res => {
             const tr = document.createElement('tr');
             const fin = res.financials || {};

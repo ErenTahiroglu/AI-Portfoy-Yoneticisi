@@ -20,7 +20,13 @@ export function renderHeatmap(results) {
     });
 
     if (validResults.length === 0) {
-        wrap.classList.add("hidden");
+        wrap.classList.remove("hidden");
+        container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1; width: 100%; min-height: 200px;">
+                <i class="fas fa-th-large" style="font-size: 2rem;"></i>
+                <p style="margin-top: 1rem;">Isı haritası için yeterli veri bulunamadı.</p>
+            </div>
+        `;
         return;
     }
 
