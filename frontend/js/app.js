@@ -54,7 +54,7 @@ AppState.subscribe('isHalalOnly', (val) => {
     if (halalToggle) halalToggle.checked = val;
 });
 
-AppState.subscribe('results', (val) => {
+AppState.subscribe('results', async (val) => {
     const resultsSection = document.getElementById("results");
     if (!val || val.length === 0) {
         if (resultsSection) resultsSection.classList.add("hidden");
@@ -65,9 +65,14 @@ AppState.subscribe('results', (val) => {
     
     // Non-blocking renders
     try { renderHeatmap(val); } catch (e) { console.error("Heatmap error:", e); }
+
+    // Client-Side Persistence
+    if (val && val.length > 0 && typeof window.setCache === 'function') {
+        window.setCache('last_known_results', val);
+    }
 });
 
-AppState.subscribe('extras', (val) => {
+AppState.subscribe('extras', async (val) => {
     window.lastExtras = val;
     if (!val) return;
     
@@ -79,14 +84,27 @@ AppState.subscribe('extras', (val) => {
 
     updateHeroCards(AppState.results, val);
     
-    if (val.optimized_weights) {
-        // renderOptimization(val.optimized_weights, AppState.results);
+    // Client-Side Persistence
+    if (typeof window.setCache === 'function') {
+        window.setCache('last_known_extras', val);
     }
 });
 
 AppState.subscribe('systemStatus', (val) => {
-    if (val === 'waking_up') {
-        showToast("🚀 Sunucu uyanıyor (Free Tier), bu işlem ilk seferde 30-40 saniye sürebilir...", "info");
+    let syncIndicator = document.getElementById("sync-indicator");
+    if (!syncIndicator) {
+        syncIndicator = document.createElement("div");
+        syncIndicator.id = "sync-indicator";
+        syncIndicator.className = "sync-indicator";
+        document.body.appendChild(syncIndicator);
+    }
+
+    if (val === 'waking_up' || val === 'syncing') {
+        syncIndicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Senkronize ediliyor...';
+        syncIndicator.classList.add("active");
+    } else if (val === 'ready') {
+        syncIndicator.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i> Güncel';
+        setTimeout(() => syncIndicator.classList.remove("active"), 2000);
     }
 });
 
@@ -165,13 +183,32 @@ class App {
 
     // Phase 3: Services & Data Hydration
     async phase3_Services() {
-        // Health Check (Async, don't block if slow)
+        // ⚡ Zero-Latency UX: Instant Hydration from Cache
+        if (typeof window.getCache === 'function') {
+            const cachedResults = await window.getCache('last_known_results');
+            const cachedExtras = await window.getCache('last_known_extras');
+            
+            if (cachedResults && cachedResults.length > 0) {
+                console.log("⚡ SWR: Yüklendi (Results)");
+                AppState.results = cachedResults;
+            }
+            if (cachedExtras) {
+                console.log("⚡ SWR: Yüklendi (Extras)");
+                AppState.extras = cachedExtras;
+            }
+        }
+
+        // Background Health Check (Revalidate)
+        AppState.systemStatus = 'syncing';
         checkServerHealth().then(h => {
             const dot = document.getElementById("server-status-dot");
             if (dot) {
                 dot.className = h.online ? "status-dot dot-green" : "status-dot dot-red";
                 dot.title = h.online ? "Online" : "Offline";
             }
+            if (h.online) AppState.systemStatus = 'ready';
+        }).catch(() => {
+            // Sessiz fail
         });
 
         // Background Data

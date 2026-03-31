@@ -76,6 +76,87 @@ app = FastAPI(
 from prometheus_fastapi_instrumentator import Instrumentator
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
+from backend.infrastructure.redis_cache import cache_get, cache_set, cache_delete
+from starlette.responses import Response
+
+# ── Middleware: Idempotency ───────────────────────────────────────────────
+class IdempotencyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        if request.method not in ["POST", "PUT", "PATCH"]:
+            return await call_next(request)
+            
+        idempotency_key = request.headers.get("Idempotency-Key")
+        if not idempotency_key:
+            return await call_next(request)
+            
+        redis_key = f"idemp:{idempotency_key}"
+        cached = cache_get(redis_key)
+        
+        if cached:
+            if cached.get("status") == "PROCESSING":
+                return JSONResponse(
+                    content={"error": True, "message": "İşlem arka planda devam ediyor (Zaten işleniyor)."},
+                    status_code=409,
+                    headers={"Idempotency-Key": idempotency_key}
+                )
+            elif cached.get("status") == "COMPLETED":
+                headers = cached.get("headers", {})
+                headers["Idempotency-Key"] = idempotency_key
+                headers["X-Idempotency-Cache"] = "HIT"
+                return Response(
+                    content=cached.get("response_body", "{}").encode("utf-8"),
+                    status_code=cached.get("status_code", 200),
+                    headers=headers,
+                    media_type=headers.get("content-type", "application/json")
+                )
+        
+        # İşlemi Kilitli Olarak İşaretle (PROCESSING) - Max 5 dakika
+        cache_set(redis_key, {"status": "PROCESSING"}, ttl=300)
+        
+        try:
+            response = await call_next(request)
+            
+            content_type = response.headers.get("content-type", "")
+            
+            # SSE akışlarını (StreamingResponse) belleğe almamak için kilidi kaldırırız
+            # Böylece yeniden denendiğinde güvenle baştan çalıştırılabilir.
+            if "text/event-stream" in content_type:
+                cache_delete(redis_key)
+                return response
+                
+            # Standart JSON yanıtlarını cache'leriz
+            if "application/json" in content_type:
+                res_body = b""
+                async for chunk in response.body_iterator:
+                    res_body += chunk
+                
+                new_response = Response(
+                    content=res_body,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    media_type=response.media_type
+                )
+                
+                # Sadece başarılı istekleri cache'le
+                if response.status_code < 400:
+                    cache_set(redis_key, {
+                        "status": "COMPLETED",
+                        "response_body": res_body.decode("utf-8", errors="ignore"),
+                        "headers": dict(response.headers),
+                        "status_code": response.status_code
+                    }, ttl=300)
+                else:
+                    cache_delete(redis_key)
+                    
+                return new_response
+            
+            cache_delete(redis_key)
+            return response
+            
+        except Exception as e:
+            cache_delete(redis_key)
+            raise e
+
 # ── Middleware: No-Cache ──────────────────────────────────────────────────
 class NoCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -89,6 +170,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 from fastapi.middleware.gzip import GZipMiddleware
 
 app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(IdempotencyMiddleware)
 app.add_middleware(NoCacheMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 

@@ -2998,3 +2998,32 @@ body.professional-mode .btn-primary:hover {
         font-size: 1.3rem;
     }
 }
+
+/* ═══════════════════════════════════════════
+   SYNC INDICATOR (ZERO-LATENCY UX)
+═══════════════════════════════════════════ */
+.sync-indicator {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 9998;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-premium);
+    backdrop-filter: blur(12px);
+    color: var(--text-main);
+}
+.sync-indicator.active {
+    opacity: 1;
+    transform: translateY(0);
+}

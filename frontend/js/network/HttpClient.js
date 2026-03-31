@@ -30,6 +30,25 @@ export class HttpClient {
         const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
         const correlationId = crypto.randomUUID ? crypto.randomUUID() : this._generateUUID();
         
+        // 🛡️ Idempotency: Create one key per request for mutations and preserve across retries
+        const method = (options.method || 'GET').toUpperCase();
+        let idempotencyKey = null;
+        if (['POST', 'PUT', 'PATCH'].includes(method)) {
+            if (options.headers && options.headers['Idempotency-Key']) {
+                idempotencyKey = options.headers['Idempotency-Key'];
+            } else if (options.body && typeof options.body === 'string') {
+                let hash = 0;
+                for (let i = 0; i < options.body.length; i++) {
+                    const char = options.body.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash |= 0;
+                }
+                idempotencyKey = `idemp-${Math.abs(hash)}`;
+            } else {
+                idempotencyKey = crypto.randomUUID ? crypto.randomUUID() : this._generateUUID();
+            }
+        }
+        
         let lastError = null;
         let attempt = 0;
 
@@ -50,14 +69,20 @@ export class HttpClient {
                 // 1. Auth Interceptor: Inject Supabase Token if available
                 const authHeaders = await this._getAuthHeaders();
                 
+                const combinedHeaders = {
+                    ...this.defaultHeaders,
+                    'X-Correlation-ID': correlationId,
+                    ...authHeaders,
+                    ...options.headers
+                };
+
+                if (idempotencyKey) {
+                    combinedHeaders['Idempotency-Key'] = idempotencyKey;
+                }
+
                 const fetchOptions = {
                     ...options,
-                    headers: {
-                        ...this.defaultHeaders,
-                        'X-Correlation-ID': correlationId,
-                        ...authHeaders,
-                        ...options.headers
-                    },
+                    headers: combinedHeaders,
                     signal: controller.signal
                 };
 

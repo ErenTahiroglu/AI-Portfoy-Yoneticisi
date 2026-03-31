@@ -115,6 +115,7 @@ export async function runAnalysis(payload, endpoint) {
         AppState.extras = null;
     }
 
+    let isConflict = false;
     try {
         const tickers = payload.tickers || [];
         const tickersToFetch = [];
@@ -235,11 +236,26 @@ export async function runAnalysis(payload, endpoint) {
         if (typeof renderMacroAI === "function") runMacroAnalysis(renderMacroAI);
 
     } catch (err) {
+        if (err.status === 409) {
+            isConflict = true;
+            console.log("⚡ [Idempotency] İşlem sunucuda devam ediyor (409). Arka planda bekleniyor...");
+            if (progressText) progressText.textContent = getLang() === "en" ? "Processing in background..." : "Arka planda işleniyor...";
+            if (typeof AppState !== 'undefined') AppState.systemStatus = 'syncing';
+            
+            // Poll after 5 seconds by re-running the same analysis (it will hit cache or retry if still processing)
+            setTimeout(() => {
+                runAnalysis(payload, endpoint, btn);
+            }, 5000);
+            return; // Exit here so we don't enable the button or hide progress
+        }
+
         if (progressContainer) progressContainer.classList.add("hidden");
         console.error("Analysis Error:", err);
         showToast(err.message || "Bağlantı hatası", "error");
     } finally {
-        if (btn) btn.disabled = false;
+        if (btn && !isConflict) {
+            btn.disabled = false;
+        }
     }
 }
 window.runAnalysis = runAnalysis;
