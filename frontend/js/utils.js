@@ -6,9 +6,9 @@
 // ═══════════════════════════════════════
 // TOAST NOTIFICATIONS
 // ═══════════════════════════════════════
-window.showToast = showToast;
-function showToast(message, type = "info") {
+export function showToast(message, type = "info") {
     const container = document.getElementById("toast-container");
+    if (!container) return; // For headless tests
     const icons = { success: "fa-check-circle", error: "fa-exclamation-circle", warning: "fa-exclamation-triangle", info: "fa-info-circle" };
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
@@ -16,12 +16,12 @@ function showToast(message, type = "info") {
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
 }
+window.showToast = showToast;
 
 // ═══════════════════════════════════════
 // THEME TOGGLE
 // ═══════════════════════════════════════
-window.initTheme = initTheme;
-function initTheme() {
+export function initTheme() {
     const saved = localStorage.getItem("theme");
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const themeToApply = saved || (systemDark ? "dark" : "light");
@@ -29,15 +29,16 @@ function initTheme() {
     document.documentElement.setAttribute("data-theme", themeToApply);
     updateThemeIcon(themeToApply);
 }
+window.initTheme = initTheme;
 
-window.toggleTheme = toggleTheme;
-function toggleTheme() {
+export function toggleTheme() {
     const current = document.documentElement.getAttribute("data-theme");
     const next = current === "light" ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("theme", next);
     updateThemeIcon(next);
 }
+window.toggleTheme = toggleTheme;
 
 function updateThemeIcon(theme) {
     const icon = document.getElementById("theme-icon");
@@ -58,6 +59,7 @@ function saveWatchlists(lists) {
 
 function renderWatchlists() {
     const container = document.getElementById("watchlist-container");
+    if (!container) return;
     const lists = getWatchlists();
     container.innerHTML = "";
     if (lists.length === 0) {
@@ -84,8 +86,7 @@ function renderWatchlists() {
     });
 }
 
-window.saveCurrentPortfolio = saveCurrentPortfolio;
-function saveCurrentPortfolio() {
+export function saveCurrentPortfolio() {
     const input = document.getElementById("ticker-input").value.trim();
     if (!input) { showToast(t("toast.enterTickers"), "warning"); return; }
     const tickers = input.split(/[\s,;]+/).filter(t => t.length > 0).map(t => t.toUpperCase());
@@ -97,18 +98,15 @@ function saveCurrentPortfolio() {
     renderWatchlists();
     showToast(`"${name}" ${t("toast.saved")} (${tickers.length} hisse)`, "success");
 }
+window.saveCurrentPortfolio = saveCurrentPortfolio;
 
-// ═══════════════════════════════════════
-// AUTOCOMPLETE
-// ═══════════════════════════════════════
 // ═══════════════════════════════════════
 // AUTOCOMPLETE
 // ═══════════════════════════════════════
 let autocompleteTimeout = null;
 const autocompleteCache = {};
 
-window.setupAutocomplete = setupAutocomplete;
-function setupAutocomplete() {
+export function setupAutocomplete() {
     const textarea = document.getElementById("ticker-input");
     const dropdown = document.getElementById("autocomplete-dropdown");
     if (!textarea || !dropdown) return;
@@ -331,28 +329,29 @@ function setupAutocomplete() {
         }
     });
 }
+window.setupAutocomplete = setupAutocomplete;
 
 // ═══════════════════════════════════════
 // COLLAPSIBLE SECTIONS
 // ═══════════════════════════════════════
-window.toggleCollapsible = toggleCollapsible;
-function toggleCollapsible(header) {
+export function toggleCollapsible(header) {
     header.classList.toggle("open");
     header.nextElementSibling.classList.toggle("open");
 }
+window.toggleCollapsible = toggleCollapsible;
 
 // ═══════════════════════════════════════
 // FORMAT HELPERS
 // ═══════════════════════════════════════
-function formatMarketCap(val) {
+export function formatMarketCap(val) {
     if (!val) return "-";
     if (val >= 1e12) return (val / 1e12).toFixed(2) + "T";
     if (val >= 1e9) return (val / 1e9).toFixed(2) + "B";
     if (val >= 1e6) return (val / 1e6).toFixed(1) + "M";
     return val.toLocaleString();
 }
-window.fmtNum = fmtNum;
-function fmtNum(val, suffix = "") {
+
+export function fmtNum(val, suffix = "") {
     if (val === undefined || val === null || val === "-") return "-";
     const num = typeof val === "number" ? val : parseFloat(val);
     if (isNaN(num)) return "-";
@@ -368,11 +367,13 @@ function fmtNum(val, suffix = "") {
          return num.toFixed(2) + suffix;
     }
 }
-window.colorClass = colorClass;
-function colorClass(val) {
+window.fmtNum = fmtNum;
+
+export function colorClass(val) {
     if (val === undefined || val === null) return "";
     return val >= 0 ? "positive" : "negative";
 }
+window.colorClass = colorClass;
 
 // ═══════════════════════════════════════
 // API KEY ENCRYPTION (AES-GCM)
@@ -385,8 +386,7 @@ async function getEncKey() {
     return key;
 }
 
-window.encryptApiKey = encryptApiKey;
-async function encryptApiKey(plaintext) {
+export async function encryptApiKey(plaintext) {
     if (!plaintext) return "";
     const key = await getEncKey();
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -395,9 +395,9 @@ async function encryptApiKey(plaintext) {
     combined.set(iv); combined.set(new Uint8Array(ct), iv.length);
     return btoa(String.fromCharCode(...combined));
 }
+window.encryptApiKey = encryptApiKey;
 
-window.decryptApiKey = decryptApiKey;
-async function decryptApiKey(b64) {
+export async function decryptApiKey(b64) {
     if (!b64) return "";
     try {
         const key = await getEncKey();
@@ -408,9 +408,9 @@ async function decryptApiKey(b64) {
         return new TextDecoder().decode(pt);
     } catch { return ""; }
 }
+window.decryptApiKey = decryptApiKey;
 
-window.saveApiKeys = saveApiKeys;
-async function saveApiKeys() {
+export async function saveApiKeys() {
     const gemini = document.getElementById("api-key").value;
     const av = document.getElementById("av-api-key").value;
     if (gemini) {
@@ -424,28 +424,30 @@ async function saveApiKeys() {
         if (icon) { icon.classList.remove("hidden"); setTimeout(() => icon.classList.add("hidden"), 3000); }
     }
 }
+window.saveApiKeys = saveApiKeys;
 
-window.loadApiKeys = loadApiKeys;
-async function loadApiKeys() {
+export async function loadApiKeys() {
     const gk = await decryptApiKey(localStorage.getItem("_gk") || "");
     const ak = await decryptApiKey(localStorage.getItem("_ak") || "");
     if (gk) {
-        document.getElementById("api-key").value = gk;
+        const el = document.getElementById("api-key");
+        if (el) el.value = gk;
         const icon = document.getElementById("api-key-saved-icon");
         if (icon) icon.classList.remove("hidden");
     }
     if (ak) {
-        document.getElementById("av-api-key").value = ak;
+        const el = document.getElementById("av-api-key");
+        if (el) el.value = ak;
         const icon = document.getElementById("av-key-saved-icon");
         if (icon) icon.classList.remove("hidden");
     }
 }
+window.loadApiKeys = loadApiKeys;
 
 // ═══════════════════════════════════════
 // TICKER QUICK VIEW MODAL
 // ═══════════════════════════════════════
-window.showTickerQuickModal = showTickerQuickModal;
-async function showTickerQuickModal(ticker) {
+export async function showTickerQuickModal(ticker) {
     let overlay = document.getElementById("ticker-modal-overlay");
     if (!overlay) {
         overlay = document.createElement("div");
@@ -460,7 +462,7 @@ async function showTickerQuickModal(ticker) {
     // Yükleme durumu (Skeleton UI)
     overlay.innerHTML = `
         <div class="modal-content glass-panel" style="animation: slideUpFade 0.3s ease;">
-            <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+            <button class="modal-close" id="ticker-modal-close-btn"><i class="fas fa-times"></i></button>
             <h3 style="margin-bottom:1rem;font-size:1.2rem;color:var(--text-main);"><i class="fas fa-search"></i> ${ticker} Hızlı Görünüm</h3>
             <div class="skeleton-title" style="width: 40%"></div>
             <div class="skeleton-box" style="margin-bottom: 1rem;"></div>
@@ -468,6 +470,7 @@ async function showTickerQuickModal(ticker) {
             <div class="skeleton-text" style="width: 80%"></div>
         </div>
     `;
+    document.getElementById('ticker-modal-close-btn').onclick = () => overlay.remove();
 
     try {
         const payload = {
@@ -491,11 +494,12 @@ async function showTickerQuickModal(ticker) {
         if (!r || r.error) {
             overlay.innerHTML = `
                 <div class="modal-content glass-panel">
-                    <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+                    <button class="modal-close" id="ticker-modal-err-close"><i class="fas fa-times"></i></button>
                     <h3 style="margin-bottom:1rem;"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> ${ticker}</h3>
                     <p style="color:var(--danger);">${r?.error || "Veri alınamadı."}</p>
                 </div>
             `;
+            document.getElementById('ticker-modal-err-close').onclick = () => overlay.remove();
             return;
         }
 
@@ -515,7 +519,7 @@ async function showTickerQuickModal(ticker) {
 
         overlay.innerHTML = `
             <div class="modal-content glass-panel" style="animation: slideUpFade 0.3s ease;">
-                <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+                <button class="modal-close" id="ticker-modal-data-close"><i class="fas fa-times"></i></button>
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem;">
                     <div>
                         <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.5px;color:var(--text-main); margin-bottom:0.2rem;">${r.ticker}</h2>
@@ -546,26 +550,30 @@ async function showTickerQuickModal(ticker) {
                     </div>
                 </div>
                 
-                <button class="btn-primary" onclick="
-                    const tarea = document.getElementById('ticker-input');
-                    let words = tarea.value.split(/[\\s,;]+/);
-                    words = words.filter(w=>w.trim());
-                    if (words[words.length-1] !== '${r.ticker}') words.push('${r.ticker}');
-                    tarea.value = words.join(', ') + ', ';
-                    document.getElementById('ticker-modal-overlay').remove();
-                    tarea.focus();
-                ">
+                <button class="btn-primary" id="ticker-modal-add-btn">
                     <i class="fas fa-plus"></i> Listeye Ekle
                 </button>
             </div>
         `;
+        document.getElementById('ticker-modal-data-close').onclick = () => overlay.remove();
+        document.getElementById('ticker-modal-add-btn').onclick = () => {
+            const tarea = document.getElementById('ticker-input');
+            let words = tarea.value.split(/[\s,;]+/);
+            words = words.filter(w=>w.trim());
+            if (words[words.length-1] !== r.ticker) words.push(r.ticker);
+            tarea.value = words.join(', ') + ', ';
+            overlay.remove();
+            tarea.focus();
+        };
     } catch (err) {
         overlay.innerHTML = `
             <div class="modal-content glass-panel">
-                <button class="modal-close" onclick="document.getElementById('ticker-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+                <button class="modal-close" id="ticker-modal-err-final-close"><i class="fas fa-times"></i></button>
                 <h3 style="margin-bottom:1rem;color:var(--danger)"><i class="fas fa-times-circle"></i> Hatası</h3>
                 <p>Beklenmeyen bir hata oluştu: ${err.message}</p>
             </div>
         `;
+        document.getElementById('ticker-modal-err-final-close').onclick = () => overlay.remove();
     }
 }
+window.showTickerQuickModal = showTickerQuickModal;

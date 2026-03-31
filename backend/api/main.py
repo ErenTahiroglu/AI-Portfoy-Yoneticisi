@@ -105,6 +105,60 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, RedirectResponse
+from backend.utils.logger import correlation_id_ctx
+
+# ── Exception Handlers ──────────────────────────────────────────────────
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    corr_id = correlation_id_ctx.get()
+    headers = getattr(exc, "headers", {}) or {}
+    
+    # 🛡️ Rate Limit (429) için Retry-After ekle
+    if exc.status_code == 429 and "Retry-After" not in headers:
+        headers["Retry-After"] = "60" # Varsayılan 1 dakika
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": True,
+            "message": exc.detail,
+            "status_code": exc.status_code,
+            "correlation_id": corr_id
+        },
+        headers=headers
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    corr_id = correlation_id_ctx.get()
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": True,
+            "message": "Veri doğrulama hatası (Validation Error)",
+            "detail": exc.errors(),
+            "status_code": 422,
+            "correlation_id": corr_id
+        }
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    corr_id = correlation_id_ctx.get()
+    logger.error(f"Unhandled Exception: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": True,
+            "message": "Sunucu tarafında beklenmedik bir hata oluştu.",
+            "status_code": 500,
+            "correlation_id": corr_id
+        }
+    )
+
 # ── WebSocket Entegrasyonu ────────────────────────────────────────────────
 register_websocket_routes(app)
 

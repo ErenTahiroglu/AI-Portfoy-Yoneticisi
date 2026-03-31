@@ -1,8 +1,8 @@
-// ══════════════════════════════════════════════════════════════════════════
-// 🧩 Puzzle Parça: Frontend Orkestratörü (app.js) — v5.0
-// ==========================================================================
-// ES6 Modülleri kullanarak parçalanmış component'leri yönetir ve başlatır.
-// ══════════════════════════════════════════════════════════════════════════
+/**
+ * 🧩 Frontend Orchestrator (app.js) — v6.0 (Deterministic Lifecycle)
+ * ==========================================================================
+ * Manages modular components and application startup sequence.
+ */
 
 import { toggleNotifications, markAllAlertsRead, fetchAutonomousAlerts } from './components/Notifications.js';
 import { openMetricModal } from './components/Modals.js';
@@ -15,33 +15,20 @@ import { updateHeroCards, showEmptyPortfolioState, hideEmptyPortfolioState } fro
 import { renderHeatmap } from './components/HeatmapComponent.js';
 import { setupAuthModal, updateAuthUI } from './network/supabaseClient.js';
 import { initOnboardingWizard, getUserProfile, skipWizard } from './services/OnboardingWizard.js';
+import { checkServerHealth, runAnalysis } from './network/api.js';
+import { initTheme, toggleTheme, loadApiKeys, saveApiKeys, setupAutocomplete, showToast } from './utils.js';
 
-// ── CTA: "İlk Varlığını Ekle" (Empty State butonu) ──
-window._triggerAddAsset = function() {
-    // Ticker input’a scroll et ve focus ver
-    const tickerInput = document.getElementById("ticker-input");
-    const tickerTab = document.querySelector('.tab-btn[data-target="ticker-card"]');
-    if (tickerTab) tickerTab.click(); // Manuel Giriş sekmesine geç
-    if (tickerInput) {
-        tickerInput.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => tickerInput.focus(), 350);
-    }
-};
-
-// ── Globale Bağlama (Backward Compatibility) ──────────────────────────────
+// ── Globals ──────────────────────────────────────────────────────────────
 window.toggleNotifications = toggleNotifications;
 window.markAllAlertsRead = markAllAlertsRead;
 window.fetchAutonomousAlerts = fetchAutonomousAlerts;
 window.openMetricModal = openMetricModal;
 window.showComparison = showComparison;
 window.renderMacroAI = renderMacroAI;
-// ── Onboarding Wizard Globals ──────────────────────────────────────────────
-window.getUserProfile       = getUserProfile;  // Chat.js tarafından kullanılacak
-window.skipOnboardingWizard = skipWizard;      // HTML skip link tarafından çağrılacak
+window.getUserProfile = getUserProfile;
+window.skipOnboardingWizard = skipWizard;
 
-const API_BASE = window.API_BASE;
-
-// ── State Yönetimi ────────────────────────────────────────────────────────
+// ── State Management v2 (Granular) ────────────────────────────────────────
 const AppState = createStore({
     viewMode: localStorage.getItem("viewMode") || "beginner",
     isHalalOnly: localStorage.getItem("isHalalOnly") === "true",
@@ -50,301 +37,258 @@ const AppState = createStore({
 });
 window.AppState = AppState;
 
-AppState.subscribe((prop, val, _oldValue) => {
-    if (prop === "viewMode") {
-        document.body.classList.toggle("professional-mode", val === "pro");
-        localStorage.setItem("viewMode", val);
-        const profToggle = document.getElementById("prof-mode-toggle");
-        if (profToggle) profToggle.checked = (val === "pro");
-        const uiToggle = document.getElementById("ui-mode-toggle");
-        if (uiToggle) uiToggle.checked = (val === "pro");
+// 🔗 Granular Subscriptions
+AppState.subscribe('viewMode', (val) => {
+    document.body.classList.toggle("professional-mode", val === "pro");
+    localStorage.setItem("viewMode", val);
+    ['prof-mode-toggle', 'ui-mode-toggle'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = (val === "pro");
+    });
+});
+
+AppState.subscribe('isHalalOnly', (val) => {
+    document.body.classList.toggle("halal-only", val);
+    localStorage.setItem("isHalalOnly", val);
+    const halalToggle = document.getElementById("check-islamic-toggle");
+    if (halalToggle) halalToggle.checked = val;
+});
+
+AppState.subscribe('results', (val) => {
+    const resultsSection = document.getElementById("results");
+    if (!val || val.length === 0) {
+        if (resultsSection) resultsSection.classList.add("hidden");
+        return;
     }
+    if (resultsSection) resultsSection.classList.remove("hidden");
+    window.lastResults = val;
     
-    if (prop === "isHalalOnly") {
-        document.body.classList.toggle("halal-only", val);
-        localStorage.setItem("isHalalOnly", val);
-        const halalToggle = document.getElementById("check-islamic-toggle");
-        if (halalToggle) halalToggle.checked = val;
+    // Non-blocking renders
+    try { renderHeatmap(val); } catch (e) { console.error("Heatmap error:", e); }
+});
+
+AppState.subscribe('extras', (val) => {
+    window.lastExtras = val;
+    if (!val) return;
+    
+    const scoreVal = document.getElementById("weighted-return-val");
+    if (val.weighted_return_5y !== undefined && scoreVal) {
+        scoreVal.textContent = val.weighted_return_5y;
+        document.getElementById("portfolio-score-badge")?.classList.remove("hidden");
     }
 
-    if (prop === "results") {
-        const resultsSection = document.getElementById("results");
-        if (!val || val.length === 0) {
-            if (resultsSection) resultsSection.classList.add("hidden");
-            return;
-        }
-        if (resultsSection) resultsSection.classList.remove("hidden");
-
-        window.lastResults = val;
-        try { renderHeatmap(val); renderScenarios(val); } catch (e) { /* render errors ignored */ }
-    }
-
-    if (prop === "extras") {
-        window.lastExtras = val;
-        if (!val) return;
-        try {
-            const scoreBadge = document.getElementById("portfolio-score-badge");
-            const scoreVal = document.getElementById("weighted-return-val");
-            if (val.weighted_return_5y !== undefined) {
-                if (scoreVal) scoreVal.textContent = val.weighted_return_5y;
-                if (scoreBadge) scoreBadge.classList.remove("hidden");
-            }
-        } catch (e) { /* score calculation ignored */ }
-
-        try { renderExtras(val); updateHeroCards(AppState.results, val); } catch (e) { /* extras render errors ignored */ }
-
-        try {
-            if (val.optimized_weights) {
-                renderOptimization(val.optimized_weights, AppState.results);
-            } else {
-                const optWrap = document.getElementById("optimization-wrap");
-                if (optWrap) optWrap.classList.add("hidden");
-            }
-        } catch (e) { /* optimization render errors ignored */ }
+    updateHeroCards(AppState.results, val);
+    
+    if (val.optimized_weights) {
+        // renderOptimization(val.optimized_weights, AppState.results);
     }
 });
 
-// ── Yardımcı Render Fonksiyonu ───────────────────────────────────────────
-window.renderSingleCard = function(item) {
-    // Reaktif bileşenler AppState.subscribe üzerinden otomatik render aldığı için
-    // burada manuel appendResultItem çağrısına gerek kalmadı.
-    // Sadece skeleton temizliği yapıyoruz.
-    const resultsSection = document.getElementById("results");
-    if (resultsSection) resultsSection.classList.remove("hidden");
+// ── Application Lifecycle ──────────────────────────────────────────────────
 
-    const skeleton = document.getElementById(`skeleton-${item.ticker}`);
-    if (skeleton) skeleton.remove();
-}
+class App {
+    constructor() {
+        this.phases = {
+            1: "Core Infrastructure",
+            2: "Authentication",
+            3: "Services & Data",
+            4: "UI & Bindings"
+        };
+    }
 
-// ── DOMContentLoaded Event Listener ──────────────────────────────────────
-document.addEventListener("DOMContentLoaded", async () => {
-    // ── Auth Check for Landing Page ──
-    if (window.SupabaseAuth) {
+    async init() {
+        console.log("🚀 Starting App Lifecycle...");
         try {
-            const user = await window.SupabaseAuth.getUser();
-            const landing = document.getElementById("landing-page");
-            const sidebar = document.getElementById("sidebar");
-            const mainContent = document.querySelector(".main-content");
-
-            // Fix: updateAuthUI handles button state reactively (both logged-in and guest cases)
-            updateAuthUI(user);
-
-            if (!user) {
-                if (landing) landing.style.display = "flex";
-                if (sidebar) sidebar.style.display = "none";
-                if (mainContent) mainContent.style.display = "none";
-                const mobBtn = document.getElementById("mobile-menu-btn");
-                if (mobBtn) mobBtn.style.display = "none";
-            } else {
-                const guestLogoutBtn = document.getElementById("guest-logout-btn");
-                if (guestLogoutBtn) guestLogoutBtn.style.display = "none";
-
-                document.body.classList.remove("professional-mode");
-                localStorage.setItem("viewMode", "beginner");
-                const profToggle = document.getElementById("prof-mode-toggle");
-                if (profToggle) profToggle.checked = false;
-                const uiToggle = document.getElementById("ui-mode-toggle");
-                if (uiToggle) uiToggle.checked = false;
-
-                // ── Onboarding wizard: ilk girişte sihirbaz ─────────────────
-                // Dashboard, wizard onComplete callback'i içinde açılacak (sadece ilk kez gösterildiğinde)
-                await initOnboardingWizard((profile, wasShown) => {
-                    if (wasShown) {
-                        if (landing)     landing.style.display     = "none";
-                        if (sidebar)     sidebar.style.display     = "";
-                        if (mainContent) mainContent.style.display = "";
-                    } else {
-                        // Zaten onboarded ise landing page kalsın, updateAuthUI butonu "Uygulamaya Git" yaptı.
-                        // Sadece sidebar ve mainContent'in arkada hazır olmasını sağlayabiliriz ama gizli kalsınlar.
-                        if (landing)     landing.style.display     = "flex";
-                        if (sidebar)     sidebar.style.display     = "none";
-                        if (mainContent) mainContent.style.display = "none";
-                    }
-                });
-
-                // Empty State: portföy yoksa göster
-                try {
-                    const portfolio = await window.SupabaseAuth.loadPortfolio();
-                    if (!portfolio || portfolio.length === 0) {
-                        showEmptyPortfolioState();
-                    }
-                } catch (_e) {
-                    showEmptyPortfolioState();
-                }
-            }
-        } catch (e) {
-            console.error("Auth status loading error:", e);
+            await this.phase1_Core();
+            await this.phase2_Auth();
+            await this.phase3_Services();
+            await this.phase4_UI();
+            console.log("✅ App Initialized Successfully.");
+        } catch (err) {
+            this.handleInitError(err);
         }
     }
 
-    // Fix 1: setup auth modal events (wires form, tabs, close, onAuthStateChange)
-    setupAuthModal();
-
-    initTheme();
-    setLanguage(currentLang);
-    await loadApiKeys();
-
-    // Server Health Check
-    const statusDot = document.getElementById("server-status-dot");
-    if (statusDot) {
-        statusDot.className = "status-dot dot-yellow"; 
-        checkServerHealth().then(h => {
-            if (h.online) { statusDot.className = "status-dot dot-green"; statusDot.title = "Online"; }
-            else { showToast("Sunucu uyandırılıyor (Free Tier)...", "info"); }
-        });
+    // Phase 1: Core Setup (Theme, i18n, Error Handlers)
+    async phase1_Core() {
+        initTheme();
+        if (typeof setLanguage === 'function') setLanguage(window.currentLang || 'tr');
+        await loadApiKeys();
+        
+        // Global Error Boundary
+        window.onerror = (msg, url, line) => {
+            console.error(`[Global Error] ${msg} at ${url}:${line}`);
+            return false;
+        };
     }
 
-    // Static Event Listeners
-    document.getElementById("theme-toggle-btn").addEventListener("click", toggleTheme);
-    document.getElementById("metric-modal-close").addEventListener("click", () => document.getElementById("metric-modal").classList.add("hidden"));
-    
-    // AI Toggles
-    const aiToggle = document.getElementById("use-ai-toggle");
-    aiToggle.addEventListener("change", () => {
-        const isAI = aiToggle.checked;
-        document.getElementById("api-key").disabled = !isAI;
-        document.getElementById("gemini-key-group").classList.toggle("disabled", !isAI);
-        document.getElementById("gemini-model-group").classList.toggle("disabled", !isAI);
-    });
+    // Phase 2: Auth & Session
+    async phase2_Auth() {
+        setupAuthModal();
+        if (!window.SupabaseAuth) return;
 
-    document.getElementById("api-key").addEventListener("blur", saveApiKeys);
-    document.getElementById("av-api-key").addEventListener("blur", saveApiKeys);
+        const user = await window.SupabaseAuth.getUser();
+        updateAuthUI(user);
 
-    const handleModeToggle = async (e) => {
-        AppState.viewMode = e.target.checked ? "pro" : "beginner";
-    };
+        const landing = document.getElementById("landing-page");
+        const sidebar = document.getElementById("sidebar");
+        const mainContent = document.querySelector(".main-content");
 
-    const profToggle = document.getElementById("prof-mode-toggle");
-    if (profToggle) profToggle.addEventListener("change", handleModeToggle);
-
-    const uiToggle = document.getElementById("ui-mode-toggle");
-    if (uiToggle) uiToggle.addEventListener("change", handleModeToggle);
-
-    const halalToggle = document.getElementById("check-islamic-toggle");
-    if (halalToggle) halalToggle.addEventListener("change", (e) => AppState.isHalalOnly = e.target.checked);
-
-    // Analyze Click Handler
-    const analyzeBtn = document.getElementById("analyze-btn");
-    analyzeBtn.addEventListener("click", () => {
-        // Analiz başlarken empty state'i kaldır
-        hideEmptyPortfolioState();
-
-        const checkIslamic = document.getElementById("check-islamic-toggle").checked;
-        const checkFinancials = document.getElementById("check-financials-toggle").checked;
-        const useAI = aiToggle.checked;
-        const apiKey = document.getElementById("api-key").value;
-        const text = document.getElementById("ticker-input").value.trim();
-
-        if (useAI && !apiKey) { showToast("AI Analizi için API key gereklidir", "warning"); return; }
-        if (!text) { showToast("Hisse sembolü giriniz", "warning"); return; }
-        
-        const tickers = text.split(/[\s,;]+/).filter(t => t).map(t => t.toUpperCase());
-        runAnalysis({ tickers, use_ai: useAI, api_key: apiKey, check_islamic: checkIslamic, check_financials: checkFinancials }, "/api/analyze");
-    });
-
-    document.getElementById("btn-run-wizard").addEventListener("click", runWizard);
-    document.getElementById("compare-btn").addEventListener("click", showComparison);
-
-    // Mobile Menu Toggle
-    const mobBtn = document.getElementById("mobile-menu-btn");
-    const sidebar = document.getElementById("sidebar");
-    const mainContent = document.querySelector(".main-content");
-    
-    if (mobBtn && sidebar) {
-        mobBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            sidebar.classList.toggle("open");
-        });
-
-        // Close sidebar when clicking main content (on mobile)
-        if (mainContent) {
-            mainContent.addEventListener("click", () => {
-                if (window.innerWidth <= 1000) {
-                    sidebar.classList.remove("open");
+        if (!user) {
+            if (landing) landing.style.display = "flex";
+            if (sidebar) sidebar.style.display = "none";
+            if (mainContent) mainContent.style.display = "none";
+        } else {
+            document.getElementById("guest-logout-btn")?.style.setProperty("display", "none");
+            
+            await initOnboardingWizard((profile, wasShown) => {
+                if (wasShown) {
+                    if (landing) landing.style.display = "none";
+                    if (sidebar) sidebar.style.display = "";
+                    if (mainContent) mainContent.style.display = "";
                 }
             });
-        }
 
-        // Close sidebar on Esc
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape" && sidebar.classList.contains("open")) {
-                sidebar.classList.remove("open");
+            // Hydrate Portfolio
+            const portfolio = await window.SupabaseAuth.loadPortfolio();
+            if (!portfolio || portfolio.length === 0) {
+                showEmptyPortfolioState();
             }
+        }
+    }
+
+    // Phase 3: Services & Data Hydration
+    async phase3_Services() {
+        // Health Check (Async, don't block if slow)
+        checkServerHealth().then(h => {
+            const dot = document.getElementById("server-status-dot");
+            if (dot) {
+                dot.className = h.online ? "status-dot dot-green" : "status-dot dot-red";
+                dot.title = h.online ? "Online" : "Offline";
+            }
+        });
+
+        // Background Data
+        if (window.SupabaseAuth) loadEquityCurve();
+        
+        // Worker check (Warm up)
+        if (window.Worker) {
+            console.log("🧵 Math Worker Ready");
+        }
+    }
+
+    // Phase 4: UI Mount & Event Listeners
+    async phase4_UI() {
+        this.bindEvents();
+        setupBacktestBindings();
+        setupOptimization();
+        setupRiskAnalysis();
+        setupPaperTrades();
+        setupAutocomplete();
+        initCopilot();
+        initAdminDashboard();
+
+        // PWA Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(e => console.warn("SW Error", e));
+        }
+    }
+
+    bindEvents() {
+        document.getElementById("theme-toggle-btn")?.addEventListener("click", toggleTheme);
+        document.getElementById("analyze-btn")?.addEventListener("click", () => this.handleAnalyze());
+        
+        const aiToggle = document.getElementById("use-ai-toggle");
+        aiToggle?.addEventListener("change", () => {
+            const isAI = aiToggle.checked;
+            document.getElementById("api-key").disabled = !isAI;
+            document.getElementById("gemini-key-group")?.classList.toggle("disabled", !isAI);
+        });
+
+        const handleModeToggle = (e) => AppState.viewMode = e.target.checked ? "pro" : "beginner";
+        document.getElementById("prof-mode-toggle")?.addEventListener("change", handleModeToggle);
+        document.getElementById("ui-mode-toggle")?.addEventListener("change", handleModeToggle);
+        document.getElementById("check-islamic-toggle")?.addEventListener("change", (e) => AppState.isHalalOnly = e.target.checked);
+        
+        document.getElementById("api-key")?.addEventListener("blur", saveApiKeys);
+        document.getElementById("btn-run-wizard")?.addEventListener("click", runWizard);
+        document.getElementById("compare-btn")?.addEventListener("click", showComparison);
+
+        // Mobile Menu
+        const mobBtn = document.getElementById("mobile-menu-btn");
+        const sidebar = document.getElementById("sidebar");
+        mobBtn?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            sidebar?.classList.toggle("open");
         });
     }
 
-    setupAutocomplete();
-    initCopilot();
-});
+    async handleAnalyze() {
+        hideEmptyPortfolioState();
+        const text = document.getElementById("ticker-input")?.value.trim();
+        if (!text) return showToast("Hisse sembolü giriniz", "warning");
+
+        const tickers = text.split(/[\s,;]+/).filter(t => t).map(t => t.toUpperCase());
+        const payload = {
+            tickers,
+            use_ai: document.getElementById("use-ai-toggle")?.checked,
+            api_key: document.getElementById("api-key")?.value,
+            check_islamic: document.getElementById("check-islamic-toggle")?.checked,
+            check_financials: document.getElementById("check-financials-toggle")?.checked,
+            model: document.getElementById("model-select")?.value || "gemini-2.5-flash",
+            lang: window.getLang ? window.getLang() : 'tr'
+        };
+
+        runAnalysis(payload, "/api/analyze");
+    }
+
+    handleInitError(err) {
+        console.error("❌ Critical Initialization Error:", err);
+        showToast("Uygulama başlatılırken bir hata oluştu. Lütfen sayfayı yenileyin.", "error");
+        
+        const loader = document.getElementById("loader");
+        if (loader) {
+            loader.innerHTML = `
+                <div class="error-state" style="text-align:center; padding:2rem;">
+                    <i class="fas fa-exclamation-triangle" style="font-size:3rem; color:var(--danger); margin-bottom:1rem;"></i>
+                    <h3>Başlatma Hatası</h3>
+                    <p>${err.message}</p>
+                    <button class="btn-primary" onclick="location.reload()">Tekrar Dene</button>
+                </div>
+            `;
+        }
+    }
+}
+
+// 🚀 Boot
+const app = new App();
+document.addEventListener("DOMContentLoaded", () => app.init());
+
+// ── Legacy Functions (kept for inline HTML calls) ──────────────────────────
+window.renderSingleCard = function(item) {
+    document.getElementById("results")?.classList.remove("hidden");
+    document.getElementById(`skeleton-${item.ticker}`)?.remove();
+};
 
 async function loadEquityCurve() {
-    if (!window.SupabaseAuth) return;
     try {
-        const session = await window.SupabaseAuth.getValidSession();
+        const session = await window.SupabaseAuth?.getValidSession();
         if (!session) return;
-        const token = session.access_token;
         
-        const resp = await fetch(`${API_BASE}/api/portfolio/history`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await resp.json();
+        const data = await http.get('/api/portfolio/history');
         if (data && data.length > 0) {
             const widget = document.getElementById("equity-curve-widget");
-            if (widget) widget.classList.remove("hidden");
+            widget?.classList.remove("hidden");
             if (typeof createEquityCurveChart === "function") {
                 createEquityCurveChart("equity-chart-container", data);
             }
         }
     } catch (e) {
-        console.error("Equity Curve load failed:", e);
-        const widget = document.getElementById("equity-curve-widget");
-        if (widget) {
-            widget.classList.remove("hidden");
-            const container = document.getElementById("equity-chart-container");
-            if (container) {
-                container.innerHTML = `<div style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.85rem;"><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> Geçmiş bakiye grafiği yüklenemedi.</div>`;
-            }
-        }
+        console.warn("Equity Curve failed:", e);
     }
 }
 
-// ── Bindings & Triggers ───────────────────────────────────────────────────
-setTimeout(() => {
-    setupBacktestBindings();
-    setupOptimization();
-    setupRiskAnalysis();
-    setupPaperTrades();
-    if (typeof setupSupabaseAuth === "function") setupSupabaseAuth();
-    
-    // Yükleme Sonrası Kayıtlı Grafik Çek
-    loadEquityCurve();
-
-    // Admin Dashboard Kontrolü
-    initAdminDashboard();
-    
-    // 🛡️ DEV-ONLY: Show persistent warning if Admin Bypass is active
-    if (localStorage.getItem("admin_bypass") === "true") {
-        setTimeout(() => {
-            if (typeof showToast === "function") {
-                showToast("⚠️ Geliştirici/Bypass Modu AKTİF (Bazı veriler sahte olabilir)", "warning");
-            }
-        }, 3000);
-    }
-
-    // ── Global Paywall Interceptor (402 Payment Required) ──
-    const originalFetch = window.fetch;
-    window.fetch = async function(...args) {
-        const rs = await originalFetch(...args);
-        if (rs.status === 402) {
-             import('./components/Modals.js').then(m => m.openPaywallModal());
-        }
-        return rs;
-    };
-}, 1000);
-
-// [REMOVED] renderResults has been replaced by reactive AppState.results updates.
-
-// ── Secret Admin Bypass Trigger (5-clicks on title) ──────────────────────
+// ── Secret Admin Bypass ──────────────────────────────────────────────────
 let secretClicks = 0;
 document.addEventListener("click", (e) => {
     if (e.target.closest(".main-title")) {
@@ -352,12 +296,9 @@ document.addEventListener("click", (e) => {
         if (secretClicks >= 5) {
             const current = localStorage.getItem("admin_bypass") === "true";
             localStorage.setItem("admin_bypass", !current ? "true" : "false");
-            if (typeof showToast === "function") {
-                showToast(`Sistem Durumu: ${!current ? "🛠️ GELİŞTİRİCİ (MODERN)" : "🛡️ STANDART (GÜVENLİ)"}`, !current ? "warning" : "success");
-            }
+            showToast(`Sistem: ${!current ? "Geliştirici" : "Standart"}`, "info");
             secretClicks = 0;
-            setTimeout(() => window.location.reload(), 1500);
+            setTimeout(() => window.location.reload(), 1000);
         }
-        setTimeout(() => { if (secretClicks > 0) secretClicks--; }, 3000);
     }
 });

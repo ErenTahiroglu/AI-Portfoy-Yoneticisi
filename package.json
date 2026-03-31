@@ -4,8 +4,10 @@
   "description": "**Yapay Zeka Destekli, Kurumsal Standartlarda Akıllı Portföy Analiz ve Risk Yönetimi Platformu**",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:ui": "node tests/ui/screenshot_bot.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:screenshot": "node tests/ui/screenshot_bot.js",
     "lint": "eslint \"frontend/js/**/*.js\""
   },
   "repository": {
@@ -15,10 +17,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
+    "@vitest/ui": "^2.1.8",
     "eslint": "^8.57.0",
-    "eslint-plugin-html": "^8.1.1"
+    "eslint-plugin-html": "^8.1.1",
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.8"
   },
   "bugs": {
     "url": "https://github.com/ErenTahiroglu/AI-Portfoy-Yoneticisi/issues"

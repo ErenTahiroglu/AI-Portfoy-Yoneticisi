@@ -1,13 +1,13 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Supabase URL ve Anon Key
-const SUPABASE_URL = "https://zlggrmsolklhfgijcjnz.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_G67qSQ6JxmUYy3fuQAHb_Q_myhSebvW";
+// Supabase URL ve Anon Key (Globals from config.js)
+const SUPABASE_URL = window.SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
 
 // İstemci Başlat (Client Init)
 let supabase = null;
 try {
-    if (SUPABASE_URL !== "YOUR_SUPABASE_URL") {
+    if (SUPABASE_URL && SUPABASE_URL !== "YOUR_SUPABASE_URL") {
         supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } else {
         console.warn("Supabase NOT Initialized: URL and Key placeholders still active.");

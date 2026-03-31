@@ -46,20 +46,15 @@ AI-Portföy-Yöneticisi; yatırımcıların hisse senedi, fon ve kripto varlıkl
 
 ## 📝 Son Değişiklikler (Changelog)
 
-* **v1.1.3 (Current): Hardening & Stability.** Finalized modular architecture, resolved frontend linting warnings, and synchronized production configuration files across Render, Vercel, and Docker.
+* **v2.0.0 (Current): The Great Architectural Refactor.** 
+  * **Frontend Modernization:** Tamamen Vanilla JS ES Modules (ESM) yapısına geçildi. Pub/Sub tabanlı reaktif state yönetimi (Proxy) entegre edildi.
+  * **Zero-Copy Web Worker:** Monte Carlo ve Korelasyon hesaplamaları `MathEngine.js` ile ana iş parçacığından ayrıldı, `Float64Array` kullanılarak bellek verimliliği sağlandı.
+  * **Resilient Network:** Exponential Backoff destekli `HttpClient` wrapper yazıldı.
+  * **Test Driven:** `Vitest` kurularak çekirdek fonksiyonlar için %100 test kapsama oranı sağlandı (25+ test).
+  * **Backend Observability:** Tüm isteklerde `X-Correlation-ID` takibi, Contextual Logging ve global hata şeması entegre edildi.
+* **v1.1.3: Hardening & Stability.** Finalized modular architecture, resolved frontend linting warnings, and synchronized production configuration files across Render, Vercel, and Docker.
 * **v1.1.2: Hybrid Redis & Persistence.** Added standard TCP Redis support for local Docker compatibility. Completed Supabase SQL schema with missing telemetry and portfolio tables.
 * **v1.1.1: Market Search & Stability.** Extended search filters for US exchanges (NYSE, NASDAQ, AMEX). Fixed innerHTML crashes during analysis.
-* **v1.1.0: Mobile-First UX Refactor.** Completely modular "Puzzle" architecture with Auto-Collapse sidebar and theme synchronization.
-* **v10.8:** **Security & CSP Hardening.** Vercel üzerinden sunulan `Content-Security-Policy` (CSP) katmanı; FontAwesome, TradingView, Render API ve GitHub Frame izinleri için optimize edildi.
-* **v10.5:** **SRE Hardening & Zero-Trust CI.** `pytest-socket` tabanlı katı ağ izolasyonu (Network Block) ve asenkron sızıntı koruması eklendi. "Sadece İslami Analiz" modu için Puzzle mimarisi ve API maliyetlerini %90 düşüren **Erken Çıkış (Early Exit)** mantığı devreye alındı.
-* **v10.1:** **Free-Tier SRE & Ölçeklenebilirlik Optimizasyonu.** Vercel 10s Timeout limitleri için Upstash Redis tabanlı Asenkron Polling (HTTP 202 Job Queue) mimarisine geçildi.
-* **v10.0:** **Kurumsal Gözlemlenebilirlik ve PnL (Shadow Tracking).** Tamamen izole Supabase pg_cron tabanlı T+n sanal kâr/zarar ölçüm motoru ve `/metrics` Prometheus telemetri altyapısı kuruldu.
-* **v9.0:** **Yönlü Graf (LangGraph) Multi-Agent** kurgusuna geçildi! Bull vs Bear tartışma döngüleri, Devre Kesici (Circuit Breaker) kalkanı ve Shadow Deployment (Gölge Dağıtım) mekanizması ile sıfır riskli paralel geçiş operasyonu. Kapsamlı otonomi ve Fan-Out Fan-In veri toplayıcılar eklendi.
-* **v1.2.8:** Güvenli Yönetici Başlatma (Admin Bootstrap) ve Genişletilmiş JWT Yaşam Döngüsü yapılandırması.
-* **v1.2.5:** Yönetici yetki izolasyonu (Admin Bypass Fix) ve görsel bildirim katmanı eklendi.
-* **v1.2.0:** Landing page tasarımı yenilendi, UX akışları optimize edildi.
-* **v1.1.5:** Güvenlik katmanı (Behavioral Brake) iyileştirildi, loglama mekanizması güçlendirildi.
-* **v1.1.0:** Çoklu-ajan (CIO) mimarisi canlıya alındı.
 
 ---
 
@@ -73,17 +68,18 @@ Proje, **Monorepo** yapısında olup hem backend hem frontend tarafında modüle
 * **`/backend/engine/`**: LangGraph iş akışları, State yönetimi ve Optimizasyon motoru.
 * **`/backend/infrastructure/`**: Auth, LLM Factory, Redis Cache, Scheduler ve Limiter gibi temel yapı taşları.
 * **`/backend/services/`**: `ChatOrchestrator` gibi üst düzey iş mantığı sarmalları.
-* **`/backend/api/`**: FastAPI Router'lar ve Model tanımları.
+* **`/backend/api/`**: FastAPI Router'lar, Global Exception Handlers ve Correlation ID Middleware katmanı.
 
-### 🎨 Frontend (Vanilla JS)
+### 🎨 Frontend (Vanilla JS & ESM)
 
-* **`/frontend/js/core/`**: Uygulama durumu (`state.js`), i18n ve yapılandırma.
-* **`/frontend/js/network/`**: API istemcisi ve Supabase entegrasyonu.
-* **`/frontend/js/components/`**: `BaseComponent` tabanlı reactive Web Components (`<x-hero-cards>`, `<x-analysis-grid>`, `<x-analysis-table>`).
+* **`/frontend/js/core/`**: Reaktif durum yönetimi (`state.js`) ve Yüksek performanslı matematik motoru (`MathEngine.js`).
+* **`/frontend/js/network/`**: Dirençli `HttpClient` ve Supabase entegrasyonu.
+* **`/frontend/js/worker.js`**: Zero-copy (ArrayBuffer) veri transferi ile asenkron simülasyon hesaplamaları.
+* **`/frontend/js/components/`**: Olay tabanlı, modüler Web Bileşenleri.
 
 ### 🛠️ Tooling & DevOps
 
-* **`tests/`**: Pytest ve Puppeteer tabanlı otonom testler.
+* **`tests/`**: Pytest (Backend) ve Vitest (Frontend Unit & Integration) tabanlı otonom testler.
 * **`migrations/`**: Alembic ile versiyonlanmış veritabanı şeması.
 * **`brand_assets/`**: Kurumsal görsel kimlik kalkanı.
 
