@@ -16,6 +16,7 @@ import { renderHeatmap } from './components/HeatmapComponent.js';
 import { setupAuthModal, updateAuthUI } from './network/supabaseClient.js';
 import { initOnboardingWizard, getUserProfile, skipWizard } from './services/OnboardingWizard.js';
 import { checkServerHealth, runAnalysis } from './network/api.js';
+import { http } from './network/HttpClient.js';
 import { initTheme, toggleTheme, loadApiKeys, saveApiKeys, setupAutocomplete, showToast } from './utils.js';
 
 // ── Globals ──────────────────────────────────────────────────────────────

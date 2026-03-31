@@ -49,7 +49,6 @@ export class HttpClient {
             }
         }
         
-        let lastError = null;
         let attempt = 0;
 
         while (attempt <= this.maxRetries) {

@@ -329,7 +329,9 @@ export async function runMacroAnalysis(onChunk) {
                         const parsed = JSON.parse(dataStr);
                         if (parsed.chunk && onChunk) onChunk(parsed.chunk, false);
                         else if (parsed.error && onChunk) onChunk(`⚠️ **Hata:** ${parsed.error}`, true);
-                    } catch (e) { }
+                    } catch (e) {
+                        console.warn("Sessiz hata:", e);
+                    }
                 }
             }
         }
