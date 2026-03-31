@@ -16,7 +16,7 @@ import { renderHeatmap } from './components/HeatmapComponent.js';
 import { setupAuthModal, updateAuthUI } from './network/supabaseClient.js';
 import { initOnboardingWizard, getUserProfile, skipWizard } from './services/OnboardingWizard.js';
 import { checkServerHealth, runAnalysis } from './network/api.js';
-import { http } from './network/HttpClient.js';
+import { httpClient } from './network/HttpClient.js';
 import { initTheme, toggleTheme, loadApiKeys, saveApiKeys, setupAutocomplete, showToast } from './utils.js';
 
 // ── Globals ──────────────────────────────────────────────────────────────
@@ -319,7 +319,7 @@ async function loadEquityCurve() {
         const session = await window.SupabaseAuth?.getValidSession();
         if (!session) return;
         
-        const data = await http.get('/api/portfolio/history');
+        const data = await httpClient.get('/api/portfolio/history');
         if (data && data.length > 0) {
             const widget = document.getElementById("equity-curve-widget");
             widget?.classList.remove("hidden");

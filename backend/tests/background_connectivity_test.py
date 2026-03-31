@@ -2,6 +2,7 @@ import os
 import httpx
 import asyncio
 import jwt
+import pytest
 from datetime import datetime, timezone
 
 # --- CONFIGURATION ---
@@ -10,6 +11,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
 
+@pytest.mark.asyncio
 async def test_env_variables():
     print("📋 [1/5] Checking Environment Variables...")
     vars_to_check = {
@@ -25,6 +27,7 @@ async def test_env_variables():
         return False
     return True
 
+@pytest.mark.asyncio
 async def test_supabase_connectivity():
     print("\n🔗 [2/5] Testing Supabase REST Connectivity...")
     headers = {
@@ -51,6 +54,7 @@ async def test_supabase_connectivity():
     
     return success_count == len(tables)
 
+@pytest.mark.asyncio
 async def test_jwt_verification():
     print("\n🛡️ [3/5] Testing JWT Verification logic...")
     if not JWT_SECRET:
@@ -77,6 +81,7 @@ async def test_jwt_verification():
         print(f"  ❌ JWT Test Error: {str(e)}")
     return False
 
+@pytest.mark.asyncio
 async def test_yahoo_finance_search():
     print("\n📈 [4/5] Testing Yahoo Finance Egress (US vs TR)...")
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -102,6 +107,7 @@ async def test_yahoo_finance_search():
         except Exception as e:
             print(f"  ❌ TR Search (THYAO.IS): ERROR ({str(e)})")
 
+@pytest.mark.asyncio
 async def test_api_endpoints():
     print("\n🚀 [5/5] Checking Public API Health Endpoints...")
     # This assumes the server is running locally on 8000 or it tests the remote one

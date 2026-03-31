@@ -17,7 +17,16 @@
       ]
     },
     {
-      "source": "/frontend/(.*\\.(js|css|png|jpg|jpeg|gif|svg|woff2?))",
+      "source": "/frontend/(.*\\.(js|mjs))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/frontend/(.*\\.(css|png|jpg|jpeg|svg|woff2))",
       "headers": [
         {
           "key": "Cache-Control",

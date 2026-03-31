@@ -7,7 +7,7 @@
  * - Managed Caching (IndexedDB)
  */
 
-import { http } from './HttpClient.js';
+import { httpClient } from './HttpClient.js';
 import { MathEngine } from '../core/MathEngine.js';
 
 // ── Web Worker Management ──
@@ -59,7 +59,7 @@ export async function pollJobResult(jobId, pollingInterval = 3000) {
     while (attempts < maxAttempts) {
         attempts++;
         try {
-            const data = await http.get(`/api/status/${jobId}`);
+            const data = await httpClient.get(`/api/status/${jobId}`);
             
             if (data.status === "COMPLETED") return data.result;
             if (data.status === "ERROR") throw new Error(data.error || "Arkaplan görevinde sunucu hatası.");
@@ -81,9 +81,10 @@ window.pollJobResult = pollJobResult;
 // ═══════════════════════════════════════
 export async function checkServerHealth() {
     try {
-        const data = await http.get('/api/health');
+        const data = await httpClient.get('/api/health');
         return { online: true, message: data.message };
     } catch (e) {
+        console.error("Health check failed:", e);
         return { online: false, message: e.message || "Sunucuya ulaşılamıyor." };
     }
 }
@@ -185,7 +186,7 @@ export async function runAnalysis(payload, endpoint) {
 
             if (progressText) progressText.textContent = getLang() === "en" ? "Streaming from server..." : "Sunucudan akış bekleniyor...";
             
-            const response = await http.post(endpoint, { ...payload, tickers: tickersToFetch });
+            const response = await httpClient.post(endpoint, { ...payload, tickers: tickersToFetch });
             
             // HttpClient returns the raw response if it's a stream
             const reader = response.body.getReader();
@@ -207,7 +208,7 @@ export async function runAnalysis(payload, endpoint) {
                                 sseBuffer.push(item);
                                 triggerBatchUpdate();
                             }
-                        } catch (e) { /* ignore parse errors */ }
+                        } catch (e) { console.error("Parse hatası (ignore):", e); }
                     }
                 }
             }
@@ -304,7 +305,7 @@ export async function runMacroAnalysis(onChunk) {
     };
 
     try {
-        const response = await http.post('/api/analyze-macro', {
+        const response = await httpClient.post('/api/analyze-macro', {
             portfolio: portfolioData, api_key: apiKey,
             model: document.getElementById("model-select")?.value || "gemini-2.5-flash",
             lang: getLang()

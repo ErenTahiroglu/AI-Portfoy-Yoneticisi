@@ -209,5 +209,5 @@ export class HttpClient {
 }
 
 // Export singleton instance for global use
-export const http = new HttpClient();
-window.http = http;
+export const httpClient = new HttpClient();
+window.httpClient = httpClient;
