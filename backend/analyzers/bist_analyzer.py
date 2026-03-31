@@ -43,6 +43,12 @@ logger = logging.getLogger(__name__)
 # Yahoo Finance'te BIST hisseleri .IS soneki ile aranır
 BIST_SONEK = ".IS"
 
+# 🛡️ Global Inflation Cache (Process-wide to avoid redundant FRED calls)
+_global_inflation_cache = {
+    "data": None,
+    "last_fetch": 0
+}
+
 # Popüler BIST sembolleri (referans)
 POPULER_BIST = {
     "THYAO": "Türk Hava Yolları",
@@ -113,6 +119,9 @@ class HisseAnaliz(BaseAnalyzer):
         """Kısa alfanümerik kodlar → TEFAS fon kodu (örn: AKB, TP2, ZP8). 
         BIST hisseler minimum 4 karakter (AKSA, THYAO vb.)."""
         s = sembol.strip().upper().replace(".IS", "")
+        # KRİPTO KORUMASI: Bazı 3 harfli kriptoların fon sanılmasını engelle
+        if s in ["BTC", "ETH", "XRP", "SOL", "AVAX", "DOGX", "DOT", "ADA", "LTC"]:
+            return False
         if len(s) <= 3 and s[0].isalpha():
             return True
         return False
@@ -124,6 +133,15 @@ class HisseAnaliz(BaseAnalyzer):
     def _enflasyon_al(self):
         """FRED'den Türkiye CPI verisini TEK bir çağrıda alır.
         Hem yıllık enflasyon dict'ini hem aylık CPI DataFrame'ini tek seferde üretir."""
+        global _global_inflation_cache
+        current_time = time.time()
+        
+        # 🛡️ Cache Check: 1 saatlik önbellek
+        if _global_inflation_cache["data"] is not None and (current_time - _global_inflation_cache["last_fetch"] < 3600):
+            self.yillik_enf, self.aylik_cpi = _global_inflation_cache["data"]
+            logger.info("✅ Enflasyon verisi önbellekten alındı.")
+            return
+
         cpi = get_cached_cpi(
             "TURCPIALLMINMEI",
             start=datetime(self.yillar[0] - 1, 1, 1),
@@ -148,6 +166,10 @@ class HisseAnaliz(BaseAnalyzer):
             bugun_n = self.bugun.tz_convert(None)
             cutoff = (bugun_n - pd.DateOffset(days=730)).to_pydatetime()
             self.aylik_cpi = cpi[cpi.index >= cutoff]
+            
+            # Cache Update
+            _global_inflation_cache["data"] = (self.yillik_enf, self.aylik_cpi)
+            _global_inflation_cache["last_fetch"] = current_time
             logger.info("✅ Enflasyon verisi alındı (tek FRED çağrısı).\n")
         else:
             logger.warning(f"⚠️  FRED erişilemedi, tahmini değer kullanılacak ({VARSAYILAN_ENF}%).\n")

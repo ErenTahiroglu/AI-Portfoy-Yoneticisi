@@ -38,7 +38,7 @@ Kullanıcı arayüzden **"Portföyümü Analiz Et"** butonuna bastığında veri
 3. *Kimlik Doğrulama (Auth):* `verify_jwt` middleware'i, Supra Auth JWT tokenı doğrular ve kullanıcının oturumunun Redis **Blocklist**'te olup olmadığına bakar.
 4. *Önbellek Sorgulama (Cache):* Analiz sonucu talep edilmeden önce Redis Cache sorgulanır. Cache Miss olursa **Mutex Locking** devreye girerek Cache Stampede önlenir.
 5. *Analitik & AI Orkestrasyonu (`ai_agent.py`):*
-   * Sistem kullanıcının portföy kurgusunu alır.
+   * **Market Detection (Pazar Tespiti):** İstekler önce `data_nodes.py` süzgecinden geçer. ABD hisseleri (`AAPL`, `MSFT` vb.) ve popüler Kriptolar (`BTC`, `ETH` vb.) için ağır BİST analiz motoru bypass edilir (**Fast-Path**). 
    * **Dinamik Sağlayıcı (Multi-Provider):** Gelen `model_name` prefix'ine göre **Gemini** veya **Groq** (Llama/Mixtral) motorları dinamik sarmalanır.
    * Hassas değerler prompt öncesi **Maskelenir (PII Sanitization)**.
    * İçerikler `<news_item>` etiketleriyle beslenerek **Indirect Prompt Injection** engellenir.

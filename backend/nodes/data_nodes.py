@@ -20,10 +20,35 @@ async def market_data_node(state: GraphState) -> dict:
     
     logger.info(f"[DataNode - Market] Fetching real market data for {ticker}")
     
+    # ── Market Detection (Fast-Path) ──────────────────────────────────────────
+    t_clean = ticker.upper().strip()
+    is_crypto = "-USD" in t_clean or t_clean in ["BTC", "ETH", "SOL", "XRP"]
+    is_us = t_clean in ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META"] # Common US Stocks
+    
     try:
         from backend.analyzers.bist_analyzer import HisseAnaliz
         analyzer = HisseAnaliz()
-        # BIST_SONEK check is in HisseAnaliz._bist_sembol
+        
+        if is_crypto or is_us:
+             logger.info(f"[DataNode - Market] Using Fast-Path for {ticker} (Detected: {'Crypto' if is_crypto else 'US'})")
+             # Use simplified yahooquery fetch
+             from yahooquery import Ticker
+             yf_sym = t_clean if (is_us or "-USD" in t_clean) else f"{t_clean}-USD"
+             t = Ticker(yf_sym)
+             hist = t.history(period="1mo")
+             if hist is not None and not hist.empty:
+                  last_price = float(hist.iloc[-1]['close'])
+                  prev_price = float(hist.iloc[-2]['close']) if len(hist) > 1 else last_price
+                  degisim = ((last_price - prev_price) / prev_price) * 100
+                  return {
+                      "market_report": {
+                          "market_data": {"fiyat": last_price, "degisim": degisim, "para_birimi": "USD" if is_us or is_crypto else "₺"},
+                          "klines": [{"close": float(c)} for c in hist['close'].tail(20)],
+                          "performance": {"annual": 10.0, "monthly": 2.0} # Basic Fallback
+                      }
+                  }
+
+        # Standard BIST/TEFAS path
         res = analyzer.analiz_et(ticker)
         if res:
             return {
@@ -38,13 +63,8 @@ async def market_data_node(state: GraphState) -> dict:
                 }
             }
         
-        # Fallback for non-BIST (Simulated for US temporarily)
-        return {
-            "market_report": {
-                "market_data": {"fiyat": 100, "degisim": 2.5, "hacim": "Yüksek"},
-                "klines": [{"close": 98}, {"close": 99}, {"close": 100}] * 4
-            }
-        }
+        # Fallback for truly unknown
+        return {"market_report": {"error": f"{ticker} için veri alınamadı."}}
     except Exception as e:
         logger.error(f"[MarketNode] Fail: {e}")
         return {"market_report": {"error": str(e)}}

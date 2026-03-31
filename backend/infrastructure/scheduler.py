@@ -108,7 +108,9 @@ async def start_alert_scheduler():
         logger.warning("Autonomous Scheduler: Supabase kimlikleri eksik. Uyarı sistemi devre dışı.")
         return
 
-    logger.info("Autonomous Scheduler: Otonom tetikleyici aktif. 12 Saatte bir çalışacak.")
+    # 🛡️ Interval Config
+    INTERVAL_SECONDS = int(os.getenv("SCHEDULER_INTERVAL_SECONDS", "840")) # Default 14 min
+    logger.info(f"Autonomous Scheduler: Otonom tetikleyici aktif. {INTERVAL_SECONDS // 60} Dakikada bir çalışacak.")
 
     
     headers = {
@@ -130,7 +132,7 @@ async def start_alert_scheduler():
 
                 resp = await client.get(f"{SUPABASE_URL}/rest/v1/portfolios?select=user_id,tickers", headers=headers)
                 if resp.status_code != 200:
-                    await asyncio.sleep(43200)
+                    await asyncio.sleep(INTERVAL_SECONDS)
                     continue
                 
                 portfolios = resp.json()
@@ -197,6 +199,6 @@ async def start_alert_scheduler():
         except Exception as e:
             logger.error(f"Autonomous Scheduler Çöktü: {e}")
         
-        # 12 Saat bekle (43200 saniye)
-        logger.info("Autonomous Scheduler: Tarama bitti. Ukuya geçiliyor (12 Saat).")
-        await asyncio.sleep(43200)
+        # Bekle (Varsayılan 14 Dakika / 840 saniye)
+        logger.info(f"Autonomous Scheduler: Tarama bitti. Ukuya geçiliyor ({INTERVAL_SECONDS // 60} Dakika).")
+        await asyncio.sleep(INTERVAL_SECONDS)

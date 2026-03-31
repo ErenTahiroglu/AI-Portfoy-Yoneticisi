@@ -161,6 +161,7 @@ async def search_tickers(q: str = ""):
     # 1. Local Lookup with proper categorization
     us_popular = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "JPM", "V", "JNJ", "WMT", "PG", "MA", "UNH", "HD", "DIS", "BAC", "KO", "PEP", "NFLX", "INTC", "AMD", "CRM", "AVGO", "COST", "ABBV", "MRK", "TMO", "ACN", "LLY", "PYPL", "NKE", "ADBE", "CSCO", "ORCL", "TXN"]
     bist_popular = ["THYAO", "ASELS", "GARAN", "AKBNK", "YKBNK", "EREGL", "BIMAS", "SAHOL", "KCHOL", "SISE", "TUPRS", "FROTO", "TOASO", "TCELL", "PGSUS", "TAVHL", "EKGYO", "KOZAL", "SASA", "TTKOM", "ARCLK", "MGROS", "PETKM", "SOKM", "VESTL", "HALKB", "VAKBN", "GUBRF", "KOZAA", "ODAS", "KRDMD", "AEFES", "ENKAI", "DOHOL", "ISCTR", "ALARK"]
+    crypto_popular = ["BTC", "ETH", "XRP", "SOL", "ADA", "DOGE", "TRX", "DOT", "MATIC", "LTC", "SHIB", "AVAX", "LINK", "UNI", "BCH", "OP", "ARB", "XLM", "NEAR"]
     
     for ticker, name in POPULAR_TICKERS.items():
         if q in ticker.upper() or q in name.upper():
@@ -203,10 +204,11 @@ async def search_tickers(q: str = ""):
 
     # 4. Speculative TEFAS (As a last resort if strictly 3 letters and NOT found yet)
     if len(q) == 3 and q.isalpha() and q not in seen:
+        is_crypto = q in crypto_popular
         combined.append({
-            "symbol": q,
-            "name": f"{q} TEFAS Fonu (Olası)",
-            "exchDisp": "TEFAS"
+            "symbol": q if not is_crypto else f"{q}-USD",
+            "name": f"{q} TEFAS Fonu (Olası)" if not is_crypto else f"{q} Kripto Para",
+            "exchDisp": "TEFAS" if not is_crypto else "Crypto"
         })
 
     return combined[:12]
