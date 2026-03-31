@@ -87,6 +87,8 @@ pytest
 pytest-asyncio>=0.23.0
 pytest-socket
 alembic
+sqlalchemy
+psutil
 supabase
 
 yfinance

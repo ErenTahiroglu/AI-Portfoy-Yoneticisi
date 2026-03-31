@@ -21,7 +21,7 @@
       ]
     },
     {
-      "source": "/frontend/(.*\\.(js|mjs))",
+      "source": "/frontend/(.*)\\.(js|mjs)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -30,7 +30,7 @@
       ]
     },
     {
-      "source": "/frontend/(.*\\.(css|png|jpg|jpeg|svg|woff2))",
+      "source": "/frontend/(.*)\\.(css|png|jpg|jpeg|svg|woff2)",
       "headers": [
         {
           "key": "Cache-Control",

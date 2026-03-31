@@ -1,4 +1,4 @@
--- 🛡️ AI Portföy Yöneticisi: Eksik Tablo Kurulum Betiği
+-- 🛡️ AI Portföy Yöneticisi: Eksik Tablo Kurulum Betiği (v1.2.0)
 -- Bu betiği Supabase -> SQL Editor kısmına yapıştırıp çalıştırın.
 
 -- 1. User Settings Tablosu (Onboarding ve Bildirim Ayarları)

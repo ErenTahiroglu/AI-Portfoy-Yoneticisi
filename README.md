@@ -15,15 +15,19 @@ Bu proje, bulut bilişim sınırlarında (Free-Tier, 512MB RAM vb.) bile **%100 
 
 ### 🛡️ Üst Düzey Mimari Özellikler
 
-- **Offline-First PWA & Zero-Latency SWR (Stale-While-Revalidate):** 
+- **Offline-First PWA & Zero-Latency SWR (Stale-While-Revalidate):**
   Uygulama açılır açılmaz IndexedDB üzerinden en son veriyi anında hidratlar (hydration). Kullanıcı saniyenin onda biri süresinde arayüzü görürken, arka planda canlı veriler sessizce güncellenir ve non-blocking bir şekilde senkronize edilir.
-- **Web Worker `MathEngine`:** 
+
+- **Web Worker `MathEngine`:**
   Ağır Sharpe Oranı, Beta ve Volatilite hesaplamaları ana UI iş parçacığını (Main Thread) tıkamaması için Web Worker'lara devredilir. Veriler `Float64Array` ve `ArrayBuffer` aracılığıyla zero-copy (kopyalamasız) olarak aktarılır.
-- **Dirençli Ağ Katmanı (Resilient Network):** 
+
+- **Dirençli Ağ Katmanı (Resilient Network):**
   `HttpClient.js` exponential backoff (üstel geri çekilme) stratejisiyle çalışır. Geçici ağ kopmalarında otomatik yeniden denemeler yapar.
-- **Redis Tabanlı Idempotency:** 
+
+- **Redis Tabanlı Idempotency:**
   Kullanıcı veya ağ kaynaklı *Retry Storm* (yeniden deneme fırtınası) sorunlarını önlemek için, her request body'sinden bir hash (`Idempotency-Key`) oluşturulur. FastAPI katmanındaki `IdempotencyMiddleware`, duplicate istekleri Redis kilidi (lock) ile tespit eder ve 409 Conflict döndürerek backend'in gereksiz yere yorulmasını engeller.
-- **Memory-Safe Backend:** 
+
+- **Memory-Safe Backend:**
   Python tarafında Explicit GC (Garbage Collection), yfinance önbellek temizliği ve rate-limiting ile 512MB RAM sınırlarında OOM (Out Of Memory) hataları kesin olarak engellenir.
 
 ---
@@ -43,6 +47,8 @@ Projenin modernizasyonu 12 aşamalı devasa bir mimari evrimle gerçekleşmişti
 | **10** | **Idempotency** | Retry fırtınalarına karşı `IdempotencyMiddleware` ve payload-hash tabanlı benzersiz anahtarlama sistemi eklendi. |
 | **11** | **UI/UX & PWA Zırhı** | Mobil ekran taşmaları önlendi, PWA Pull-to-Refresh hataları giderildi ve tüm bileşenlere Empty State (Boş Durum) tasarımları eklendi. |
 | **12** | **Bug Hunt & Stabilization** | Son stabilizasyon turu yapıldı, DOM null referansları önlendi, sessiz hatalar temizlendi ve dokümantasyon tamamlandı. |
+| **13** | **ESLint & Vercel Hardening** | ESLint parsing hataları giderildi, Vercel regex yapılandırmaları normalize edildi ve deployment kararlılığı sağlandı. |
+| **14** | **Async & UI Final Polish** | `pytest-asyncio` entegrasyonu tamamlandı, UI üzerindeki Unicode escape hataları ve HttpClient asenkron problemleri çözüldü. |
 
 ---
 
