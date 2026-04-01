@@ -199,8 +199,8 @@ const TRANSLATIONS = {
     },
 };
 
-window.currentLang = currentLang;
 let currentLang = localStorage.getItem("lang") || "tr";
+window.currentLang = currentLang;
 
 window.t = t;
 function t(key) {

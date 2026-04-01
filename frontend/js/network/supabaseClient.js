@@ -4,12 +4,14 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = window.SUPABASE_URL;
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
 
-// İstemci Başlat (Client Init)
-let supabase = null;
+// İstemci Başlat (Client Init) — Singleton Pattern
+let supabase = window.supabaseInstance || null;
+
 try {
-    if (SUPABASE_URL && SUPABASE_URL !== "YOUR_SUPABASE_URL") {
+    if (!supabase && SUPABASE_URL && SUPABASE_URL !== "YOUR_SUPABASE_URL") {
         supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } else {
+        window.supabaseInstance = supabase;
+    } else if (!SUPABASE_URL || SUPABASE_URL === "YOUR_SUPABASE_URL") {
         console.warn("Supabase NOT Initialized: URL and Key placeholders still active.");
     }
 } catch (e) {

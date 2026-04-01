@@ -65,20 +65,24 @@ self.addEventListener('fetch', (event) => {
     // Static assets & Diğer her şey → Stale-While-Revalidate Stratejisi
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            const fetchPromise = fetch(event.request).then((networkResponse) => {
-                // Arkaplanda ağı kontrol et, yeniyse cache'i güncelle
-                if (networkResponse && networkResponse.status === 200) {
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, networkResponse.clone());
-                    });
-                }
-                return networkResponse;
-            }).catch(() => {
-                // Offline durumunda sessizce fail ol
-                console.warn("[SW] Offline: Ağa ulaşılamadı, Cache ile devam ediliyor.");
-            });
+            const fetchPromise = fetch(event.request)
+                .then((networkResponse) => {
+                    // Sadece başarılı ve geçerli yanıtları önbelleğe al
+                    if (networkResponse && networkResponse.ok) {
+                        const responseToCache = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
+                    return networkResponse;
+                })
+                .catch((err) => {
+                    console.warn(`[SW] Fetch Hatası: ${event.request.url}`, err);
+                    // Eğer cache varsa onu dön, yoksa bir hata Response'u dön ki 'Failed to convert value' hatası almayalım
+                    if (cachedResponse) return cachedResponse;
+                    throw err; // Veya new Response(...)
+                });
             
-            // Eğer Cache'de varsa ANINDA ver, yoksay fetchPromise'i (Ağı) bekle
             return cachedResponse || fetchPromise;
         })
     );
