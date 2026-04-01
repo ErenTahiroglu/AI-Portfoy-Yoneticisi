@@ -22,8 +22,17 @@ async def market_data_node(state: GraphState) -> dict:
     
     # ── Market Detection (Fast-Path) ──────────────────────────────────────────
     t_clean = ticker.upper().strip()
-    is_crypto = "-USD" in t_clean or t_clean in ["BTC", "ETH", "SOL", "XRP"]
-    is_us = t_clean in ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META"] # Common US Stocks
+    is_crypto = "-USD" in t_clean or t_clean in ["BTC", "ETH", "SOL", "XRP", "AVAX", "ADA", "DOT"]
+    
+    # Smarter US detection: 1-4 letters and not a known TEFAS/BIST 
+    # (BIST typically 5 letters without suffix in this context, or has .IS)
+    us_popular = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "T", "V", "MA", "INTC", "AMD"]
+    is_us = t_clean in us_popular or (len(t_clean) <= 4 and t_clean.isalpha() and not t_clean.endswith(".IS"))
+    
+    # 🛡️ Anti-False Positive: TEFAS funds are 3 letters. If it's 3 letters, we check if it's a known Crypto/US or default to BIST analyzer (which handles TEFAS)
+    if len(t_clean) == 3 and t_clean not in us_popular and t_clean not in ["BTC", "ETH", "SOL"]:
+        is_us = False # Let HisseAnaliz handle TEFAS funds properly
+    
     
     try:
         from backend.analyzers.bist_analyzer import HisseAnaliz

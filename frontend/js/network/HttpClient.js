@@ -13,7 +13,7 @@
 export class HttpClient {
     constructor(options = {}) {
         this.baseUrl = options.baseUrl || window.API_BASE || '';
-        this.timeout = options.timeout || 60000; // 60s default for Render cold starts
+        this.timeout = options.timeout || 120000; // 120s for complex TEFAS + AI analyses
         this.maxRetries = options.maxRetries || 3;
         this.defaultHeaders = {
             'Content-Type': 'application/json',

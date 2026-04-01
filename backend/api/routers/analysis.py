@@ -85,6 +85,9 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
     from backend.services.chat_orchestrator import orchestrator
 
     async def event_generator():
+        # 🛡️ Immediate Ping: Prevents Render/Browser connection timeout during heavy analysis
+        yield f"data: {json.dumps({'status': 'processing', 'message': 'Engine initialized. Analysis starting...'})}\n\n"
+        
         semaphore = asyncio.Semaphore(2) # Parallel limit for Free Tier
         async def run_graph_task(ticker):
             async with semaphore:
