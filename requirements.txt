@@ -101,7 +101,3 @@ langgraph
 prometheus-client
 prometheus-fastapi-instrumentator
 redis
-# Frontend/Maintenance Dependencies
-vitest
-puppeteer
-jsdom
