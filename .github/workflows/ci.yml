@@ -1,4 +1,4 @@
-name: Enterprise CI/CD Quality Gate
+name: CI/CD Test
 
 on:
   push:
