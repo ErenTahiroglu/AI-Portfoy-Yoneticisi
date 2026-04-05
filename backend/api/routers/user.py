@@ -2,7 +2,7 @@ import logging
 import os
 import httpx
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Header
 from backend.api.models import UserSettingsRequest, OnboardingProfileRequest
 from backend.infrastructure.auth import verify_jwt
 
@@ -367,7 +367,7 @@ async def get_portfolio(request: Request):
         return {"tickers": []}
 
 @router.post("/portfolio", dependencies=[Depends(verify_jwt)])
-async def save_portfolio(request: Request):
+async def save_portfolio(request: Request, x_shadow_test: str | None = Header(default=None)):
     """Kullanıcının portföyünü (tickers) güvenli bir şekilde kaydeder/günceller."""
     user_id = request.state.user.get("sub")
     if not user_id: 
@@ -400,7 +400,8 @@ async def save_portfolio(request: Request):
             "Prefer": "resolution=merge-duplicates" 
         }
 
-        if request.headers.get("x-shadow-test", "").lower() == "true":
+        is_shadow = getattr(x_shadow_test, "lower", lambda: "")() == "true" if x_shadow_test else False
+        if is_shadow:
             logger.info("🛡️ Shadow bypass triggered for portfolio save.")
             return {"status": "success", "shadow_bypassed": True}
 
