@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import Callable, Optional, Union, Any, SupportsIndex
+from typing import Callable, Optional, Any, SupportsIndex
 
 logger = logging.getLogger(__name__)
 
