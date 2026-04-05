@@ -23,7 +23,7 @@ from dataclasses import asdict
 import pandas as pd
 from io import StringIO
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 from backend.data.data_sources import (
     HAS_CURL, AV_KEY, req_lib,
@@ -77,8 +77,8 @@ class HisseAnaliz(BaseAnalyzer):
                     c_once = cpi[cpi.index.year == yil - 1]["CPIAUCSL"]
                     c_bu = cpi[cpi.index.year == yil]["CPIAUCSL"]
                     if isinstance(c_once, pd.Series) and isinstance(c_bu, pd.Series) and not c_once.empty and not c_bu.empty:
-                        once = c_once.iloc[-1]
-                        bu = c_bu.iloc[-1]
+                        once = cast(pd.Series, c_once).iloc[-1]
+                        bu = cast(pd.Series, c_bu).iloc[-1]
                         sonuc[yil] = ((float(bu) - float(once)) / float(once)) * 100
                     else:
                         sonuc[yil] = VARSAYILAN_ENF
@@ -261,9 +261,10 @@ class HisseAnaliz(BaseAnalyzer):
             if isinstance(y_kaynak, pd.DataFrame) and "Dividends" in y_kaynak.columns:
                 tem = y_kaynak["Dividends"]
                 if isinstance(tem, pd.Series):
-                    tem = tem[tem > 0]
-                    if not tem.empty:
-                        temettular = tem
+                    tem_s = cast(pd.Series, tem)
+                    tem_filtered = tem_s[tem_s > 0]
+                    if not cast(pd.Series, tem_filtered).empty:
+                        temettular = cast(pd.Series, tem_filtered)
         except Exception:
             pass
 

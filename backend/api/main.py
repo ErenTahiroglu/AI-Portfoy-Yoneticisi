@@ -9,6 +9,7 @@ import os
 import logging
 import asyncio
 import sys
+from typing import cast
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException
@@ -129,10 +130,10 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                 res_body = b""
                 if isinstance(response, StreamingResponse):
                     async for chunk in response.body_iterator:
-                        res_body += chunk
+                        res_body += cast(bytes, chunk)
                 else:
                     # Non-streaming responses like JSONResponse already have .body
-                    res_body = getattr(response, "body", b"")
+                    res_body = cast(bytes, getattr(response, "body", b""))
                 
                 new_response = Response(
                     content=res_body,

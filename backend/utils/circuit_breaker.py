@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, Union, Any
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class FastFailList(list):
         super().__init__(*args)
         self.cb = cb
     
-    def __getitem__(self, index):
+    def __getitem__(self, index: Union[int, slice]) -> Any:
         if self.cb and self.cb.state == "OPEN":
             return 0
         return super().__getitem__(index)

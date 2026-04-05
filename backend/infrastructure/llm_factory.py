@@ -1,4 +1,5 @@
 import os
+from pydantic import SecretStr
 from langchain_core.language_models.chat_models import BaseChatModel
 
 def get_quick_think_llm(model_name: str = "gemini-2.5-flash", temperature: float = 0.2, max_tokens: int = 500, api_key: str = None) -> BaseChatModel:
@@ -11,7 +12,7 @@ def get_quick_think_llm(model_name: str = "gemini-2.5-flash", temperature: float
     if "llama" in model_name.lower() or "mixtral" in model_name.lower():
         from langchain_groq import ChatGroq
         effective_api_key = api_key or os.getenv("GROQ_API_KEY") or ""
-        return ChatGroq(model=model_name, temperature=temperature, api_key=effective_api_key, max_tokens=max_tokens)
+        return ChatGroq(model=model_name, temperature=temperature, api_key=SecretStr(effective_api_key), max_tokens=max_tokens)
     
     from langchain_google_genai import ChatGoogleGenerativeAI
     return ChatGoogleGenerativeAI(
@@ -31,7 +32,7 @@ def get_deep_think_llm(model_name: str = "gemini-2.5-pro", temperature: float = 
     if "llama" in model_name.lower() or "mixtral" in model_name.lower():
         from langchain_groq import ChatGroq
         effective_api_key = api_key or os.getenv("GROQ_API_KEY") or ""
-        return ChatGroq(model=model_name, temperature=temperature, api_key=effective_api_key, max_tokens=max_tokens)
+        return ChatGroq(model=model_name, temperature=temperature, api_key=SecretStr(effective_api_key), max_tokens=max_tokens)
     
     from langchain_google_genai import ChatGoogleGenerativeAI
     return ChatGoogleGenerativeAI(

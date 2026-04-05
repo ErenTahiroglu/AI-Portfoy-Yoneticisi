@@ -3,7 +3,9 @@ import time
 import logging
 import os
 import psutil
+from typing import cast
 from unittest.mock import patch
+from backend.engine.agent_states import GraphState
 from langchain_community.chat_models import FakeListChatModel
 from backend.engine.graph import compile_trading_graph
 
@@ -43,7 +45,7 @@ async def test_full_analysis_performance_gate():
         }
         
         # Run graph
-        result = await graph.ainvoke(input_state)
+        result = await graph.ainvoke(cast(GraphState, input_state))
     
     end_time = time.time()
     end_mem = get_process_memory()
