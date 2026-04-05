@@ -19,7 +19,7 @@ import time
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from typing import Dict, Optional, Tuple, cast
+from typing import Dict, Optional, Tuple, cast, Any
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)

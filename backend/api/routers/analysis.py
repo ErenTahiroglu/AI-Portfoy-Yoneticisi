@@ -292,6 +292,4 @@ async def predict_api(ticker: str):
 @router.get("/options/{ticker}", dependencies=[Depends(limiter.check)])
 async def options_api(ticker: str, expiration: Optional[str] = None):
     # Options analyzer logic is now handled via BaseAnalyzer risk metrics
-    pass
-    res = await asyncio.to_thread(get_options_chain, ticker.upper(), expiration)
-    return res
+    return {"message": "Dinamik opsiyon zinciri şeması ana rapora entegre edildi.", "status": "integrated"}
