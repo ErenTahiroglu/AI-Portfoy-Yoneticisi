@@ -400,7 +400,7 @@ async def save_portfolio(request: Request, x_shadow_test: str | None = Header(de
             "Prefer": "resolution=merge-duplicates" 
         }
 
-        is_shadow = getattr(x_shadow_test, "lower", lambda: "")() == "true" if x_shadow_test else False
+        is_shadow = (x_shadow_test.lower() == 'true') if x_shadow_test else False
         if is_shadow:
             logger.info("🛡️ Shadow bypass triggered for portfolio save.")
             return {"status": "success", "shadow_bypassed": True}
