@@ -13,7 +13,7 @@ def spawn_background_job(background_tasks: BackgroundTasks, execute_func, *args,
     """
     job_id = str(uuid.uuid4())
     # Redis'te min 10 dakika yaşasın
-    redis_cache.cache_set(f"job:{job_id}:status", "PENDING", ttl=600)
+    redis_cache.cache_set(f"job:{job_id}:status", {"status": "PENDING"}, ttl=600)
     
     # Asenkron Wrapper
     background_tasks.add_task(_job_runner, job_id, execute_func, *args, **kwargs)
@@ -22,7 +22,7 @@ def spawn_background_job(background_tasks: BackgroundTasks, execute_func, *args,
 async def _job_runner(job_id: str, execute_func, *args, **kwargs):
     """Arkaplanda çalışan, hataları yakalayıp Redis'e sonucu gömen koruyucu işçi."""
     try:
-        redis_cache.cache_set(f"job:{job_id}:status", "RUNNING", ttl=600)
+        redis_cache.cache_set(f"job:{job_id}:status", {"status": "RUNNING"}, ttl=600)
         
         # Orijinal fonksiyonu çalıştır
         import inspect
@@ -33,29 +33,34 @@ async def _job_runner(job_id: str, execute_func, *args, **kwargs):
             result = await asyncio.to_thread(execute_func, *args, **kwargs)
             
         # Sonucu JSON formatında serialize et
-        redis_cache.cache_set(f"job:{job_id}:result", json.dumps(result), ttl=600)
-        redis_cache.cache_set(f"job:{job_id}:status", "COMPLETED", ttl=600)
+        redis_cache.cache_set(f"job:{job_id}:result", {"data": result}, ttl=600)
+        redis_cache.cache_set(f"job:{job_id}:status", {"status": "COMPLETED"}, ttl=600)
         logger.info(f"✅ Job {job_id} successfully completed in background.")
     except Exception as e:
         logger.error(f"❌ Job {job_id} failed: {e}")
-        redis_cache.cache_set(f"job:{job_id}:status", "ERROR", ttl=600)
-        redis_cache.cache_set(f"job:{job_id}:error", str(e), ttl=600)
+        redis_cache.cache_set(f"job:{job_id}:status", {"status": "ERROR"}, ttl=600)
+        redis_cache.cache_set(f"job:{job_id}:error", {"message": str(e)}, ttl=600)
 
 def get_job_status(job_id: str) -> dict:
     """
     Frontend tarafından 3 saniyede bir (Polling) çağrılacak uç nokta okuyucusu.
     """
-    status = redis_cache.cache_get(f"job:{job_id}:status") or "NOT_FOUND"
+    raw_status = redis_cache.cache_get(f"job:{job_id}:status")
+    status = "NOT_FOUND"
+    if isinstance(raw_status, dict):
+        status = raw_status.get("status", "NOT_FOUND")
+    
     response = {"job_id": job_id, "status": status}
     
     if status == "COMPLETED":
-        raw_res = redis_cache.cache_get(f"job:{job_id}:result")
-        if raw_res:
-             try:
-                 response["result"] = json.loads(raw_res)
-             except Exception:
-                 response["result"] = raw_res
+        res_data = redis_cache.cache_get(f"job:{job_id}:result")
+        if isinstance(res_data, dict):
+             response["result"] = res_data.get("data")
     elif status == "ERROR":
-        response["error"] = redis_cache.cache_get(f"job:{job_id}:error") or "Bilinmeyen hata"
+        err_data = redis_cache.cache_get(f"job:{job_id}:error")
+        if isinstance(err_data, dict):
+            response["error"] = err_data.get("message", "Bilinmeyen hata")
+        else:
+            response["error"] = "Bilinmeyen hata"
         
     return response

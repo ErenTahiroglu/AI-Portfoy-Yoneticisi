@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List
+from typing import List, cast
 from pydantic import BaseModel, Field
 from langgraph.graph import START, END, StateGraph
 
@@ -89,7 +89,11 @@ async def summarizer_node(state: GraphState) -> dict:
         try:
             llm = get_quick_think_llm(model_name="gemini-2.5-flash")
             structured_llm = llm.with_structured_output(SummarizedDebate)
-            res = await structured_llm.ainvoke(prompt)
+            res_data = await structured_llm.ainvoke(prompt)
+            if not res_data or not isinstance(res_data, SummarizedDebate):
+                raise ValueError("Model valid bir özet döndüremedi.")
+            
+            res = cast(SummarizedDebate, res_data)
             summary_text = f"[SIKIŞTIRILMIŞ BAĞLAM]\nMetrikler: {res.korunan_metrikler}\nBoğa: {res.boga_argumanlari}\nAyı: {res.ayi_argumanlari}\nUzlaşma: {res.uzlasma_noktalari}"
             logger.info("[PRUNING] State context strictly compressed via Pydantic Schema.")
             

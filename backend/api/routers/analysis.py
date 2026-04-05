@@ -48,7 +48,7 @@ async def check_double_submit(request: Request, payload_dict: dict, name: str):
     if existing:
         raise HTTPException(status_code=429, detail="Mükerrer işlem engellendi. Lütfen birkaç saniye bekleyin.")
         
-    await asyncio.to_thread(redis_cache.cache_set, key, 1, ttl=5) # 5 sny kilit
+    await asyncio.to_thread(redis_cache.cache_set, key, {"locked": True}, ttl=5) # 5 sny kilit
 
 @router.post("/analyze", dependencies=[Depends(limiter.check)])
 async def analyze_portfolio(request: AnalysisRequest, req: Request):

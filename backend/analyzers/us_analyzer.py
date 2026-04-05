@@ -70,13 +70,18 @@ class HisseAnaliz(BaseAnalyzer):
             end=datetime(self.bu_yil, 12, 31),
         )
 
-        if cpi is not None and not cpi.empty:
+        if isinstance(cpi, pd.DataFrame) and not cpi.empty:
             sonuc: Dict[int, float] = {}
             for yil in self.yillar:
                 try:
-                    once = cpi[cpi.index.year == yil - 1]["CPIAUCSL"].iloc[-1]
-                    bu   = cpi[cpi.index.year == yil    ]["CPIAUCSL"].iloc[-1]
-                    sonuc[yil] = ((bu - once) / once) * 100
+                    c_once = cpi[cpi.index.year == yil - 1]["CPIAUCSL"]
+                    c_bu = cpi[cpi.index.year == yil]["CPIAUCSL"]
+                    if isinstance(c_once, pd.Series) and isinstance(c_bu, pd.Series) and not c_once.empty and not c_bu.empty:
+                        once = c_once.iloc[-1]
+                        bu = c_bu.iloc[-1]
+                        sonuc[yil] = ((float(bu) - float(once)) / float(once)) * 100
+                    else:
+                        sonuc[yil] = VARSAYILAN_ENF
                 except Exception:
                     sonuc[yil] = VARSAYILAN_ENF
             self.yillik_enf = sonuc
@@ -247,14 +252,18 @@ class HisseAnaliz(BaseAnalyzer):
             # Şirket adı
             price_info = t.price
             if isinstance(price_info, dict) and sembol in price_info:
-                ad = price_info[sembol].get('shortName') or price_info[sembol].get('longName') or sembol
-                
+                s_info = price_info[sembol]
+                if isinstance(s_info, dict):
+                    ad = s_info.get('shortName') or s_info.get('longName') or sembol
+            
             # Temettü (Eğer Yahoo verisi varsa)
-            if kaynaklar["Yahoo"] is not None and "Dividends" in kaynaklar["Yahoo"].columns:
-                tem = kaynaklar["Yahoo"]["Dividends"]
-                tem = tem[tem > 0]
-                if not tem.empty:
-                    temettular = tem
+            y_kaynak = kaynaklar.get("Yahoo")
+            if isinstance(y_kaynak, pd.DataFrame) and "Dividends" in y_kaynak.columns:
+                tem = y_kaynak["Dividends"]
+                if isinstance(tem, pd.Series):
+                    tem = tem[tem > 0]
+                    if not tem.empty:
+                        temettular = tem
         except Exception:
             pass
 

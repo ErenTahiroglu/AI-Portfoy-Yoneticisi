@@ -79,7 +79,9 @@ async def news_api(request: NewsRequest):
         return {"news": []}
     try:
         from backend.data.news_fetcher import fetch_and_filter_news
-        data = fetch_and_filter_news(request.tickers, request.api_key, request.model, request.lang)
+        # Ensure api_key is str (Pyright hardening)
+        effective_key = request.api_key or ""
+        data = fetch_and_filter_news(request.tickers, effective_key, request.model, request.lang)
         return data
     except Exception as e:
         error_msg = str(e)

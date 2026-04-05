@@ -15,7 +15,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -127,8 +127,12 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
             # Standart JSON yanıtlarını cache'leriz
             if "application/json" in content_type:
                 res_body = b""
-                async for chunk in response.body_iterator:
-                    res_body += chunk
+                if isinstance(response, StreamingResponse):
+                    async for chunk in response.body_iterator:
+                        res_body += chunk
+                else:
+                    # Non-streaming responses like JSONResponse already have .body
+                    res_body = getattr(response, "body", b"")
                 
                 new_response = Response(
                     content=res_body,

@@ -99,7 +99,7 @@ async def billing_webhook(
     res = await _process_upgrade_db(user_id)
     
     # Event_ID'yi 24 saatliğine cache'e kaydet (Replay engellemek için)
-    cache_set(processed_key, "true", ttl=86400)
+    cache_set(processed_key, {"processed": True}, ttl=86400)
     
     logger.info(f"Billing Webhook: Successfully processed event {event_id} for user {user_id}")
     return res
