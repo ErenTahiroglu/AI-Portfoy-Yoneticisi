@@ -53,7 +53,7 @@ def get_job_status(job_id: str) -> dict:
         if raw_res:
              try:
                  response["result"] = json.loads(raw_res)
-             except:
+             except Exception:
                  response["result"] = raw_res
     elif status == "ERROR":
         response["error"] = redis_cache.cache_get(f"job:{job_id}:error") or "Bilinmeyen hata"

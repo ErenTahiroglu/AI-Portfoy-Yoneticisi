@@ -1,8 +1,11 @@
 # yfinance kaldırıldı, yahooquery kullanılacak
-from langchain_google_genai import ChatGoogleGenerativeAI
+import asyncio
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+
+from langchain_google_genai import ChatGoogleGenerativeAI
+from yahooquery import Ticker
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +25,7 @@ def filter_impactful_news(news_list: list, api_key: str, model_name: str = "gemi
             link = article.get('link', '')
             news_context.append(f"<news_item>\n[Başlık]: {title}\n[Özet]: {summary}\n[Link]: {link}\n</news_item>")
             
-        context_str = f"<news_list>\n" + "\n".join(news_context) + "\n</news_list>"
+        context_str = "<news_list>\n" + "\n".join(news_context) + "\n</news_list>"
         
         prompt = f"""
         Aşağıda bir veya birden fazla hisseye ait güncel haberlerin bir listesi bulunmaktadır.
@@ -51,9 +54,12 @@ def filter_impactful_news(news_list: list, api_key: str, model_name: str = "gemi
         response = llm.invoke(prompt)
         content = str(response.content).strip()
         
-        if content.startswith("```json"): content = content[7:]
-        elif content.startswith("```"): content = content[3:]
-        if content.endswith("```"): content = content[:-3]
+        if content.startswith("```json"):
+            content = content[7:]
+        elif content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
         
         return json.loads(content.strip())
     except Exception as e:
@@ -80,7 +86,6 @@ def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini
     
     def get_news(ticker):
         try:
-            from yahooquery import Ticker
             tkr = Ticker(ticker)
             n = tkr.news()
             if isinstance(n, list):
@@ -88,10 +93,9 @@ def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini
                     item['source_ticker'] = ticker
                 return n
             return []
-        except:
+        except Exception:
             return []
             
-    from concurrent.futures import TimeoutError
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(get_news, t) for t in valid_tickers]
         try:
@@ -112,9 +116,6 @@ def fetch_and_filter_news(tickers: list, api_key: str, model_name: str = "gemini
     filtered = filter_impactful_news(all_news, api_key, model_name, lang)
     return {"news": filtered}
 
-import asyncio
-from yahooquery import Ticker
-
 async def fetch_recent_news_async(ticker: str):
     """Verilen ticker için son 5 haberi asenkron ve timeout korumalı çeker."""
     def _fetch():
@@ -124,7 +125,7 @@ async def fetch_recent_news_async(ticker: str):
             if isinstance(res, list):
                 return res[:5]
             return []
-        except:
+        except Exception:
             return []
             
     try:

@@ -10,7 +10,6 @@ Adds columns to user_settings for dynamic transaction costs:
 """
 
 from alembic import op
-import sqlalchemy as sa
 
 # ── Revision metadata ──────────────────────────────────────────────────────────
 revision = "003_add_dynamic_rates_to_settings"

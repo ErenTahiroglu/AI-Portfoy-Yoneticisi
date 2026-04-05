@@ -1,5 +1,4 @@
 import os
-import sys
 import httpx
 import asyncio
 import logging
@@ -109,7 +108,8 @@ async def evaluate_pnl_dynamic(ticker, t0, old_dec, new_dec, comm_rate, slip_rat
         data = yf.Ticker(ticker)
         await asyncio.sleep(0.5) 
         hist = data.history(period="1d")
-        if hist.empty: return None, None
+        if hist.empty:
+            return None, None
             
         tn = Decimal(str(hist["Close"].iloc[-1]))
         

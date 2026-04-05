@@ -141,7 +141,7 @@ async def trader_node(state: GraphState) -> dict:
         content = str(response.content)
     
     return {
-        "trader_investment_plan": str(response.content)
+        "trader_investment_plan": content
     }
 
 async def aggressive_analyst_node(state: GraphState) -> dict:
@@ -191,8 +191,6 @@ async def portfolio_manager_node(state: GraphState) -> dict:
     
     {'RİSK TARTIŞMASI DEVRE KESİCİ (CIRCUIT BREAKER) TARAFINDAN ESNESİL (BYPASS) EDİLDİ NEDENİ: ' + cb_reason if skip_risk else 'AĞIR RİSK TARTIŞMASI SONUÇLARI: ' + chr(10).join(risk_debate)}
     """
-    
-    mode = "ISLAMIC-ONLY" if not state.get("check_financials", True) else "FULL-ANALYSIS"
     
     prompt = f"""
     [TÜM BAĞLAM VE GEÇMİŞ]:

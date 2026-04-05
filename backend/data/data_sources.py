@@ -13,10 +13,17 @@ Diğer modüller buradan import eder:
 # ══════════════════════════════════════════════════════════════════════════════
 import logging
 import time
+import os
+import ssl
+import warnings
+import urllib3
+import sys
+
+from backend.api.config import settings
+from backend.utils.circuit_breaker import CircuitBreaker, FastFailList
+
 if not logging.getLogger().handlers:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Python 3.12+ uyumu — distutils kaldırıldı, setuptools gerekli
@@ -29,12 +36,6 @@ except ImportError:
 # ══════════════════════════════════════════════════════════════════════════════
 # SSL BYPASS — tüm proje için tek noktadan yönetim
 # ══════════════════════════════════════════════════════════════════════════════
-import os
-import ssl
-import warnings
-import urllib3
-from backend.api.config import settings
-
 if not settings.SSL_VERIFY:
     os.environ["CURL_CA_BUNDLE"]     = ""
     os.environ["REQUESTS_CA_BUNDLE"] = ""
@@ -53,7 +54,6 @@ except ImportError:
     pass
 
 # ── curl_cffi oturumu (varsa) ─────────────────────────────────────────────
-
 try:
     from curl_cffi import requests as curl_req
     CURL_SESSION = curl_req.Session(verify=False, impersonate="chrome")
@@ -74,7 +74,6 @@ except ImportError:
     pass
 
 # ── API Anahtarları ───────────────────────────────────────────────────────
-from backend.api.config import settings
 AV_KEY = settings.ALPHA_VANTAGE_KEY or os.environ.get("ALPHA_VANTAGE_KEY", "")
 
 # ── Sabitler (paylaşılan) ─────────────────────────────────────────────────
@@ -82,9 +81,6 @@ ANALIZ_YIL_SAYI     = 5
 AYLIK_DONEMLER      = [1, 2, 3, 4, 5, 6, 9, 12, 24, 36, 60, 120]
 HAFTALIK_DONEMLER   = [1, 2, 4, 8, 13, 26]
 RETRY_SAYISI        = 4
-
-# ── Circuit Breaker & Sabitler ───────────────────────────────────────────
-from backend.utils.circuit_breaker import CircuitBreaker, FastFailList
 
 _RETRY_BEKLEME     = [5, 15, 30, 60]
 FIYAT_TOLERANS      = 2.0     # Kaynaklar arası max fark (%)
@@ -128,8 +124,6 @@ try:
 
     yq.Ticker = SafeTicker
     # Optional: also monkey-patch it in sys.modules just in case some place uses local import
-    import sys
     sys.modules["yahooquery"].Ticker = SafeTicker
 except Exception as e:
     logging.warning(f"yahooquery monkey-patch failed: {e}")
-

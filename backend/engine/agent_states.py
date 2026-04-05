@@ -1,15 +1,18 @@
-import operator
 from typing import Annotated, TypedDict, List, Dict, Any
 
 def merge_dicts(left: dict, right: dict) -> dict:
-    if not left: return right.copy()
-    if not right: return left.copy()
+    if not left:
+        return right.copy()
+    if not right:
+        return left.copy()
     left.update(right)
     return left
 
 def sliding_window_reducer(left: list, right: list) -> list:
-    if not left: left = []
-    if not right: right = []
+    if not left:
+        left = []
+    if not right:
+        right = []
     # Maximum 5 messages kept in RAM to prevent OOM
     combined = left + right
     return combined[-5:]
@@ -39,7 +42,7 @@ class GraphState(TypedDict):
     # Intent & Execution Metadata
     intent: str # "analyze" | "trade" | "unknown"
     execution_payload: Annotated[Dict[str, Any], merge_dicts]
-
+    
     # Final Analysis Result
     final_report: Annotated[Dict, merge_dicts]
 

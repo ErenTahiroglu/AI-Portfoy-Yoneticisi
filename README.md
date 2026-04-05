@@ -51,6 +51,17 @@ Projenin modernizasyonu 12 aşamalı devasa bir mimari evrimle gerçekleşmişti
 | **14** | **Async & UI Final Polish** | `pytest-asyncio` entegrasyonu tamamlandı, UI üzerindeki Unicode escape hataları ve HttpClient asenkron problemleri çözüldü. |
 | **15** | **Performans Optimizasyonu** | Kripto veri işleme süreçleri ve genel sistem performansı optimize edildi. |
 | **16** | **Otonom Portföy Rebalans** | Risk yönetimi ve otonom portföy optimizasyon algoritmaları eklendi. |
+| **17** | **Institutional Hardening** | Ruff linter temizliği, PEP8 uyumu ve backend mimari stabilizasyonu tamamlandı. |
+
+---
+
+## 🏗️ Mimari ve Kalite Standartları
+
+Bu proje, sadece çalışan bir kod değil, aynı zamanda **sürdürülebilir ve kurumsal** bir mühendislik ürünüdür:
+
+- **Ruff Cleanup (Institutional-Grade):** Tüm backend kod tabanı, modern Python ekosisteminin en hızlı linter'ı olan Ruff ile taranmış; tanımlanmamış değişkenler, hatalı formatlar ve potansiyel güvenlik açıkları (Wave 2) temizlenmiştir.
+- **Zero-Trust Sentinel:** GitHub Actions üzerinde çalışan otonom sağlık kontrolleri ve güvenlik tarayıcıları (TruffleHog) ile API anahtarı sızıntıları ve sistem çökmeleri anında tespit edilir.
+- **Shadow Test Architecture:** Canlı ortamda (Production) LLM analizlerini test etmek için `X-Shadow-Test` header'ı kullanılarak veritabanı kirliliği önlenir.
 
 ---
 

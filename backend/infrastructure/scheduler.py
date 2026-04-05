@@ -3,6 +3,7 @@ import os
 import httpx
 import logging
 from datetime import datetime, timezone
+from functools import wraps
 
 from backend.services.chat_orchestrator import orchestrator
 
@@ -12,8 +13,6 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-
-from functools import wraps
 
 def dlq_guard(func):
     """
@@ -141,7 +140,8 @@ async def start_alert_scheduler():
                     tickers = portfolio.get("tickers", [])
                     chat_id = user_settings_map.get(user_id, {}).get("telegram_chat_id")
                     
-                    if not user_id or not tickers: continue
+                    if not user_id or not tickers:
+                        continue
                     
                     portfolio_return_sum = 0.0
                     total_weight = 0.0

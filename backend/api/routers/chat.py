@@ -2,7 +2,6 @@ import logging
 import json
 from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from fastapi.responses import JSONResponse
 
 from backend.api.models import ChatRequest, NewsRequest
 from backend.infrastructure.limiter import limiter

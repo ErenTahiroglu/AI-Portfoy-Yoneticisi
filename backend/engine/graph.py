@@ -1,4 +1,7 @@
 import logging
+import re
+from typing import List
+from pydantic import BaseModel, Field
 from langgraph.graph import START, END, StateGraph
 
 from backend.engine.agent_states import GraphState
@@ -54,9 +57,6 @@ def route_circuit_breaker(state: GraphState) -> str:
     return "Aggressive Analyst"
 
 
-from pydantic import BaseModel, Field
-from typing import List
-
 class SummarizedDebate(BaseModel):
     korunan_metrikler: List[str] = Field(description="Rakamlar ve metrikler. Finansal veri yoksa boş liste döndürün.")
     boga_argumanlari: List[str] = Field(description="İyimser/Agresif tarafın temel argüman maddeleri")
@@ -64,7 +64,6 @@ class SummarizedDebate(BaseModel):
     uzlasma_noktalari: str = Field(description="Tarafların ortak kabullendiği piyasa gerçekleri")
 
 async def summarizer_node(state: GraphState) -> dict:
-    messages = state.get("messages", [])
     inv_hist = state.get("investment_debate_state", {}).get("history", [])
     risk_hist = state.get("risk_debate_state", {}).get("history", [])
     
@@ -109,8 +108,6 @@ async def summarizer_node(state: GraphState) -> dict:
             
             logger.error(f"Summarizer failed unexpectedly: {e}")
             break
-            logger.error(f"Summarizer failed unexpectedly: {e}")
-            break
 
     # If all retries failed, force HOLD state to prevent corrupted context propagation
     logger.error("🛑 Summarizer failed to validate schema after max retries. Forcing secure HOLD mode.")
@@ -120,7 +117,6 @@ async def summarizer_node(state: GraphState) -> dict:
         "turn_count": 0  # Reset for Risk debate
     }
 
-import re
 async def intent_detector_node(state: GraphState) -> dict:
     """
     🎯 [IntentNode]: Business Logic sığınağı.

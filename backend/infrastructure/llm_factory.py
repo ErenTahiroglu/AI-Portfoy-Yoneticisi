@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 from langchain_core.language_models.chat_models import BaseChatModel
 
 def get_quick_think_llm(model_name: str = "gemini-2.5-flash", temperature: float = 0.2, max_tokens: int = 500, api_key: str = None) -> BaseChatModel:

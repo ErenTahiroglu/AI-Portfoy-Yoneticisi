@@ -98,3 +98,4 @@ langgraph
 prometheus-client
 prometheus-fastapi-instrumentator
 redis
+ruff

@@ -6,7 +6,8 @@ def process_tickers_with_weights(raw_tickers: List[str]):
     for rt in raw_tickers:
         parts = rt.split(":")
         ticker = parts[0].strip().upper()
-        if not ticker: continue
+        if not ticker:
+            continue
         weight = 1.0
         if len(parts) > 1:
             try:

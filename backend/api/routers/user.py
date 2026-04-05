@@ -178,7 +178,8 @@ async def get_user_settings(request: Request):
             resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 data = resp.json()
-                if data: return data[0]
+                if data:
+                    return data[0]
         return {"telegram_chat_id": "", "risk_tolerance": "Orta", "commission_rate": 0.002, "slippage_rate": 0.001}
     except Exception as e:
         logger.error(f"User settings fetch failed: {e}")
@@ -220,18 +221,21 @@ async def update_user_settings(settings: UserSettingsRequest, request: Request):
                 raise HTTPException(status_code=500, detail=f"DB Error: {resp.text}")
         return {"status": "success"}
     except Exception as e:
-        if isinstance(e, HTTPException): raise e
+        if isinstance(e, HTTPException):
+            raise e
         logger.error(f"User settings update failed: {e}")
         raise HTTPException(status_code=500, detail=f"DB Error: {e}")
 
 @router.get("/paper-trades", dependencies=[Depends(verify_jwt)])
 async def get_paper_trades(request: Request):
     user = getattr(request.state, "user", None)
-    if not user or "sub" not in user: raise HTTPException(status_code=401, detail="Unauthorized")
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     user_id = user["sub"]
     supa_url = os.getenv('SUPABASE_URL', '')
     supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    if not supa_url or not supa_key: return []
+    if not supa_url or not supa_key:
+        return []
 
     url = f"{supa_url}/rest/v1/paper_trades?user_id=eq.{user_id}&order=timestamp.desc&limit=50"
     headers = { "apikey": supa_key, "Authorization": f"Bearer {supa_key}" }
@@ -239,7 +243,8 @@ async def get_paper_trades(request: Request):
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(url, headers=headers)
-            if resp.status_code == 200: return resp.json()
+            if resp.status_code == 200:
+                return resp.json()
         return []
     except Exception as e:
         logger.error(f"Paper trades fetch failed: {e}")
@@ -249,11 +254,13 @@ async def get_paper_trades(request: Request):
 async def get_portfolio_history(request: Request):
     """Kullanıcının geçmiş portföy snapshot verilerini (son 30 gün) getirir."""
     user = getattr(request.state, "user", None)
-    if not user or "sub" not in user: raise HTTPException(status_code=401, detail="Unauthorized")
+    if not user or "sub" not in user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     user_id = user["sub"]
     supa_url = os.getenv('SUPABASE_URL', '')
     supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    if not supa_url or not supa_key: return []
+    if not supa_url or not supa_key:
+        return []
 
     url = f"{supa_url}/rest/v1/portfolio_snapshots?user_id=eq.{user_id}&order=timestamp.desc&limit=30"
     headers = { "apikey": supa_key, "Authorization": f"Bearer {supa_key}" }
@@ -282,7 +289,7 @@ async def logout(request: Request):
              from backend.infrastructure.redis_cache import cache_set
              # Token'ı 24 Saatliğine kara listeye al (Max TTL simülasyonu)
              cache_set(f"jwt_blacklist:{token}", "true", ttl=86400)
-             logger.info(f"User JWT blacklisted successfully on logout.")
+             logger.info("User JWT blacklisted successfully on logout.")
         except ImportError:
              logger.warning("Redis support missing, token not listed.")
              
@@ -350,7 +357,8 @@ async def get_portfolio(request: Request):
 
     supa_url = os.getenv('SUPABASE_URL', '')
     supa_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    if not supa_url or not supa_key: return {"tickers": []}
+    if not supa_url or not supa_key:
+        return {"tickers": []}
 
     url = f"{supa_url}/rest/v1/portfolios?user_id=eq.{user_id}"
     headers = { "apikey": supa_key, "Authorization": f"Bearer {supa_key}" }
@@ -360,7 +368,8 @@ async def get_portfolio(request: Request):
             resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 data = resp.json()
-                if data: return data[0]
+                if data:
+                    return data[0]
         return {"tickers": []}
     except Exception as e:
         logger.error(f"Portfolio fetch failed: {e}")
@@ -420,5 +429,6 @@ async def save_portfolio(request: Request, x_shadow_test: str | None = Header(de
                     return {"status": "success"}
                 raise HTTPException(status_code=500, detail="Database write failed")
     except Exception as e:
-        if isinstance(e, HTTPException): raise e
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=400, detail=str(e))

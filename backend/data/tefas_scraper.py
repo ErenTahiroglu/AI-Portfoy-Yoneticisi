@@ -12,6 +12,7 @@ import pandas as pd
 import datetime
 import gc
 import time
+import threading
 from curl_cffi import requests
 from bs4 import BeautifulSoup
 
@@ -69,14 +70,17 @@ class TefasScraper:
                         clean_text = soup.get_text(separator=' ', strip=True)
                         if "WAF" in clean_text or "Cloudflare" in clean_text:
                             logger.warning(f"TEFAS WAF Block detected for {fonkod} (Attempt {attempt+1}/3)")
-                        if attempt == 2: return []
+                        if attempt == 2:
+                            return []
                 else:
                     logger.warning(f"HTTP Error {response.status_code} for {fonkod} (Attempt {attempt+1}/3)")
-                    if attempt == 2: return []
+                    if attempt == 2:
+                        return []
                     
             except Exception as e:
                 logger.error(f"Chunk fetch error for {fonkod} (Attempt {attempt+1}/3): {e}")
-                if attempt == 2: return []
+                if attempt == 2:
+                    return []
             
             # Geri çekilme (Backoff)
             time.sleep(1 * (attempt+1))
@@ -162,7 +166,6 @@ class TefasScraper:
         
         return df[["Close"]]
 
-import threading
 _tefas_lock = threading.Lock()
 
 def get_tefas_data_sync(fonkod: str, start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:

@@ -67,7 +67,7 @@ def _get_single_stock_data(ticker):
         interest_income = abs(interest_income)
         
         total_assets, total_debt, bal_date = 0.0, 0.0, "Bilinmiyor"
-        cash, st_investments, receivables = 0.0, 0.0, 0.0
+        cash, st_investments = 0.0, 0.0
         
         for _, row in bal.iterrows():
             ast = get_val(row, ['TotalAssets'])

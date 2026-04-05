@@ -9,7 +9,9 @@ export default defineConfig({
     exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
     coverage: {
       provider: 'v8',
+      reporter: ['text', 'json', 'html'],
       include: ['frontend/js/**/*.js'],
+      exclude: ['frontend/js/vendor/**', 'frontend/tests/**'],
     },
   },
   resolve: {

@@ -10,8 +10,6 @@ Supabase'deki user_settings tablosuna onboarding wizard verisini tutacak iki sü
 """
 
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB
 
 # ── Revision metadata ──────────────────────────────────────────────────────────
 revision = "001_add_onboarding_to_user_settings"

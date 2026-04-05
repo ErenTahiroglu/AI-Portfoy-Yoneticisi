@@ -14,6 +14,8 @@ import json
 import logging
 import os
 import time
+import httpx
+import threading
 from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
@@ -25,7 +27,6 @@ logger = logging.getLogger(__name__)
 _LOCAL: dict = {}
 
 # ── Standard Redis (TCP) & Upstash (REST) Client ───────────────────────────
-import httpx
 try:
     import redis
 except ImportError:
@@ -153,7 +154,8 @@ def cache_delete(key: str) -> None:
         if _redis_mode == "standard" and _REDIS_CONN:
             try:
                 _REDIS_CONN.delete(key)
-            except Exception: pass
+            except Exception:
+                pass
         elif _redis_mode == "upstash" and _UPSTASH_URL and _SESSION:
             try:
                 _SESSION.get(f"{_UPSTASH_URL}/del/{key}", headers=_upstash_headers())
@@ -175,7 +177,6 @@ def cache_close() -> None:
             pass
 
 # ── Cache Stampede (İzdiham) Koruması ────────────────────────────────────
-import threading
 _locks = {}
 _lock_access = threading.Lock()
 

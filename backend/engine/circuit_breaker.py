@@ -40,7 +40,7 @@ def evaluate_risk_circuit_breaker(state: GraphState) -> str:
         beta = float(fin_data.get("beta", 1.0) or 1.0)
         if should_bypass and beta > 2.0:
             should_bypass = False
-            reason = f"Piyasa korelasyonu (Beta > 2.0) son derece yüksek olan volatil bir varlık. Risk Tartışması tetikleniyor."
+            reason = "Piyasa korelasyonu (Beta > 2.0) son derece yüksek olan volatil bir varlık. Risk Tartışması tetikleniyor."
             
         state["skip_risk_debate"] = should_bypass
         state["circuit_breaker_reason"] = reason
