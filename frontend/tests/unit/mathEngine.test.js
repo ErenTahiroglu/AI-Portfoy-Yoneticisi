@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MathEngine } from '../../frontend/js/core/MathEngine.js';
+import { MathEngine } from '../../js/core/MathEngine.js';
 
 describe('MathEngine Core Tests', () => {
     describe('Precision Helpers', () => {

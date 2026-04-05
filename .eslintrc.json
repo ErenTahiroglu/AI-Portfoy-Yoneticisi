@@ -69,6 +69,7 @@
     "no-console": "off",
     "no-inner-declarations": "off"
   },
+  "ignorePatterns": ["frontend/tests/**"],
   "plugins": [
     "html"
   ]

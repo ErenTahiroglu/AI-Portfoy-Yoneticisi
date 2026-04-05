@@ -20,7 +20,7 @@ if (!global.crypto) {
     vi.stubGlobal('crypto', crypto);
 }
 
-import { fmtNum, colorClass, encryptApiKey, decryptApiKey } from '../../frontend/js/utils.js';
+import { fmtNum, colorClass, encryptApiKey, decryptApiKey } from '../../js/utils.js';
 
 describe('Utils.js Logic Tests', () => {
   describe('fmtNum', () => {

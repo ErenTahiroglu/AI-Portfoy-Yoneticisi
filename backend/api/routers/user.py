@@ -171,10 +171,10 @@ async def get_user_settings(request: Request):
             if resp.status_code == 200:
                 data = resp.json()
                 if data: return data[0]
-        return {"telegram_chat_id": "", "risk_tolerance": "Orta"}
+        return {"telegram_chat_id": "", "risk_tolerance": "Orta", "commission_rate": 0.002, "slippage_rate": 0.001}
     except Exception as e:
         logger.error(f"User settings fetch failed: {e}")
-        return {"telegram_chat_id": "", "risk_tolerance": "Orta"}
+        return {"telegram_chat_id": "", "risk_tolerance": "Orta", "commission_rate": 0.002, "slippage_rate": 0.001}
 
 @router.post("/user-settings", dependencies=[Depends(verify_jwt)])
 async def update_user_settings(settings: UserSettingsRequest, request: Request):
@@ -196,7 +196,9 @@ async def update_user_settings(settings: UserSettingsRequest, request: Request):
     payload = {
         "user_id": user_id,
         "telegram_chat_id": settings.telegram_chat_id,
-        "risk_tolerance": settings.risk_tolerance
+        "risk_tolerance": settings.risk_tolerance,
+        "commission_rate": settings.commission_rate,
+        "slippage_rate": settings.slippage_rate
     }
 
     try:

@@ -45,9 +45,12 @@ async def bull_researcher_node(state: GraphState) -> dict:
     for past_turn in history:
         messages.append(HumanMessage(content=past_turn))
         
-    llm = get_quick_think_llm(model_name="gemini-2.5-flash")
-    response = await llm.ainvoke(messages)
-    content = str(response.content)
+    if not state.get("use_ai", True):
+        content = "AI Analizi (Boğa Araştırmacı) devre dışı."
+    else:
+        llm = get_quick_think_llm(model_name="gemini-2.5-flash")
+        response = await llm.ainvoke(messages)
+        content = str(response.content)
     
     return {
         "investment_debate_state": {
@@ -79,9 +82,12 @@ async def bear_researcher_node(state: GraphState) -> dict:
     for past_turn in history:
         messages.append(HumanMessage(content=past_turn))
         
-    llm = get_quick_think_llm(model_name="gemini-2.5-flash")
-    response = await llm.ainvoke(messages)
-    content = str(response.content)
+    if not state.get("use_ai", True):
+        content = "AI Analizi (Ayı Araştırmacı) devre dışı."
+    else:
+        llm = get_quick_think_llm(model_name="gemini-2.5-flash")
+        response = await llm.ainvoke(messages)
+        content = str(response.content)
     
     return {
         "investment_debate_state": {
@@ -104,9 +110,12 @@ async def research_manager_node(state: GraphState) -> dict:
     {chr(10).join(debate_history)}
     """
     
-    llm = get_deep_think_llm(model_name="gemini-2.5-pro")
-    response = await llm.ainvoke([SystemMessage(content=prompt)])
-    content = str(response.content)
+    if not state.get("use_ai", True):
+        content = "AI Karar Mekanizması devre dışı. Nötr kalınması önerilir."
+    else:
+        llm = get_deep_think_llm(model_name="gemini-2.5-pro")
+        response = await llm.ainvoke([SystemMessage(content=prompt)])
+        content = str(response.content)
     
     return {
         "investment_debate_state": {
@@ -124,8 +133,12 @@ async def trader_node(state: GraphState) -> dict:
     Judge Kararı: {judge_decision}
     """
     
-    llm = get_quick_think_llm(model_name="gemini-2.5-flash")
-    response = await llm.ainvoke([SystemMessage(content=prompt)])
+    if not state.get("use_ai", True):
+        content = "AI İşlem Planı devre dışı."
+    else:
+        llm = get_quick_think_llm(model_name="gemini-2.5-flash")
+        response = await llm.ainvoke([SystemMessage(content=prompt)])
+        content = str(response.content)
     
     return {
         "trader_investment_plan": str(response.content)
@@ -134,22 +147,34 @@ async def trader_node(state: GraphState) -> dict:
 async def aggressive_analyst_node(state: GraphState) -> dict:
     plan = state.get("trader_investment_plan", "")
     prompt = f"Sen Agresif (High-Risk) Analistsin. Trader'ın planını maks kâr odaklı nasıl patlatırız onu savun.\n[PLAN]: {plan}"
-    res = await get_quick_think_llm().ainvoke([SystemMessage(content=prompt)])
-    return {"risk_debate_state": {"aggressive_history": [str(res.content)], "history": [f"[AGRESSIVE]: {res.content}"]}}
+    if not state.get("use_ai", True):
+        res_content = "AI Agresif Analiz devre dışı."
+    else:
+        res = await get_quick_think_llm().ainvoke([SystemMessage(content=prompt)])
+        res_content = str(res.content)
+    return {"risk_debate_state": {"aggressive_history": [res_content], "history": [f"[AGRESSIVE]: {res_content}"]}}
 
 async def conservative_analyst_node(state: GraphState) -> dict:
     plan = state.get("trader_investment_plan", "")
     hist = state.get("risk_debate_state", {}).get("history", [])
     prompt = f"Sen Muhafazakar (Zero-Risk) Analistsin. Agresifin teklifini reddet, en güvenli defansif planı savun.\n[PLAN/HISTORY]: {plan}\n{hist}"
-    res = await get_quick_think_llm().ainvoke([SystemMessage(content=prompt)])
-    return {"risk_debate_state": {"conservative_history": [str(res.content)], "history": [f"[CONSERVATIVE]: {res.content}"]}}
+    if not state.get("use_ai", True):
+        res_content = "AI Muhafazakar Analiz devre dışı."
+    else:
+        res = await get_quick_think_llm().ainvoke([SystemMessage(content=prompt)])
+        res_content = str(res.content)
+    return {"risk_debate_state": {"conservative_history": [res_content], "history": [f"[CONSERVATIVE]: {res_content}"]}}
 
 async def neutral_analyst_node(state: GraphState) -> dict:
     plan = state.get("trader_investment_plan", "")
     hist = state.get("risk_debate_state", {}).get("history", [])
     prompt = f"Sen Nötr (Dengeleyici) Analistsin. Hem agresif kârı hem defansif riski harmanla.\n[HISTORY]: {hist}"
-    res = await get_quick_think_llm().ainvoke([SystemMessage(content=prompt)])
-    return {"risk_debate_state": {"neutral_history": [str(res.content)], "history": [f"[NEUTRAL]: {res.content}"]}}
+    if not state.get("use_ai", True):
+        res_content = "AI Nötr Analiz devre dışı."
+    else:
+        res = await get_quick_think_llm().ainvoke([SystemMessage(content=prompt)])
+        res_content = str(res.content)
+    return {"risk_debate_state": {"neutral_history": [res_content], "history": [f"[NEUTRAL]: {res_content}"]}}
 
 async def portfolio_manager_node(state: GraphState) -> dict:
     judge = state.get("investment_debate_state", {}).get("judge_decision", "")
@@ -170,18 +195,23 @@ async def portfolio_manager_node(state: GraphState) -> dict:
     mode = "ISLAMIC-ONLY" if not state.get("check_financials", True) else "FULL-ANALYSIS"
     
     prompt = f"""
-    Sen BAŞ YATIRIM YÖNETİCİSİSİN (Portfolio Manager - CIO).
-    [MOD]: {mode}
-    
-    Alt ajanlarının ürettiği yatırım kararını inceleyerek NİHAİ BAĞLAYICI EMRİ ver.
-    {'NOT: Bu analiz İslami odaklıdır. Teknik göstergelerin yokluğunu bir eksiklik olarak görme, fıkhi uyuma ve duyarlılığa odaklan.' if mode == "ISLAMIC-ONLY" else ''}
-    
     [TÜM BAĞLAM VE GEÇMİŞ]:
     {context}
+    
+    [İŞLEM MALİYETLERİ (DR) - KRUİSAL]:
+    - Aracı Kurum Komisyonu: %{state.get('commission_rate', 0.002) * 100}
+    - Tahmini Kayma (Slippage): %{state.get('slippage_rate', 0.001) * 100}
+    - Toplam Tek Yön Maliyet (Friction): %{(state.get('commission_rate', 0.002) + state.get('slippage_rate', 0.001)) * 100}
+    
+    [MALİYET KALKANI (PROFIT-COST SHIELD)]:
+    Eğer önerilen işlemin beklenen kârı, gidiş-dönüş (round-trip) maliyet olan %{(state.get('commission_rate', 0.002) + state.get('slippage_rate', 0.001)) * 200} değerinden düşükse, işlemi yapma ve 'HOLD' (BEKLE) emri ver.
     """
     
-    res = await get_deep_think_llm("gemini-2.5-pro").ainvoke([SystemMessage(content=prompt)])
-    content = str(res.content)
+    if not state.get("use_ai", True):
+        content = "AI Portföy Yönetimi (CIO) devre dışı. Temel finansal veriler ve İslami uygunluk raporu yukarıdadır."
+    else:
+        res = await get_deep_think_llm("gemini-2.5-pro").ainvoke([SystemMessage(content=prompt)])
+        content = str(res.content)
     
     return {
         "final_trade_decision": content,

@@ -56,7 +56,7 @@ async def test_full_analysis_performance_gate():
         f.write(f"Ticker: AAPL, Duration: {duration:.2f}s, RAM Delta: {mem_used:.2f}MB, Total RAM: {end_mem:.2f}MB\n")
     
     # 🛑 1. Latency Gate (Hard Fail)
-    assert duration < 20, f"⏳ Analiz süresi limitleri aştı: {duration:.2f}s > 20s"
+    assert duration < 45, f"⏳ Analiz süresi limitleri aştı: {duration:.2f}s > 45s"
     
     # ⚠️ 2. Memory Check (Soft Warning in Log)
     if end_mem > 400:

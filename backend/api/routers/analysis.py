@@ -67,13 +67,24 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
 
     # Auth for Token Logging & Quota check
     user_id = None
+    comm_rate = 0.002
+    slip_rate = 0.001
+    
     auth_header = req.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
         if SUPABASE_JWT_SECRET:
             try:
+                # 1. Decode & Verify
                 payload = jwt.decode(token, SUPABASE_JWT_SECRET, algorithms=["HS256"], options={"verify_aud": True}, audience="authenticated")
                 user_id = payload.get("sub")
+                
+                # 2. Fetch User Settings for Dynamic Rates
+                from backend.api.routers.user import get_user_settings
+                settings = await get_user_settings(req)
+                comm_rate = settings.get("commission_rate", 0.002)
+                slip_rate = settings.get("slippage_rate", 0.001)
+
                 if request.use_ai:
                      from backend.api.dependencies import check_llm_quota
                      await check_llm_quota(req, payload=payload)
@@ -100,7 +111,10 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
                         "lang": request.lang,
                         "user_id": user_id,
                         "check_financials": request.check_financials,
-                        "check_islamic": request.check_islamic
+                        "check_islamic": request.check_islamic,
+                        "use_ai": request.use_ai,
+                        "commission_rate": comm_rate,
+                        "slippage_rate": slip_rate
                     }
                     # Synchronized Bridge: Direct ainvoke
                     result = await orchestrator.ainvoke(input_state)
@@ -110,18 +124,28 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
                 except Exception as e:
                     return ticker, None, e
 
-        tasks = [asyncio.create_task(run_graph_task(t)) for t in parsed_tickers]
+        pending = [asyncio.create_task(run_graph_task(t)) for t in parsed_tickers]
         try:
-            for coro in asyncio.as_completed(tasks):
+            while pending:
                 if await req.is_disconnected():
-                    for t in tasks: t.cancel()
+                    for t in pending:
+                        t.cancel()
                     break
-                ticker, res, err = await coro
-                if err:
-                    yield f"data: {json.dumps({'ticker': ticker, 'error': str(err)})}\n\n"
-                else:
-                    res["weight"] = weights_map.get(ticker, 1.0)
-                    yield f"data: {json.dumps(res)}\n\n"
+
+                done, pending = await asyncio.wait(pending, timeout=10.0, return_when=asyncio.FIRST_COMPLETED)
+                
+                if not done:
+                    # 🛡️ Anti-Timeout Ping (Heartbeat) for mobile Safari and Vercel
+                    yield f"data: {json.dumps({'status': 'ping', 'message': 'Engine working...'})}\n\n"
+                    continue
+                
+                for task in done:
+                    ticker, res, err = task.result()
+                    if err:
+                        yield f"data: {json.dumps({'ticker': ticker, 'error': str(err)})}\n\n"
+                    else:
+                        res["weight"] = weights_map.get(ticker, 1.0)
+                        yield f"data: {json.dumps(res)}\n\n"
         except Exception as e:
             logger.error(f"Graph SSE Error: {e}")
         finally:

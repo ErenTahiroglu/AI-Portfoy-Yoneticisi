@@ -75,43 +75,51 @@ Projenin modernizasyonu 12 aşamalı devasa bir mimari evrimle gerçekleşmişti
 
 ## 🚀 Hızlı Başlangıç
 
-### Gereksinimler
-- Node.js (v18+)
-- Python 3.10+
-- Redis Server (yerel veya bulut)
+Sistemi ayağa kaldırmak için iki farklı yöntem tercih edebilirsiniz: Docker ile tam izole kurulum veya yerel cihazınızda manuel kurulum.
 
-### 1. Backend Kurulumu
+### Seçenek 1: Docker ile Kurulum (Önerilen)
+Sistemde Docker kuruluysa tek bir komutla hem backend, hem frontend, hem de Redis önbelleğini ayağa kaldırabilirsiniz.
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# Repo'yu klonlayın ve kök dizine gidin
+# Çevresel değişken örneğini kopyalayın ve içini doldurun
+cp .env.example .env
 
-# Çevresel değişkenleri ayarlayın
+# Container'ları arka planda inşa edip çalıştırın
+docker-compose up --build -d
+```
+Sistem ayağa kalktıktan sonra tarayıcınızdan `http://localhost:3000` adresine giderek arayüze ulaşabilirsiniz.
+
+### Seçenek 2: Manuel (Local) Kurulum
+
+#### 1. Backend Kurulumu (Python & FastAPI)
+```bash
+# Geliştirme ortamı oluşturun ve aktifleştirin
+python -m venv venv
+source venv/bin/activate  # Windows için: venv\Scripts\activate
+
+# Backend bağımlılıklarını kurun
+pip install -r backend/requirements.txt
+
+# Çevresel değişkenleri hazırlayın
 cp .env.example .env
 
 # Sunucuyu başlatın
-uvicorn api.main:app --reload --port 8000
+uvicorn backend.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 2. Frontend Kurulumu (Geliştirme Modu)
-Frontend tamamen statik dosyalardan oluştuğu için herhangi bir live server kullanabilirsiniz (Örn: Vite, Live Server).
-
+#### 2. Frontend Kurulumu (Vanilla JS / Web Server)
+Uygulamanın ön yüzü saf HTML, CSS ve Vanilla JS'den oluştuğu için karmaşık bir build sürecine ihtiyaç duymaz. Doğrudan bir basit HTTP sunucusu ile ayağa kalkar.
 ```bash
-cd frontend
-npm install  # Test araçları için
-npm run dev  # Vite veya benzeri bir araçla
+# Yeni bir terminal açın ve uygulamanın kök dizininde çalıştırın:
+python -m http.server 3000
 ```
+Tarayıcınızdan `http://localhost:3000/frontend/` adresine giderek sistemi kullanmaya başlayabilirsiniz.
 
-### 3. Testleri Çalıştırma
+### Testleri Çalıştırma
 ```bash
-# Frontend testleri
-cd frontend
-npx vitest run
-
-# Backend testleri
-cd backend
-pytest tests/
+# Finansal Bütünlük, Hesaplama Metrikleri ve Kayan Nokta Testleri:
+source venv/bin/activate
+pytest backend/tests/test_financial_integrity.py backend/tests/test_decimal_precision_v3.py
 ```
 
 ---

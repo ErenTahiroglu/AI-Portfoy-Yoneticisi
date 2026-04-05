@@ -68,6 +68,9 @@ async def summarizer_node(state: GraphState) -> dict:
     inv_hist = state.get("investment_debate_state", {}).get("history", [])
     risk_hist = state.get("risk_debate_state", {}).get("history", [])
     
+    if not state.get("use_ai", True):
+        return {"messages": ["Kısa özet: AI devre dışı bırakıldı."]}
+        
     if len(inv_hist) < 4 and len(risk_hist) < 4:
         return {}
         
@@ -82,16 +85,11 @@ async def summarizer_node(state: GraphState) -> dict:
     {chr(10).join(risk_hist[-6:]) if risk_hist else 'Yok'}
     """
     
-    llm = get_quick_think_llm(model_name="gemini-2.5-flash")
-    structured_llm = llm.with_structured_output(SummarizedDebate)
-    
-    from pydantic import ValidationError
-    from backend.api.metrics import SUMMARIZER_VALIDATION_ERROR_TOTAL
-    import json
-    
     max_retries = 2
     for attempt in range(max_retries):
         try:
+            llm = get_quick_think_llm(model_name="gemini-2.5-flash")
+            structured_llm = llm.with_structured_output(SummarizedDebate)
             res = await structured_llm.ainvoke(prompt)
             summary_text = f"[SIKIŞTIRILMIŞ BAĞLAM]\nMetrikler: {res.korunan_metrikler}\nBoğa: {res.boga_argumanlari}\nAyı: {res.ayi_argumanlari}\nUzlaşma: {res.uzlasma_noktalari}"
             logger.info("[PRUNING] State context strictly compressed via Pydantic Schema.")
@@ -99,12 +97,18 @@ async def summarizer_node(state: GraphState) -> dict:
             return {
                 "messages": [summary_text]
             }
-        except ValidationError as ve:
-            logger.warning(f"Summarizer Schema Validation Error (Attempt {attempt+1}/{max_retries}): {ve}")
-            SUMMARIZER_VALIDATION_ERROR_TOTAL.labels(agent_node="SummarizerNode").inc()
-            # Feed the error back to the LLM
-            prompt += f"\n\n[SİSTEM UYARISI - ÖNCEKİ DENEME BAŞARISIZ]: Lütfen JSON şemasına tam uyunuz. Aldığınız Hata: {ve}"
         except Exception as e:
+            from pydantic import ValidationError
+            if isinstance(e, ValidationError):
+                from backend.api.metrics import SUMMARIZER_VALIDATION_ERROR_TOTAL
+                logger.warning(f"Summarizer Schema Validation Error (Attempt {attempt+1}/{max_retries}): {e}")
+                SUMMARIZER_VALIDATION_ERROR_TOTAL.labels(agent_node="SummarizerNode").inc()
+                # Feed the error back to the LLM
+                prompt += f"\n\n[SİSTEM UYARISI - ÖNCEKİ DENEME BAŞARISIZ]: Lütfen JSON şemasına tam uyunuz. Aldığınız Hata: {e}"
+                continue
+            
+            logger.error(f"Summarizer failed unexpectedly: {e}")
+            break
             logger.error(f"Summarizer failed unexpectedly: {e}")
             break
 

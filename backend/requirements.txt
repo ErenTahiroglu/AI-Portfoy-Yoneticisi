@@ -90,14 +90,11 @@ alembic
 sqlalchemy
 psutil
 supabase
-
 yfinance
 pandas
 numpy
 PyJWT
-
 langgraph
-
 prometheus-client
 prometheus-fastapi-instrumentator
 redis

@@ -27,6 +27,9 @@ def verify_token_string(token: str) -> dict:
          if cache_get(f"jwt_blacklist:{token}"):
               logger.warning("Zero Trust: Revoked token presented.")
               raise HTTPException(status_code=401, detail="This session has been signed out.")
+    except HTTPException:
+         # Yeniden fırlat (Auth blacklist vb. durumlar)
+         raise
     except Exception as e:
          # Redis hatası auth akışını bozmamalı (Fallback)
          logger.warning(f"Auth Redis check failed: {e}. Proceeding with standard JWT check.")

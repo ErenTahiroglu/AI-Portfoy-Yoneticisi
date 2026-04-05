@@ -207,9 +207,9 @@ body {
 }
 
 .scenario-card:hover {
-    border-color: rgba(14, 165, 233, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    border-color: var(--primary);
+    box-shadow: 0 12px 35px rgba(14, 165, 233, 0.2);
+    transform: translateY(-4px);
 }
 
 .scenario-card h4 {
@@ -685,8 +685,9 @@ body {
 }
 
 .input-card:hover {
-    border-color: rgba(14, 165, 233, 0.2);
-    box-shadow: 0 4px 24px rgba(14, 165, 233, 0.06);
+    border-color: rgba(14, 165, 233, 0.4);
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.15);
+    transform: translateY(-4px);
 }
 
 .input-card h3 {
@@ -1274,8 +1275,27 @@ body.halal-only .summary-table tr.status-rejected {
 }
 
 .result-card:hover {
-    border-color: rgba(14, 165, 233, 0.18);
-    box-shadow: 0 4px 32px rgba(14, 165, 233, 0.06);
+    border-color: var(--primary);
+    box-shadow: 0 12px 35px rgba(14, 165, 233, 0.2);
+    transform: translateY(-4px);
+}
+
+/* ── Generic Agent Card (Dynamic or newly defined components) ── */
+.agent-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    background-image: var(--gradient-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.agent-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 12px 35px rgba(14, 165, 233, 0.2);
+    transform: translateY(-4px);
 }
 
 .card-header {

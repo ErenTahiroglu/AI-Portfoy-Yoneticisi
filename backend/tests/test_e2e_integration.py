@@ -33,6 +33,9 @@ async def test_api_analyze_sse():
             async for line in response.aiter_lines():
                 if line.startswith("data:"):
                     data = json.loads(line[5:])
+                    # Skip the initial processing ping
+                    if data.get("status") == "processing":
+                        continue
                     assert "ticker" in data
                     break
 

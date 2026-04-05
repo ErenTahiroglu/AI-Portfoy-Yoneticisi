@@ -319,7 +319,10 @@ function renderExtras(extras) {
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "top", labels: { color: text, font: { size: 10, family: "Inter" }, boxWidth: 10 } } }, scales: { x: { grid: { display: false }, ticks: { color: text, font: { size: 10 } } }, y: { grid: { color: grid }, ticks: { color: text, font: { size: 10 }, callback: v => (v * 100 - 100).toFixed(0) + "%" } } } },
         });
-    } else { mcCard.classList.add("hidden"); }
+    } else if (mcCard) {
+        mcCard.classList.remove("hidden");
+        document.getElementById("monte-carlo-chart").innerHTML = "<div style='color:var(--text-muted); text-align:center; padding:2rem; font-size: 0.85rem;'>Monte Carlo simülasyonu oluşturulamadı veya veri eksik.</div>";
+    }
 
     // PV Simulation
     const pvWrap = document.getElementById("pv-simulation-wrap");

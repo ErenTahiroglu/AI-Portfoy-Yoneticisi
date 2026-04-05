@@ -5,7 +5,12 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./tests/setup.js'],
+    setupFiles: ['./frontend/tests/setup.js'],
+    exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
+    coverage: {
+      provider: 'v8',
+      include: ['frontend/js/**/*.js'],
+    },
   },
   resolve: {
     alias: {

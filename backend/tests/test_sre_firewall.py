@@ -2,6 +2,7 @@ import pytest
 import socket
 import httpx
 import requests
+from pytest_socket import disable_socket
 
 def test_sync_network_block_firewall():
     """
@@ -9,6 +10,7 @@ def test_sync_network_block_firewall():
     Senkron (requests) dış ağ çağrılarının engellendiğini ve 
     SocketBlockedError (veya sarmalanmış hata) fırlatıldığını doğrular.
     """
+    disable_socket()
     with pytest.raises(Exception) as excinfo:
          # Bilinçli olarak Google'a gitmeye çalış
          requests.get("https://google.com", timeout=1)
@@ -22,6 +24,7 @@ async def test_async_network_block_firewall():
     Asenkron (httpx) dış ağ çağrılarının engellendiğini doğrular.
     Bu, asenkron event loop'ların (uvloop/asyncio) delinmediğinin kanıtıdır.
     """
+    disable_socket()
     async with httpx.AsyncClient() as client:
         with pytest.raises(Exception) as excinfo:
             await client.get("https://alpha-vantage.co/query", timeout=1)

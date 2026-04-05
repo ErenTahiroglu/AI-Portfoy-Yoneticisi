@@ -3,10 +3,14 @@ import sys
 import httpx
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
+from decimal import Decimal, getcontext, ROUND_HALF_UP
+from datetime import datetime, timezone
 import yfinance as yf
 
-# Standalone execution configuration
+# 🛡️ Financial Precision Setup (Standard for banking/trading)
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_UP
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("ShadowPnLTracker")
 
@@ -15,14 +19,12 @@ SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 async def update_missing_pnl():
     """
-    Idempotent PnL Updater. Supabase veritabanındaki Divergence Loglarını çeker.
-    Eğer T+1, T+3 veya T+7 güncel fiyatları eskiyse (ve hesaplanmamışsa) yfinance üzerinden
-    hisse durumunu günceller ve Old/New motorun kimin haklı çıktığını hesaplar.
-    Bu script dışarıdan pg_cron üzerinden her gece tetiklenmek üzere tasarlanmıştır.
+    Global PnL güncelleyici. user_settings tablosundaki bireysel oranları baz alarak
+    shadow_divergence_logs sonuçlarını hesaplar.
     """
     if not SUPABASE_URL or not SUPABASE_KEY:
-        logger.error("Eksik Supabase servis rolü veya URL anahtarı!")
-        sys.exit(1)
+        logger.error("Eksik Supabase yapılandırması!")
+        return
         
     headers = {
         "apikey": SUPABASE_KEY,
@@ -30,9 +32,8 @@ async def update_missing_pnl():
         "Content-Type": "application/json"
     }
     
-    # 1. Bekleyen (Null olan) PnL kayıtlarını al (T1, T3, T7)
     async with httpx.AsyncClient() as client:
-        # Son 10 gündeki kayıtları çek, çok eskileri bırak
+        # Son 50 kaydı çek
         resp = await client.get(
             f"{SUPABASE_URL}/rest/v1/shadow_divergence_logs?select=*&order=created_at.desc&limit=50",
             headers=headers
@@ -44,62 +45,107 @@ async def update_missing_pnl():
         logs = resp.json()
         now = datetime.now(timezone.utc)
         
-        for idx, log in enumerate(logs):
+        for log in logs:
             created_at = datetime.fromisoformat(log["created_at"].replace("Z", "+00:00"))
             days_passed = (now - created_at).days
             
             ticker = log["ticker"]
-            t0 = log.get("t0_price", 1.0)
+            t0 = Decimal(str(log.get("t0_price", "1.0")))
+            user_id = log.get("user_id") # Null ise global default kullanılır
+            
+            # Kullanıcıya özel oranları çek (veya varsayılan %0.2 / %0.1)
+            comm_rate, slip_rate = await _get_user_rates(client, headers, user_id)
             
             updates = {}
-            # T+1 Check
-            if days_passed >= 1 and log.get("t1_price") is None:
-                updates["t1_price"], updates["winner_t1"] = await _evaluate_pnl(ticker, t0, log["old_decision"], log["new_decision"])
+            for period in [1, 3, 7]:
+                col_price = f"t{period}_price"
+                col_winner = f"winner_t{period}"
+                
+                if days_passed >= period and log.get(col_price) is None:
+                    tn, winner = await evaluate_pnl_dynamic(
+                        ticker, t0, log["old_decision"], log["new_decision"],
+                        comm_rate, slip_rate
+                    )
+                    if tn is not None:
+                        updates[col_price] = float(tn)
+                        updates[col_winner] = winner
             
-            # T+3 Check
-            if days_passed >= 3 and log.get("t3_price") is None:
-                updates["t3_price"], updates["winner_t3"] = await _evaluate_pnl(ticker, t0, log["old_decision"], log["new_decision"])
-                
-            # T+7 Check
-            if days_passed >= 7 and log.get("t7_price") is None:
-                updates["t7_price"], updates["winner_t7"] = await _evaluate_pnl(ticker, t0, log["old_decision"], log["new_decision"])
-                
-            # DB Write if needed
             if updates:
                 await client.patch(
                     f"{SUPABASE_URL}/rest/v1/shadow_divergence_logs?id=eq.{log['id']}",
                     headers=headers,
                     json=updates
                 )
-                logger.info(f"[{ticker}] PnL güncellendi: {updates}")
-                
-        logger.info(f"🎉 Tüm T+1/T+3/T+7 PnL kontrol zinciri tamamlandı. ({len(logs)} kayıt tarandı)")
+                logger.info(f"[{ticker}] PnL güncellendi (Kullanıcı: {user_id}): {updates}")
 
-async def _evaluate_pnl(ticker: str, t0: float, old_dec: str, new_dec: str):
+async def _get_user_rates(client, headers, user_id):
+    """Kullanıcının veritabanındaki komisyon ve kayma oranlarını döner."""
+    if not user_id:
+        return Decimal("0.002"), Decimal("0.001")
+        
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/user_settings?user_id=eq.{user_id}&select=commission_rate,slippage_rate"
+        resp = await client.get(url, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data:
+                return (
+                    Decimal(str(data[0].get("commission_rate", "0.002"))),
+                    Decimal(str(data[0].get("slippage_rate", "0.001")))
+                )
+    except Exception as e:
+        logger.warning(f"Kullanıcı oranları çekilemedi ({user_id}): {e}")
+        
+    return Decimal("0.002"), Decimal("0.001")
+
+async def evaluate_pnl_dynamic(ticker, t0, old_dec, new_dec, comm_rate, slip_rate):
     """
-    yfinance üzerinden güncel hisse fiyatını çeker ve T0 anındaki karar
-    ile T+n'i match ederek kimin kazandığını döner (Old vs New).
+    Dinamik maliyetlerle (Decimal) PnL hesaplar.
+    Logic:
+    - BUY: Net = (tn - t0)/t0 - (Entry_Cost + Exit_Cost)
+    - SELL/HOLD: Ayrıştırılmış maliyet kalkanı.
     """
     try:
         data = yf.Ticker(ticker)
-        # Sadece son günlük kapanış fiyatı (mocking API delays via async sleep)
         await asyncio.sleep(0.5) 
         hist = data.history(period="1d")
-        if hist.empty:
-            return None, None
+        if hist.empty: return None, None
             
-        tn = float(hist["Close"].iloc[-1])
+        tn = Decimal(str(hist["Close"].iloc[-1]))
         
-        gain = tn - t0
+        # Sürtünme Maliyeti (Friction) = Komisyon + Kayma
+        friction = comm_rate + slip_rate
+        
+        # 1. 'HOLD' ve 'SELL' Farkını Modelle
+        # SELL sinyali bir 'ÇIKIŞ' maliyeti üretir.
+        # HOLD ise mevcut pozisyonda beklemedir (yeni maliyet yok).
+        
+        def calc_perf(decision, price_start, price_end):
+            # Karar BUY ise: Fiyat artışı bekliyoruz, giriş-çıkış maliyeti düşer.
+            if "BUY" in decision:
+                gross = (price_end - price_start) / price_start
+                return gross - (Decimal("2.0") * friction) # Alırken ve satarken
+            
+            # Karar SELL ise: Fiyat düşüşünden kaçmak istiyoruz.
+            # Bir kereye mahsus 'ÇIKIŞ' maliyeti öderiz.
+            if "SELL" in decision:
+                # Potansiyel kalkan (Shield): Eğer düşüş beklentisi maliyetten azsa, HOLD daha iyidir.
+                avoided_loss = (price_start - price_end) / price_start
+                return avoided_loss - friction
+                
+            # Karar HOLD ise: Bekliyoruz. Mevcut fiyat hareketini olduğu gibi alırız.
+            # Eğer nakitte beklemek anlamındaysa 0.0 olur, ancak biz 'Varlığı Tut' olarak modelliyoruz.
+            return (price_end - price_start) / price_start
+
+        old_perf = calc_perf(old_dec, t0, tn)
+        new_perf = calc_perf(new_dec, t0, tn)
+        
+        # 🛡️ Profit-Cost Shield: 
+        # Eğer yeni karar (SELL) maliyet yüzünden negatif performans üretiyorsa 
+        # ve HOLD (karar vermeme) daha iyiyse, sistem mantıksal olarak HOLD'u tercih etmeli.
+        # (Not: Bu mantık karar alma aşamasında kullanılır, burada sadece performans ölçüyoruz.)
+
         winner = "TIE"
-        
-        # BUY kâr getirir, HOLD/SELL zarardan / düşüşten korur
-        old_dir = 1 if "BUY" in old_dec else -1
-        new_dir = 1 if "BUY" in new_dec else -1
-        
-        old_perf = old_dir * gain
-        new_perf = new_dir * gain
-        
         if new_perf > old_perf:
             winner = "NEW"
         elif old_perf > new_perf:
@@ -107,8 +153,15 @@ async def _evaluate_pnl(ticker: str, t0: float, old_dec: str, new_dec: str):
             
         return tn, winner
     except Exception as e:
-        logger.warning(f"Tracker Yfinance fetch failed for {ticker}: {e}")
+        logger.warning(f"PnL evaluation failed for {ticker}: {e}")
         return None, None
+
+async def _evaluate_pnl(ticker, t0, old_dec, new_dec):
+    """Legacy wrapper for backward compatibility with older tests."""
+    return await evaluate_pnl_dynamic(
+        ticker, Decimal(str(t0)), old_dec, new_dec, 
+        Decimal("0.002"), Decimal("0.001")
+    )
 
 if __name__ == "__main__":
     asyncio.run(update_missing_pnl())

@@ -20,11 +20,12 @@ class MockWorker {
 vi.stubGlobal('Worker', MockWorker);
 
 // Mock HttpClient
-vi.mock('../../frontend/js/network/HttpClient.js', () => ({
-    http: { get: vi.fn(), post: vi.fn() }
+vi.mock('../../js/network/HttpClient.js', () => ({
+    httpClient: { get: vi.fn(), post: vi.fn() }
 }));
 
-import { checkServerHealth, pollJobResult } from '../../frontend/js/network/api.js';
+import { checkServerHealth, pollJobResult } from '../../js/network/api.js';
+import { httpClient } from '../../js/network/HttpClient.js';
 
 describe('Refactored API Logic', () => {
     beforeEach(() => {
@@ -32,20 +33,18 @@ describe('Refactored API Logic', () => {
     });
 
     it('should use HttpClient for health check', async () => {
-        const { http } = await import('../../frontend/js/network/HttpClient.js');
-        http.get.mockResolvedValueOnce({ message: 'OK' });
+        httpClient.get.mockResolvedValueOnce({ message: 'OK' });
 
         const result = await checkServerHealth();
-        expect(http.get).toHaveBeenCalledWith('/api/health');
+        expect(httpClient.get).toHaveBeenCalledWith('/api/health');
         expect(result.online).toBe(true);
     });
 
     it('should use HttpClient for job polling', async () => {
-        const { http } = await import('../../frontend/js/network/HttpClient.js');
-        http.get.mockResolvedValueOnce({ status: 'COMPLETED', result: { data: 123 } });
+        httpClient.get.mockResolvedValueOnce({ status: 'COMPLETED', result: { data: 123 } });
 
         const result = await pollJobResult('job-123');
-        expect(http.get).toHaveBeenCalledWith('/api/status/job-123');
+        expect(httpClient.get).toHaveBeenCalledWith('/api/status/job-123');
         expect(result.data).toBe(123);
     });
 });

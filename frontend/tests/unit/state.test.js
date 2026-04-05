@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createStore } from '../../frontend/js/core/state.js';
+import { createStore } from '../../js/core/state.js';
 
 describe('State Manager v2 Tests', () => {
   it('should initialize with provided state', () => {

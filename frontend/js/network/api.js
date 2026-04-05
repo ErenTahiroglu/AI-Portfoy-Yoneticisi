@@ -193,9 +193,32 @@ export async function runAnalysis(payload, endpoint) {
             const decoder = new TextDecoder();
             let buffer = "";
 
+            let streamWatchdog;
+            const startWatchdog = () => {
+                clearTimeout(streamWatchdog);
+                streamWatchdog = setTimeout(() => {
+                    reader.cancel();
+                    console.error("Stream inactive for 60s, cancelling.");
+                }, 60000);
+            };
+            startWatchdog();
+
             for (;;) {
-                const { value, done } = await reader.read();
-                if (done) break;
+                let readResult;
+                try {
+                    readResult = await reader.read();
+                } catch(err) {
+                    clearTimeout(streamWatchdog);
+                    throw new Error("Sunucu bağlantısı koptu (Zaman aşımı).");
+                }
+                startWatchdog();
+                
+                const { value, done } = readResult;
+                if (done) {
+                    clearTimeout(streamWatchdog);
+                    break;
+                }
+                
                 buffer += decoder.decode(value);
                 const lines = buffer.split("\n\n");
                 buffer = lines.pop();
@@ -245,14 +268,19 @@ export async function runAnalysis(payload, endpoint) {
             
             // Poll after 5 seconds by re-running the same analysis (it will hit cache or retry if still processing)
             setTimeout(() => {
-                runAnalysis(payload, endpoint, btn);
+                runAnalysis(payload, endpoint);
             }, 5000);
             return; // Exit here so we don't enable the button or hide progress
         }
 
         if (progressContainer) progressContainer.classList.add("hidden");
         console.error("Analysis Error:", err);
-        showToast(err.message || "Bağlantı hatası", "error");
+        
+        if (err.status === 429) {
+            showToast("Çok hızlı işlem yapıyorsunuz, yavaşlayın", "warning");
+        } else {
+            showToast(err.message || "Bağlantı hatası", "error");
+        }
     } finally {
         if (btn && !isConflict) {
             btn.disabled = false;

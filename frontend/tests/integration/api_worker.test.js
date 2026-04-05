@@ -42,14 +42,15 @@ class MockWorker {
 vi.stubGlobal('Worker', MockWorker);
 
 // Mock HttpClient
-vi.mock('../../frontend/js/network/HttpClient.js', () => ({
-    http: {
+vi.mock('../../js/network/HttpClient.js', () => ({
+    httpClient: {
         get: vi.fn(),
         post: vi.fn()
     }
 }));
 
-import { runAnalysis } from '../../frontend/js/network/api.js';
+import { runAnalysis } from '../../js/network/api.js';
+import { httpClient } from '../../js/network/HttpClient.js';
 
 describe('API and Worker Integration', () => {
     beforeEach(() => {
@@ -74,10 +75,8 @@ describe('API and Worker Integration', () => {
     });
 
     it('should delegate calculations to worker after fetching data', async () => {
-        const { http } = await import('../../frontend/js/network/HttpClient.js');
-        
         // Mock successful API stream response
-        http.post.mockResolvedValueOnce({
+        httpClient.post.mockResolvedValueOnce({
             body: {
                 getReader: () => ({
                     read: vi.fn()
@@ -90,7 +89,7 @@ describe('API and Worker Integration', () => {
         await runAnalysis({ tickers: ['AAPL'] }, '/api/analyze');
 
         // Check if data was "fetched"
-        expect(http.post).toHaveBeenCalledWith('/api/analyze', expect.any(Object));
+        expect(httpClient.post).toHaveBeenCalledWith('/api/analyze', expect.any(Object));
         
         // Check if AppState was updated with worker results
         // Since we use setTimeout in MockWorker, we might need to wait

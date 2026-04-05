@@ -16,7 +16,7 @@ self.onmessage = async function(e) {
             
             // Collect buffers for zero-copy transfer
             const buffers = [];
-            if (extras.monte_carlo && extras.monte_carlo.rawData) {
+            if (extras && extras.monte_carlo && extras.monte_carlo.rawData) {
                 buffers.push(extras.monte_carlo.rawData);
             }
 

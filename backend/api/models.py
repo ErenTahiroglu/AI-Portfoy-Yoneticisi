@@ -19,6 +19,8 @@ class UserSettingsRequest(BaseModel):
     model_config = ConfigDict(strict=True)
     telegram_chat_id: Optional[str] = None
     risk_tolerance: Optional[str] = "Orta"
+    commission_rate: float = Field(default=0.002, ge=0, le=0.5, description="Komisyon oranı %0 ile %50 arasında olmalıdır.")
+    slippage_rate: float = Field(default=0.001, ge=0, le=0.5, description="Kayma (slippage) oranı %0 ile %50 arasında olmalıdır.")
 
 class PortfolioOptimizeRequest(BaseModel):
     model_config = ConfigDict(strict=True)

@@ -46,3 +46,8 @@ class GraphState(TypedDict):
     # Analysis Mode Flags (Modular Analysis)
     check_financials: bool
     check_islamic: bool
+    use_ai: bool
+
+    # Dynamic Transaction Costs (User-Specific)
+    commission_rate: float
+    slippage_rate: float

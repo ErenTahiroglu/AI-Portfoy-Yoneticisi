@@ -30,9 +30,17 @@ window.getUserProfile = getUserProfile;
 window.skipOnboardingWizard = skipWizard;
 
 // ── State Management v2 (Granular) ────────────────────────────────────────
+let initialViewMode = localStorage.getItem("viewMode") || "beginner";
+if (initialViewMode === "pro" && localStorage.getItem("admin_bypass") !== "true") {
+    initialViewMode = "beginner";
+    localStorage.setItem("viewMode", "beginner");
+}
+
 const AppState = createStore({
-    viewMode: localStorage.getItem("viewMode") || "beginner",
+    viewMode: initialViewMode,
     isHalalOnly: localStorage.getItem("isHalalOnly") === "true",
+    commissionRate: parseFloat(localStorage.getItem("commissionRate")) || 0.2,
+    slippageRate: parseFloat(localStorage.getItem("slippageRate")) || 0.1,
     results: [],
     extras: null
 });
@@ -166,18 +174,43 @@ class App {
         } else {
             document.getElementById("guest-logout-btn")?.style.setProperty("display", "none");
             
-            await initOnboardingWizard((profile, wasShown) => {
-                if (wasShown) {
-                    if (landing) landing.style.display = "none";
-                    if (sidebar) sidebar.style.display = "";
-                    if (mainContent) mainContent.style.display = "";
-                }
-            });
+            try {
+                await initOnboardingWizard((profile, wasShown) => {
+                    if (wasShown) {
+                        if (landing) landing.style.display = "none";
+                        if (sidebar) sidebar.style.display = "";
+                        if (mainContent) mainContent.style.display = "";
+                    }
+                });
 
-            // Hydrate Portfolio
-            const portfolio = await window.SupabaseAuth.loadPortfolio();
-            if (!portfolio || portfolio.length === 0) {
-                showEmptyPortfolioState();
+                // Hydrate Portfolio & Settings
+                const portfolio = await window.SupabaseAuth.loadPortfolio();
+                if (!portfolio || portfolio.length === 0) {
+                    showEmptyPortfolioState();
+                }
+
+                // Sync user settings (including new rates)
+                const settings = await httpClient.get('/api/user-settings');
+                if (settings) {
+                    AppState.commissionRate = (settings.commission_rate * 100) || 0.2;
+                    AppState.slippageRate = (settings.slippage_rate * 100) || 0.1;
+                    
+                    const commInput = document.getElementById("settings-commission-rate");
+                    const slipInput = document.getElementById("settings-slippage-rate");
+                    if (commInput) commInput.value = AppState.commissionRate;
+                    if (slipInput) slipInput.value = AppState.slippageRate;
+                }
+            } catch (err) {
+                console.warn("🛡️ Auth hydration failed (Invalid token or expired):", err);
+                if (err.status === 401 || err.status === 403 || err.message?.includes("token")) {
+                    console.log("Stale session detected, auto-logging out...");
+                    if (window.SupabaseAuth && window.SupabaseAuth.signOut) {
+                        await window.SupabaseAuth.signOut();
+                    }
+                    window.location.reload();
+                    return; // Halt further init
+                }
+                throw err; // If it's a critical non-auth error, let it crash or show fallback
             }
         }
     }
@@ -249,7 +282,18 @@ class App {
             document.getElementById("gemini-key-group")?.classList.toggle("disabled", !isAI);
         });
 
-        const handleModeToggle = (e) => AppState.viewMode = e.target.checked ? "pro" : "beginner";
+        const handleModeToggle = (e) => {
+            const isDev = localStorage.getItem("admin_bypass") === "true";
+            if (e.target.checked && !isDev) {
+                e.preventDefault();
+                e.target.checked = false;
+                if (typeof showToast === 'function') {
+                    showToast("Profesyonel mod şimdilik sadece geliştiricilere açıktır.", "warning");
+                }
+                return;
+            }
+            AppState.viewMode = e.target.checked ? "pro" : "beginner";
+        };
         document.getElementById("prof-mode-toggle")?.addEventListener("change", handleModeToggle);
         document.getElementById("ui-mode-toggle")?.addEventListener("change", handleModeToggle);
         document.getElementById("check-islamic-toggle")?.addEventListener("change", (e) => AppState.isHalalOnly = e.target.checked);
@@ -265,6 +309,38 @@ class App {
             e.stopPropagation();
             sidebar?.classList.toggle("open");
         });
+
+        // Dynamic Cost Logic
+        const saveRates = async () => {
+            const rawComm = parseFloat(document.getElementById("settings-commission-rate").value) || 0;
+            const rawSlip = parseFloat(document.getElementById("settings-slippage-rate").value) || 0;
+            
+            // 🛡️ Clamp between 0 and 50%
+            AppState.commissionRate = Math.min(50, Math.max(0, rawComm));
+            AppState.slippageRate = Math.min(50, Math.max(0, rawSlip));
+            
+            // Sync back to UI if clamped
+            document.getElementById("settings-commission-rate").value = AppState.commissionRate;
+            document.getElementById("settings-slippage-rate").value = AppState.slippageRate;
+            
+            localStorage.setItem("commissionRate", AppState.commissionRate);
+            localStorage.setItem("slippageRate", AppState.slippageRate);
+            
+            // Sync with backend
+            try {
+                await httpClient.post('/api/user-settings', {
+                    commission_rate: AppState.commissionRate / 100,
+                    slippage_rate: AppState.slippageRate / 100,
+                    risk_tolerance: AppState.riskTolerance || "Orta" // Keep existing
+                });
+                showToast("Maliyet ayarları kaydedildi", "success");
+            } catch (e) {
+                console.error("Settings sync failed:", e);
+            }
+        };
+
+        document.getElementById("settings-commission-rate")?.addEventListener("change", saveRates);
+        document.getElementById("settings-slippage-rate")?.addEventListener("change", saveRates);
     }
 
     async handleAnalyze() {

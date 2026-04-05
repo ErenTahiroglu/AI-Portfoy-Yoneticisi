@@ -348,7 +348,29 @@
                 </table>
             </div>
         </div>
-        <footer style="padding: 1.5rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.02); color: #6b7280; font-size: 0.85rem;">
+
+        <!-- Sponsor Section (Premium Card) -->
+        <div class="sponsors-footer" style="margin-top: 4rem; text-align: center; padding: 0 1rem;">
+            <div style="background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.6)); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; max-width: 500px; margin: 0 auto; padding: 2.5rem 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05); backdrop-filter: blur(10px); position: relative; overflow: hidden;">
+                <!-- Decorative Glow -->
+                <div style="position: absolute; top: -50px; left: 50%; transform: translateX(-50%); width: 150px; height: 150px; background: rgba(236, 72, 153, 0.4); filter: blur(60px); z-index: 0; pointer-events: none;"></div>
+                
+                <div style="position: relative; z-index: 1;">
+                    <img src="https://github.com/ErenTahiroglu.png" alt="Eren Tahiroglu" style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(236, 72, 153, 0.5); box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3); margin-bottom: 1rem; padding: 2px; background: var(--bg-dark);">
+                    
+                    <h3 style="color: var(--text-main); font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem;">Açık Kaynağa Destek Olun</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.75rem;">
+                        Portföy Analiz Platformu'nun geliştirilmesine ve sunucu maliyetlerine katkıda bulunarak projenin büyümesine yardımcı olabilirsiniz.
+                    </p>
+                    
+                    <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #ffffff; font-weight: 700; font-size: 1rem; padding: 0.85rem 2rem; border-radius: 50px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.35);">
+                        <i class="fas fa-heart"></i> GitHub Üzerinden Sponsor Ol
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <footer style="padding: 1.5rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.02); color: #6b7280; font-size: 0.85rem; margin-top: 2rem;">
             © 2026 Portföy Analiz Platformu. Tüm Hakları Saklıdır.
         </footer>
     </div>
@@ -618,6 +640,21 @@
                         <option value="yearly" data-i18n="sidebar.rebalance.yearly">Yıllık</option>
                     </select>
                 </div>
+
+                <!-- NEW: Dynamic Transaction Costs -->
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <h4 style="font-size: 0.75rem; color: var(--text-main); margin-bottom: 1rem; text-transform: uppercase;"><i class="fas fa-percentage"></i> İşlem Maliyetleri</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="input-group">
+                            <label style="font-size:0.65rem;">Komisyon (%)</label>
+                            <input type="number" id="settings-commission-rate" step="0.01" value="0.2" min="0" max="50" style="font-size:0.8rem; padding:6px;">
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size:0.65rem;">Kayma (%)</label>
+                            <input type="number" id="settings-slippage-rate" step="0.01" value="0.1" min="0" max="50" style="font-size:0.8rem; padding:6px;">
+                        </div>
+                    </div>
+                </div>
                 <p style="font-size:0.65rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.3; background:rgba(255,255,255,0.05); padding:6px; border-radius:4px;"><i class="fas fa-info-circle"></i> <span data-i18n="sidebar.pvNote">PV simülasyonları geçmiş 5 yıla dayalıdır. Rakamlar nominaldir.</span></p>
             </div>
         </div>
@@ -658,7 +695,7 @@
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
-        <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <span class="top-badge" data-i18n="header.badge">AI Destekli Analiz</span>
             
             <!-- Mode Switcher -->
@@ -671,7 +708,7 @@
                 <span style="font-size:0.75rem; color:var(--primary); cursor:pointer;" id="lbl-pro" onclick="const t=document.getElementById('ui-mode-toggle'); t.checked=true; t.dispatchEvent(new Event('change'))">Profesyonel</span>
             </div>
             
-            <div class="auth-controls" id="auth-controls" style="margin-left:auto; display:flex; align-items:center;">
+            <div class="auth-controls" id="auth-controls" style="margin-left:auto; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
                 <!-- Otonom Uyarı Zili (Phase 4) -->
                 <div class="notification-container" id="notification-container" style="position:relative; display:none; margin-right:15px; cursor:pointer;">
                     <i class="fas fa-bell" style="font-size:1.2rem; color:var(--text-main);" onclick="toggleNotifications()"></i>
@@ -692,7 +729,7 @@
                 </button>
 
                 <!-- Sponsor Button next to Geri Don -->
-                <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" id="dashboard-sponsor-btn" style="display: none; align-items: center; gap: 6px; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: var(--text-main); padding: 0.5rem 0.85rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; margin-right: 12px; height: 32px; box-sizing: border-box;">
+                <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" id="dashboard-sponsor-btn" style="display: flex; align-items: center; gap: 6px; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: var(--text-main); padding: 0.5rem 0.85rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; margin-right: 12px; height: 32px; box-sizing: border-box;">
                     <i class="fas fa-heart" style="color: #ec4899;"></i> <span>Sponsor</span>
                 </a>
 
@@ -1201,14 +1238,6 @@
             <!-- Individual Result Cards (Reactive Component) -->
             <x-analysis-grid id="results-grid"></x-analysis-grid>
 
-            <!-- Sponsor Section -->
-            <div class="sponsors-footer" style="margin-top: 3rem; text-align: center; padding: 2rem; background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
-                <h4 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-heart"></i> Destek Olun</h4>
-                <div style="display: flex; justify-content: center; position: relative; width: 600px; margin: 0 auto;">
-                    <iframe src="https://github.com/sponsors/ErenTahiroglu/card" title="Sponsor ErenTahiroglu" height="225" width="600" style="border: 0; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);"></iframe>
-                    <a href="https://github.com/sponsors/ErenTahiroglu" target="_blank" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer;" title="Sponsor Ol"></a>
-                </div>
-            </div>
         </section>
     </main>
 
