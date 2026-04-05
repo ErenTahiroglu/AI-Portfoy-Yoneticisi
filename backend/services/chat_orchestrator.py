@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from typing import Dict, Any, Optional, List
 from backend.engine.graph import compile_trading_graph
 

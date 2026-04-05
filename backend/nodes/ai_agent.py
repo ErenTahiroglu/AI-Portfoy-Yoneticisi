@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Optional
+from typing import Optional
 from langchain_core.messages import SystemMessage, HumanMessage
 from backend.infrastructure.llm_factory import get_quick_think_llm
 
@@ -72,5 +72,5 @@ def analyze_news_sentiment(news_items: list, check_islamic: bool, api_key: str):
     try:
         content = str(response.content).replace("```json", "").replace("```", "").strip()
         return json.loads(content)
-    except:
+    except Exception:
         return {"score": 50, "sentiment_label": "Nötr", "islamic_risk_flag": False, "risk_reason": "Parse error"}

@@ -118,8 +118,8 @@ async def test_api_endpoints():
             if resp.status_code == 200:
                 print(f"  ✅ Local Health Check: OK ({resp.json()})")
             else:
-                print(f"  ⚠️ Local Health Check: Failed or Server Not Running.")
-    except:
+                print("  ⚠️ Local Health Check: Failed or Server Not Running.")
+    except Exception:
         print("  ℹ️ Local Server not detected. Skipping endpoint check.")
 
 async def main():

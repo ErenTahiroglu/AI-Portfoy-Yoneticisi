@@ -3,7 +3,7 @@ import time
 import logging
 import os
 import psutil
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from langchain_community.chat_models import FakeListChatModel
 from backend.engine.graph import compile_trading_graph
 

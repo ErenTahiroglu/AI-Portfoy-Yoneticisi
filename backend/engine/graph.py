@@ -194,7 +194,7 @@ async def risk_join_and_circuit_node(state: GraphState) -> dict:
 # dokunmaya gerek kalmaz; sadece bu listeye ekleme yapmak yeterlidir.
 # ─────────────────────────────────────────────────────────────────────────
 
-NODE_REGISTRY = {
+NODE_REGISTRY = {  # noqa: F841
     "IntentNode": {
         "func": intent_detector_node,
         "edges": ["MarketNode", "IslamicNode", "NewsNode"]

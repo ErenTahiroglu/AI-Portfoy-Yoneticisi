@@ -159,7 +159,6 @@ class TestProductionIntegrity(unittest.TestCase):
 
     def test_node_registry_integration(self):
         """Düğümlerin (Nodes) doğru register edildiğini test eder."""
-        from backend.engine.graph import NODE_REGISTRY
         self.assertTrue(len(NODE_REGISTRY) > 0)
         self.assertIn("MarketNode", NODE_REGISTRY)
         self.assertIn("IslamicNode", NODE_REGISTRY)

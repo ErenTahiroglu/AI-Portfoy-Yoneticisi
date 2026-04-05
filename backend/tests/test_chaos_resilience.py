@@ -119,7 +119,7 @@ async def test_redis_fallback_on_connection_error():
     in-memory _LOCAL sözlüğüne sessizce geçiş yapması ve veriyi koruması.
     """
     from backend.infrastructure import redis_cache as redis_cache
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import patch
     import httpx
     
     test_key = "chaos_test_job_id"

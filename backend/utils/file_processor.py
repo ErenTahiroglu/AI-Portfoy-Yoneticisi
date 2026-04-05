@@ -11,8 +11,6 @@ import re
 import io
 
 import pandas as pd
-import docx
-from fpdf import FPDF
 
 logger = logging.getLogger(__name__)
 

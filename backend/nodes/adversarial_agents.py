@@ -166,7 +166,6 @@ async def conservative_analyst_node(state: GraphState) -> dict:
     return {"risk_debate_state": {"conservative_history": [res_content], "history": [f"[CONSERVATIVE]: {res_content}"]}}
 
 async def neutral_analyst_node(state: GraphState) -> dict:
-    plan = state.get("trader_investment_plan", "")
     hist = state.get("risk_debate_state", {}).get("history", [])
     prompt = f"Sen Nötr (Dengeleyici) Analistsin. Hem agresif kârı hem defansif riski harmanla.\n[HISTORY]: {hist}"
     if not state.get("use_ai", True):

@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from unittest.mock import patch, MagicMock
 from backend.engine.graph import summarizer_node, SummarizedDebate
 

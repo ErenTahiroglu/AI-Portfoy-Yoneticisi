@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from langchain_core.messages import AIMessage
 from backend.engine.graph import summarizer_node, SummarizedDebate
 
 # ── 1. Summarizer Node Garbage/Validation Failure Tests ─────────────────────
@@ -17,7 +16,6 @@ async def test_summarizer_validation_failure_hold_mode():
     mock_structured = MagicMock()
     
     # Pydantic validation error simülasyonu (Gerçek hata üreterek)
-    from pydantic import ValidationError
     try:
         # Invalid data to trigger ValidationError
         SummarizedDebate.model_validate({"korunan_metrikler": "not_a_list"})
