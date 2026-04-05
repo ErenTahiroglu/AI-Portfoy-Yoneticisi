@@ -1,16 +1,12 @@
 {
-  "venvPath": ".",
+  "venvPath": "..",
   "venv": ".venv",
-  "pythonVersion": "3.9",
-  "reportMissingImports": false,
-  "reportMissingModuleSource": false,
+  "pythonVersion": "3.12",
+  "reportMissingImports": "error",
+  "reportMissingModuleSource": "none",
   "executionEnvironments": [
     {
-      "root": ".",
-      "extraPaths": [
-        "/Users/eren/repos/AI-Portfoy-Yoneticisi",
-        "/Users/eren/repos/AI-Portfoy-Yoneticisi/.venv/lib/python3.11/site-packages"
-      ]
+      "root": "."
     }
   ]
 }

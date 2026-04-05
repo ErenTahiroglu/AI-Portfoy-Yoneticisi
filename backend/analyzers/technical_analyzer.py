@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
     """Teknik göstergeleri hesaplar: RSI 14, MACD 12/26/9, EMA & SMA (20/50/100/200)."""
+    hist, close, df = None, None, None
     try:
         from yahooquery import Ticker
         t = Ticker(fetcher_ticker)

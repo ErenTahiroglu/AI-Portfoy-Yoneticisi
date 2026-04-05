@@ -40,7 +40,7 @@ class HisseAnaliz(BaseAnalyzer):
     market_code = "US"
 # ══════════════════════════════════════════════════════════════════════════════
 
-    def __init__(self, av_key: str = None):
+    def __init__(self, av_key: Optional[str] = None):
         self.bugun  = pd.Timestamp.now(tz="UTC")
         self.bu_yil = self.bugun.year
         self.yillar = list(range(self.bu_yil - ANALIZ_YIL_SAYI, self.bu_yil))

@@ -128,8 +128,8 @@ def get_financials(ticker):
         # 2. Aşama: EĞER ETF İSE İÇİNİ TARAMA MANTIĞI
         if is_etf:
             df = holdings_df
-            if not isinstance(df, pd.DataFrame):
-                return None, f"Veri bulunamadı. ({ticker})"
+            if not isinstance(df, pd.DataFrame) or df is None:
+                return None, f"Veri bulunamadı veya boş. ({ticker})"
                 
             if 'symbol' not in getattr(df, 'columns', []):
                 df = df.reset_index()

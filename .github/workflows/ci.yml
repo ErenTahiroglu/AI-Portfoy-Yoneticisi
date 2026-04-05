@@ -49,7 +49,7 @@ jobs:
       - name: Install Python Linters
         run: |
           pip install ruff pyright
-          
+          pip install -r backend/requirements.txt          
       - name: Run Ruff Linter
         run: npm run lint:py
 
