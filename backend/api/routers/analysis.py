@@ -2,18 +2,15 @@ import asyncio
 import logging
 import json
 import gc
-import os
 import hashlib
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
-from typing import List, Optional
-import pandas as pd
+from typing import Optional
 
 from backend.api.models import AnalysisRequest, PortfolioOptimizeRequest, PortfolioRiskRequest
 from backend.infrastructure.limiter import limiter
 from backend.infrastructure.auth import verify_jwt, SUPABASE_JWT_SECRET
 import jwt
-from backend.api.dependencies import get_orchestrator
 from backend.api.utils import process_tickers_with_weights, tr_lower
 from backend.data.constants import POPULAR_TICKERS
 
@@ -157,9 +154,11 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
 async def get_portfolio_signals(tickers: str = ""):
     """Teknik sinyalleri tarar."""
     tickers = tickers.strip()
-    if not tickers: return []
+    if not tickers:
+        return []
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
-    if not ticker_list: return []
+    if not ticker_list:
+        return []
 
     from backend.analyzers.technical_analyzer import run_technical_indicators
     async def fetch_signal(ticker):
@@ -177,7 +176,8 @@ async def get_portfolio_signals(tickers: str = ""):
 @router.get("/search")
 async def search_tickers(q: str = ""):
     q = q.strip().upper()
-    if not q: return []
+    if not q:
+        return []
     
     import httpx
     from backend.data.constants import POPULAR_TICKERS
@@ -208,7 +208,8 @@ async def search_tickers(q: str = ""):
                     exch = i.get("exchDisp", "").upper()
                     quote_type = i.get("quoteType", "").upper()
                     
-                    if any(m["symbol"] == symbol for m in local_matches): continue
+                    if any(m["symbol"] == symbol for m in local_matches):
+                        continue
 
                     if symbol.endswith(".IS"):
                         yahoo_matches.append({"symbol": symbol, "name": i.get("shortname") or i.get("longname") or "", "exchDisp": "BIST"})
@@ -243,18 +244,21 @@ async def search_tickers(q: str = ""):
 @router.get("/suggest")
 async def suggest_tickers(q: str = ""):
     q = q.strip()
-    if not q: return {"suggestions": []}
+    if not q:
+        return {"suggestions": []}
     q_norm = tr_lower(q)
     matches = []
     for ticker, name in POPULAR_TICKERS.items():
         if tr_lower(ticker).startswith(q_norm) or q_norm in tr_lower(ticker):
             matches.append({"ticker": ticker, "name": name})
-            if len(matches) >= 15: break
+            if len(matches) >= 15:
+                break
     return {"suggestions": matches[:15]}
 
 @router.post("/optimize-portfolio", dependencies=[Depends(verify_jwt)])
 async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest, request: Request):
-    if not req_body.tickers: raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
+    if not req_body.tickers:
+        raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
     
     # Double-submit koruması
     await check_double_submit(request, req_body.model_dump(), "optimize")
@@ -262,11 +266,13 @@ async def optimize_portfolio_endpoint(req_body: PortfolioOptimizeRequest, reques
     try:
         from backend.services.analysis_service import optimize_portfolio_service
         return await optimize_portfolio_service(req_body.tickers, req_body.risk_free_rate, req_body.weights)
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/risk-analysis", dependencies=[Depends(verify_jwt)])
 async def risk_analysis_endpoint(req_body: PortfolioRiskRequest, request: Request):
-    if not req_body.tickers: raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
+    if not req_body.tickers:
+        raise HTTPException(status_code=400, detail="Varlık listesi boş olamaz.")
     
     # Double-submit koruması
     await check_double_submit(request, req_body.model_dump(), "risk")
@@ -274,7 +280,8 @@ async def risk_analysis_endpoint(req_body: PortfolioRiskRequest, request: Reques
     try:
         from backend.services.analysis_service import calculate_portfolio_risk_service
         return await calculate_portfolio_risk_service(req_body.tickers, req_body.weights)
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/predict/{ticker}", dependencies=[Depends(limiter.check)])
 async def predict_api(ticker: str):

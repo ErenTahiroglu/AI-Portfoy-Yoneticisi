@@ -1,11 +1,10 @@
 import os
 import httpx
 import logging
-import jwt
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timedelta
 
-from backend.infrastructure.auth import verify_jwt, SUPABASE_JWT_SECRET
+from backend.infrastructure.auth import verify_jwt
 
 logger = logging.getLogger(__name__)
 

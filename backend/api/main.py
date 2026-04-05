@@ -8,17 +8,24 @@ dekuple edilmiş router'ları include eder.
 import os
 import logging
 import asyncio
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+import sys
 from contextlib import asynccontextmanager
 
-from backend.infrastructure.scheduler import start_alert_scheduler
-from backend.api.websocket import register_websocket_routes
-from backend.utils.logger import setup_logging, CorrelationIdMiddleware
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
-import sys
+from prometheus_fastapi_instrumentator import Instrumentator
+
+from backend.infrastructure.scheduler import start_alert_scheduler
+from backend.infrastructure.redis_cache import cache_close, cache_get, cache_set, cache_delete, cache_is_redis_active
+from backend.infrastructure.http_client import init_global_http_client, close_global_http_client
+from backend.api.websocket import register_websocket_routes, _clients
+from backend.utils.logger import setup_logging, CorrelationIdMiddleware, correlation_id_ctx
+from backend.api.routers import analysis, chat, user, admin, billing, telemetry
 
 def validate_critical_env():
     """Kritik ortam değişkenlerini başlatmadan önce doğrular (Fail-Fast)."""
@@ -32,18 +39,14 @@ def validate_critical_env():
         print(f"⚠️ UYARI: Kritik ortam değişkenleri eksik: {', '.join(missing)}")
         print("Sistem işlevleri (Örn: DB, Auth) kısıtlı çalışabilir.")
 
-validate_critical_env()
-
-
 # ── Logging Setup ─────────────────────────────────────────────────────────
 setup_logging()
 logger = logging.getLogger(__name__)
 
+validate_critical_env()
+
 
 # ── Lifespan (Background Tasks) ───────────────────────────────────────────
-from backend.infrastructure.redis_cache import cache_close
-from backend.infrastructure.http_client import init_global_http_client, close_global_http_client
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # API kalktığında HTTP Client havuzunu başlat
@@ -73,11 +76,8 @@ app = FastAPI(
     redoc_url=None if is_prod else "/redoc"
 )
 
-from prometheus_fastapi_instrumentator import Instrumentator
+# ── Metrics (Prometheus) ──────────────────────────────────────────────────
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
-
-from backend.infrastructure.redis_cache import cache_get, cache_set, cache_delete
-from starlette.responses import Response
 
 # ── Middleware: Idempotency ───────────────────────────────────────────────
 class IdempotencyMiddleware(BaseHTTPMiddleware):
@@ -167,8 +167,6 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
             response.headers["Expires"] = "0"
         return response
 
-from fastapi.middleware.gzip import GZipMiddleware
-
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(IdempotencyMiddleware)
 app.add_middleware(NoCacheMiddleware)
@@ -187,11 +185,6 @@ app.add_middleware(
     allow_headers=["*", "X-Correlation-ID"],
     expose_headers=["X-Correlation-ID"],
 )
-
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, RedirectResponse
-from backend.utils.logger import correlation_id_ctx
 
 # ── Exception Handlers ──────────────────────────────────────────────────
 @app.exception_handler(HTTPException)
@@ -246,8 +239,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 register_websocket_routes(app)
 
 # ── Sub-Routers Include ───────────────────────────────────────────────────
-from backend.api.routers import analysis, chat, user, admin, billing, telemetry
-
 app.include_router(analysis.router)
 app.include_router(chat.router)
 app.include_router(user.router)
@@ -265,7 +256,6 @@ async def health_check():
     health_status = {"status": "ok", "redis": "connected", "supabase": "connected"}
     
     # 1. Redis Check
-    from backend.infrastructure.redis_cache import cache_is_redis_active
     if not cache_is_redis_active():
         health_status["redis"] = "disconnected (fallback active)"
 
@@ -295,7 +285,6 @@ async def get_metrics():
     📊 Uygulama Telemetri Verileri (Monitoring).
     🛡️ Anlık aktif WebSocket bağlantı sayılarını ve sağlık özetini döner.
     """
-    from backend.api.websocket import _clients
     from datetime import datetime, timezone
     return {
         "active_websocket_connections": len(_clients),

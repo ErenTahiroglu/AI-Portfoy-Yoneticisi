@@ -98,16 +98,20 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
         
         if "rsi_14" in technicals:
             total_signals += 1
-            if technicals["rsi_14"] > 50: bullish_signals += 1
+            if technicals["rsi_14"] > 50:
+                bullish_signals += 1
         if "macd_hist" in technicals:
             total_signals += 1
-            if technicals["macd_hist"] > 0: bullish_signals += 1
+            if technicals["macd_hist"] > 0:
+                bullish_signals += 1
         if "ema_20" in technicals and "last_close" in technicals:
             total_signals += 1
-            if technicals["last_close"] > technicals["ema_20"]: bullish_signals += 1
+            if technicals["last_close"] > technicals["ema_20"]:
+                bullish_signals += 1
         if "sma_50" in technicals and "last_close" in technicals:
             total_signals += 1
-            if technicals["last_close"] > technicals["sma_50"]: bullish_signals += 1
+            if technicals["last_close"] > technicals["sma_50"]:
+                bullish_signals += 1
             
         if total_signals > 0:
             gauge_score = int((bullish_signals / total_signals) * 100)
@@ -174,15 +178,15 @@ def run_technical_indicators(fetcher_ticker: str, result_entry: dict):
         # 🛡️ Memory Cleanup for Free Tier limits
         try:
             del hist
-        except:
+        except Exception:
             pass
         try:
             del close
-        except:
+        except Exception:
             pass
         try:
             del df
-        except:
+        except Exception:
             pass
         import gc
         gc.collect()

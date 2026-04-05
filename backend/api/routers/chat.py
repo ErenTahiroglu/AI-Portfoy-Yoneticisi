@@ -1,13 +1,13 @@
 import logging
 import json
-import re
 from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse
+
 from backend.api.models import ChatRequest, NewsRequest
 from backend.infrastructure.limiter import limiter
-from backend.infrastructure.auth import verify_jwt
-from backend.engine.execution_engine import execute_paper_trades
 from backend.api.dependencies import check_llm_quota
+from backend.infrastructure.job_queue import spawn_background_job
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,6 @@ async def wizard_api(request: Request, background_tasks: BackgroundTasks):
         user_id = user["sub"] if user else None
             
         from backend.nodes.ai_agent import generate_wizard_portfolio
-        from backend.infrastructure.job_queue import spawn_background_job
         
         # OOM/Timeout crash protection: Background spawn
         job_id = spawn_background_job(background_tasks, generate_wizard_portfolio, prompt, api_key, model, lang, user_id=user_id)
@@ -77,7 +76,8 @@ async def wizard_api(request: Request, background_tasks: BackgroundTasks):
 @router.post("/news", dependencies=[Depends(check_llm_quota)])
 async def news_api(request: NewsRequest):
     """Ticker listesi için önemli haberleri çeker ve AI ile filtreler."""
-    if not request.tickers: return {"news": []}
+    if not request.tickers:
+        return {"news": []}
     try:
         from backend.data.news_fetcher import fetch_and_filter_news
         data = fetch_and_filter_news(request.tickers, request.api_key, request.model, request.lang)

@@ -142,8 +142,10 @@ def predict_price(ticker: str) -> dict:
         # ── 4. Güven Skoru (Confidence) & Drift Fallback ───────────────────
         vol_factor = daily_vol * 100
         
-        if vol_factor <= 0: confidence = 95.0
-        else: confidence = max(10, min(95, 100 - (vol_factor * 15)))
+        if vol_factor <= 0:
+            confidence = 95.0
+        else:
+            confidence = max(10, min(95, 100 - (vol_factor * 15)))
 
         # ⚡ DRIFT GUARD: Güven skoru fırlarsa/çürürse klasik analizlere dön (Fallback)
         if confidence < 40.0:
@@ -155,9 +157,12 @@ def predict_price(ticker: str) -> dict:
             }
 
         # ── 5. Yön Belirleme ─────────────────────────────────────────────
-        if change_pct > 1.0: direction = "UP"
-        elif change_pct < -1.0: direction = "DOWN"
-        else: direction = "SIDEWAYS"
+        if change_pct > 1.0:
+            direction = "UP"
+        elif change_pct < -1.0:
+            direction = "DOWN"
+        else:
+            direction = "SIDEWAYS"
 
         return {
             "ticker": ticker,

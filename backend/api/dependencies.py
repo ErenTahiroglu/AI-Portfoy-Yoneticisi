@@ -67,7 +67,7 @@ async def get_current_user(request: Request) -> dict:
 
 def get_supabase_client():
     """Supabase client (PostgREST) instance'ı döner (Synchronous wrappers are common in FastAPI DI)."""
-    from supabase import create_client, Client
+    from supabase import create_client
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not url or not key:

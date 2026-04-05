@@ -79,7 +79,7 @@ def _get_single_stock_data(ticker):
                 
                 cash = get_val(row, ['CashAndCashEquivalents'])
                 st_investments = get_val(row, ['OtherShortTermInvestments', 'ShortTermInvestments'])
-                receivables = get_val(row, ['AccountsReceivable', 'Receivables'])
+                # receivables = get_val(row, ['AccountsReceivable', 'Receivables']) # Unused
                 
                 bal_date = str(row.get('asOfDate', 'Bilinmiyor')).split(' ')[0]
                 break
@@ -163,10 +163,12 @@ def get_financials(ticker):
                 tasks = []
                 for _, row in df.iterrows():
                     sub_ticker = row.get('symbol')
-                    if not isinstance(sub_ticker, str): continue
+                    if not isinstance(sub_ticker, str):
+                        continue
                     
                     weight = float(row.get('holdingPercent', 0))
-                    if weight <= 0: continue
+                    if weight <= 0:
+                        continue
                     
                     tasks.append(fetch_holding(sub_ticker, weight, sem))
                 return await asyncio.gather(*tasks)
