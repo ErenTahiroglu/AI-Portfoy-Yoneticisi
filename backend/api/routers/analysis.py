@@ -140,7 +140,7 @@ async def analyze_portfolio(request: AnalysisRequest, req: Request):
                     ticker, res, err = task.result()
                     if err:
                         yield f"data: {json.dumps({'ticker': ticker, 'error': str(err)})}\n\n"
-                    else:
+                    elif res is not None:
                         res["weight"] = weights_map.get(ticker, 1.0)
                         yield f"data: {json.dumps(res)}\n\n"
         except Exception as e:

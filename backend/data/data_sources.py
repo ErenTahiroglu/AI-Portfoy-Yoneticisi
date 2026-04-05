@@ -49,7 +49,7 @@ if not settings.SSL_VERIFY:
 try:
     import certifi
     certifi.where = lambda: ""
-    certifi.old_where = certifi.where
+    setattr(certifi, "old_where", certifi.where)
 except ImportError:
     pass
 
@@ -122,7 +122,7 @@ try:
             return attr
 
 
-    yq.Ticker = SafeTicker
+    setattr(yq, "Ticker", SafeTicker)
     # Optional: also monkey-patch it in sys.modules just in case some place uses local import
     sys.modules["yahooquery"].Ticker = SafeTicker
 except Exception as e:

@@ -1,6 +1,7 @@
 import json
 import logging
-from langchain_core.messages import SystemMessage, HumanMessage
+from typing import Dict, List, Any, cast
+from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 
 from backend.engine.agent_states import GraphState
 from backend.infrastructure.llm_factory import get_quick_think_llm, get_deep_think_llm
@@ -41,7 +42,7 @@ async def bull_researcher_node(state: GraphState) -> dict:
     {reports_str}
     """
     
-    messages = [SystemMessage(content=prompt)]
+    messages: List[BaseMessage] = [SystemMessage(content=prompt)]
     for past_turn in history:
         messages.append(HumanMessage(content=past_turn))
         
@@ -63,7 +64,6 @@ async def bull_researcher_node(state: GraphState) -> dict:
 async def bear_researcher_node(state: GraphState) -> dict:
     ticker = state.get("company_of_interest", state.get("ticker"))
     reports_str = _stringify_state_reports(state)
-    history = state.get("investment_debate_state", {}).get("history", [])
     
     mode = "ISLAMIC-ONLY" if not state.get("check_financials", True) else "FULL-ANALYSIS"
     
@@ -78,8 +78,8 @@ async def bear_researcher_node(state: GraphState) -> dict:
     {reports_str}
     """
     
-    messages = [SystemMessage(content=prompt)]
-    for past_turn in history:
+    messages: List[BaseMessage] = [SystemMessage(content=prompt)]
+    for past_turn in (state.get("bull_history", []) or []):
         messages.append(HumanMessage(content=past_turn))
         
     if not state.get("use_ai", True):

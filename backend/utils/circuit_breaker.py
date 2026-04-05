@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import Callable, Optional, Union, Any
+from typing import Callable, Optional, Union, Any, SupportsIndex
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class CircuitBreaker:
         self.fallback_factory = fallback_factory
         self.failures = 0
         self.state = "CLOSED" # CLOSED, OPEN, HALF_OPEN
-        self.last_failure_time = 0
+        self.last_failure_time: float = 0.0
 
     def __call__(self, func: Callable) -> Callable:
         def wrapper(*args, **kwargs):
@@ -66,7 +66,7 @@ class FastFailList(list):
         super().__init__(*args)
         self.cb = cb
     
-    def __getitem__(self, index: Union[int, slice]) -> Any:
+    def __getitem__(self, index: SupportsIndex | slice) -> Any:
         if self.cb and self.cb.state == "OPEN":
             return 0
         return super().__getitem__(index)
