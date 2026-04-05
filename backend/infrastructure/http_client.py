@@ -1,5 +1,5 @@
 import httpx
-from typing import Optional
+from typing import Optional, cast
 
 # Global Singleton HTTP Client for TCP Connection Pooling
 # Prevent Socket Exhaustion during async Fan-Out requests (Zombie connections on Free Tiers)
@@ -24,4 +24,4 @@ def get_http_client() -> httpx.AsyncClient:
     global global_http_client
     if global_http_client is None:
         init_global_http_client()
-    return global_http_client
+    return cast(httpx.AsyncClient, global_http_client)

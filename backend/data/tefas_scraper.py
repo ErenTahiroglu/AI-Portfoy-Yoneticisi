@@ -15,6 +15,7 @@ import time
 import threading
 from curl_cffi import requests
 from bs4 import BeautifulSoup
+from typing import cast
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +165,7 @@ class TefasScraper:
         # Remove duplicates
         df = df[~df.index.duplicated(keep='first')]
         
-        return df[["Close"]]
+        return cast(pd.DataFrame, df[["Close"]])
 
 _tefas_lock = threading.Lock()
 

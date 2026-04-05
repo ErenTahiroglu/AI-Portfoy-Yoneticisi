@@ -288,7 +288,7 @@ async def logout(request: Request):
         try:
              from backend.infrastructure.redis_cache import cache_set
              # Token'ı 24 Saatliğine kara listeye al (Max TTL simülasyonu)
-             cache_set(f"jwt_blacklist:{token}", "true", ttl=86400)
+             cache_set(f"jwt_blacklist:{token}", {"revoked": True}, ttl=86400)
              logger.info("User JWT blacklisted successfully on logout.")
         except ImportError:
              logger.warning("Redis support missing, token not listed.")

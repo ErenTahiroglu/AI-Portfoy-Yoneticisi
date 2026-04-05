@@ -151,12 +151,12 @@ class HisseAnaliz(BaseAnalyzer):
         if cpi is not None and not cpi.empty:
             # Yıllık enflasyon hesapla
             sonuc: Dict[int, float] = {}
-            cpi_idx = cast(pd.DatetimeIndex, pd.DatetimeIndex(cpi.index))
+            cpi_idx = cast(Any, pd.DatetimeIndex(cpi.index))
             cpi_col = cast(pd.Series, cpi["TURCPIALLMINMEI"])
             for yil in self.yillar:
                 try:
-                    once = float(cast(pd.Series, cpi_col[cpi_idx.year == yil - 1]).iloc[-1])
-                    bu   = float(cast(pd.Series, cpi_col[cpi_idx.year == yil    ]).iloc[-1])
+                    once = float(cpi_col[cpi_idx.year == yil - 1].iloc[-1])
+                    bu   = float(cpi_col[cpi_idx.year == yil    ].iloc[-1])
                     sonuc[yil] = ((bu - once) / once) * 100
                 except Exception:
                     sonuc[yil] = VARSAYILAN_ENF

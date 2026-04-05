@@ -1,6 +1,8 @@
 import pytest
+from typing import cast
 from unittest.mock import patch, MagicMock
 from backend.engine.graph import summarizer_node, SummarizedDebate
+from backend.engine.agent_states import GraphState
 
 # ── 1. Summarizer Node Garbage/Validation Failure Tests ─────────────────────
 
@@ -31,7 +33,7 @@ async def test_summarizer_validation_failure_hold_mode():
     }
 
     with patch("backend.engine.graph.get_quick_think_llm", return_value=mock_llm):
-        result = await summarizer_node(state)
+        result = await summarizer_node(cast(GraphState, state))
         
     assert "HOLD" in result["final_trade_decision"]
     assert "şema doğrulama (validation) kalıcı olarak çöktü" in result["messages"][0].lower()
@@ -45,7 +47,7 @@ async def test_summarizer_empty_history_noop():
         "investment_debate_state": {"history": ["short"]},
         "risk_debate_state": {"history": []}
     }
-    result = await summarizer_node(state)
+    result = await summarizer_node(cast(GraphState, state))
     assert result == {}
 
 # ── 2. LLM Timeout / Exception Resilience ───────────────────────────────────
@@ -62,6 +64,6 @@ async def test_summarizer_unexpected_exception():
     }
 
     with patch("backend.engine.graph.get_quick_think_llm", return_value=mock_llm):
-        result = await summarizer_node(state)
+        result = await summarizer_node(cast(GraphState, state))
 
     assert "[HOLD]" in result["final_trade_decision"]

@@ -123,7 +123,7 @@ class BaseAnalyzer:
     def _utc(df: "pd.DataFrame | pd.Series") -> pd.DataFrame:
         if isinstance(df, pd.Series):
             df = df.to_frame()
-        idx = cast(pd.DatetimeIndex, pd.to_datetime(df.index))
+        idx = cast(Any, pd.to_datetime(df.index))
         if idx.tzinfo is None:
             df.index = idx.tz_localize("UTC")
         else:
@@ -136,7 +136,8 @@ class BaseAnalyzer:
 
     @staticmethod
     def _ydf(df: pd.DataFrame, yil: int) -> pd.DataFrame:
-        return df.loc[cast(pd.DatetimeIndex, pd.to_datetime(df.index)).year == yil]
+        idx = cast(Any, pd.to_datetime(df.index))
+        return df.loc[idx.year == yil]
 
     # ─────────────────────────────────────────────────────────────────────────
     # GETİRİ HESAPLAMALARI
@@ -176,7 +177,8 @@ class BaseAnalyzer:
     def _temettu_verimi(self, temettular: pd.Series,
                         fiyatlar: pd.DataFrame, yil: int) -> float:
         try:
-            yt = temettular.loc[cast(pd.DatetimeIndex, pd.to_datetime(temettular.index)).year == yil]
+            idx = cast(Any, pd.to_datetime(temettular.index))
+            yt = temettular.loc[idx.year == yil]
             if yt.empty:
                 return 0.0
             yf_ = self._ydf(fiyatlar, yil)

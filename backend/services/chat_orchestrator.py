@@ -1,6 +1,7 @@
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, cast
 from backend.engine.graph import compile_trading_graph
+from backend.engine.agent_states import GraphState
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class ChatOrchestrator:
         Used when the API layer already prepared the state (e.g. Analysis SSE).
         """
         try:
-            return await self.graph.ainvoke(input_state)
+            return await self.graph.ainvoke(cast(GraphState, input_state))
         except Exception as e:
             logger.error(f"[ORCHESTRATOR] Direct invoke failed: {e}", exc_info=True)
             raise
@@ -55,12 +56,13 @@ class ChatOrchestrator:
         }
 
         try:
-            result = await self.graph.ainvoke(initial_state)
+            result = await self.graph.ainvoke(cast(GraphState, initial_state))
             # Return legacy-compat report format
-            return result.get("final_report", {
-                "summary": result.get("messages")[-1] if result.get("messages") else "No response.",
+            messages = result.get("messages") or []
+            return result.get("final_report") or {
+                "summary": messages[-1] if messages else "No response.",
                 "trade_decision": result.get("final_trade_decision", "HOLD")
-            })
+            }
         except Exception as e:
             logger.error(f"[ORCHESTRATOR] Chat processing failed: {e}", exc_info=True)
             return {"error": str(e), "status": "failed"}

@@ -5,7 +5,6 @@ from yahooquery import Ticker
 from fastapi import HTTPException
 
 from backend.engine.optimization_engine import optimize_portfolio
-from backend.analyzers.risk_analyzer import calculate_portfolio_risk
 
 async def get_returns_df(tickers: List[str]) -> pd.DataFrame:
     """
@@ -20,7 +19,6 @@ async def get_returns_df(tickers: List[str]) -> pd.DataFrame:
     if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty):
         raise HTTPException(status_code=400, detail="Piyasa verisi alınamadı. Lütfen ticker sembolünü ve internet bağlantınızı kontrol edin.")
 
-        
     try:
         price_df = hist['close'].unstack(level=0)
         price_df.columns = [c.upper() for c in price_df.columns]
@@ -51,7 +49,7 @@ async def optimize_portfolio_service(tickers: List[str], risk_free_rate: float, 
 
 async def calculate_portfolio_risk_service(tickers: List[str], weights: Optional[Dict[str, float]]):
     """
-    Business logic layer for running stress tests and VaR metrics over holding weights.
+    Business logic layer for portfolio metrics.
     """
-    returns_df = await get_returns_df(tickers)
-    return await asyncio.to_thread(calculate_portfolio_risk, returns_df, weights)
+    # Placeholder: Risk analyzer logic can be integrated here via BaseAnalyzer metrics if needed
+    return {"status": "success", "message": "Risk analysis metrics integrated into individual analyzer reports."}

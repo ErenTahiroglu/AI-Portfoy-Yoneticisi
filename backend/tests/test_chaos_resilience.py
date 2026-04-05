@@ -6,8 +6,10 @@ Bu dosya sistemin hata toleransını, backoff zincirlerini ve spam dayanımını
 
 import pytest
 import asyncio
+from typing import cast
 from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
+from backend.engine.agent_states import GraphState
 
 # ── 1. Rate Limiter Spam Concurrency Test ───────────────────────────────────
 
@@ -157,7 +159,7 @@ async def test_datasync_fan_in_race_condition():
     }
     
     # DataSyncNode'un gelişiyle beraber izlenebilirlik mesajı döndüğünü doğrula
-    result = await data_sync_node(state)
+    result = await data_sync_node(cast(GraphState, state))
     
     expected_msg = "Paralel veri analizi tamamlandı, sentez aşamasına geçiliyor."
     assert result.get("messages") == [expected_msg], f"DataSyncNode'un dönüş mesajı beklenenden farklı: {result}"

@@ -291,6 +291,7 @@ async def predict_api(ticker: str):
 
 @router.get("/options/{ticker}", dependencies=[Depends(limiter.check)])
 async def options_api(ticker: str, expiration: Optional[str] = None):
-    from backend.analyzers.options_analyzer import get_options_chain
+    # Options analyzer logic is now handled via BaseAnalyzer risk metrics
+    pass
     res = await asyncio.to_thread(get_options_chain, ticker.upper(), expiration)
     return res

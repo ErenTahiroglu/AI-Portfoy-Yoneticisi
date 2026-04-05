@@ -53,9 +53,10 @@ class TestProductionIntegrity(unittest.TestCase):
         res = _get_single_stock_data('AAPL')
         
         self.assertIsNotNone(res)
-        self.assertEqual(res['purification_ratio'], 5.0)
-        self.assertEqual(res['debt_ratio'], 30.0)
-        self.assertEqual(res['liquidity_ratio'], 30.0)
+        if res is not None:
+            self.assertEqual(res['purification_ratio'], 5.0)
+            self.assertEqual(res['debt_ratio'], 30.0)
+            self.assertEqual(res['liquidity_ratio'], 30.0)
         print("✅ Standart Hesaplama: Başarılı")
 
     @patch('backend.analyzers.islamic_analyzer.Ticker')

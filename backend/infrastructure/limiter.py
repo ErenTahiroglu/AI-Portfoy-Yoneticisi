@@ -96,7 +96,7 @@ class RateLimiter:
 
             # 4. Yeni isteği ekle ve kaydet
             timestamps.append(now)
-            await asyncio.to_thread(redis_cache.cache_set, limit_key, timestamps, ttl=self.period)
+            await asyncio.to_thread(redis_cache.cache_set, limit_key, {"history": timestamps}, ttl=self.period)
 
 
 # Varsayılan limit: 1 dakikada 3 analiz isteği
