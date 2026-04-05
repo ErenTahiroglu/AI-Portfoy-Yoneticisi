@@ -8,8 +8,10 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:screenshot": "node frontend/tests/ui/screenshot_bot.js",
-    "lint": "ruff check . && eslint \"frontend/js/**/*.js\"",
-    "lint:fix": "ruff check . --fix && eslint \"frontend/js/**/*.js\" --fix"
+    "lint": "npm run lint:js && npm run lint:py",
+    "lint:js": "eslint \"frontend/js/**/*.js\"",
+    "lint:py": "ruff check .",
+    "lint:fix": "npm run lint:js -- --fix && npm run lint:py -- --fix"
   },
   "repository": {
     "type": "git",

@@ -39,7 +39,7 @@ jobs:
         run: npm install
 
       - name: Run ESLint (JS Verification)
-        run: npm run lint
+        run: npm run lint:js
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -51,7 +51,7 @@ jobs:
           pip install ruff pyright
           
       - name: Run Ruff Linter
-        run: ruff check .
+        run: npm run lint:py
 
       - name: Run Pyright Type Checker
         run: pyright backend/
