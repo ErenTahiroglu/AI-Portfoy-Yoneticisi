@@ -67,6 +67,7 @@ def test_circuit_breaker_high_beta():
 
 @patch("jwt.decode")
 @patch("backend.infrastructure.redis_cache.cache_get")
+@patch("backend.infrastructure.auth.SUPABASE_JWT_SECRET", "dummy_secret_for_tests")
 def test_auth_expired_token(mock_redis, mock_jwt_decode):
     """Süresi dolmuş token ile 401 hatası fırlatır."""
     import jwt
@@ -79,6 +80,7 @@ def test_auth_expired_token(mock_redis, mock_jwt_decode):
     assert "Token has expired" in exc.value.detail
 
 @patch("backend.infrastructure.redis_cache.cache_get")
+@patch("backend.infrastructure.auth.SUPABASE_JWT_SECRET", "dummy_secret_for_tests")
 def test_auth_blacklisted_token(mock_redis):
     """Kara listedeki token ile erişim engellenir."""
     mock_redis.return_value = True # Found in blacklist
