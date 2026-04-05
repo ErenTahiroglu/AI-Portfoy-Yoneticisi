@@ -169,23 +169,9 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 from fastapi.middleware.gzip import GZipMiddleware
 
-# ── Middleware: Shadow Test (Zero-Trust Data Protection) ─────────────────
-class ShadowTestMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.headers.get("x-shadow-test", "").lower() == "true":
-            # Allow safe reads and the main analysis engine to work
-            if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
-                path = request.url.path
-                # Bypass database inserts for portfolios, trades, alerts, etc.
-                if any(ext in path for ext in ["/portfolios", "/paper_trades", "/alerts", "/telemetry"]):
-                    logger.info(f"🛡️ Shadow Agent bypass triggered for mutating route: {path}")
-                    return JSONResponse(content={"status": "shadow_success", "message": "Bypassed DB insert"}, status_code=200)
-        return await call_next(request)
-
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(IdempotencyMiddleware)
 app.add_middleware(NoCacheMiddleware)
-app.add_middleware(ShadowTestMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 

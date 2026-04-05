@@ -84,6 +84,10 @@ async def save_onboarding_profile(body: OnboardingProfileRequest, request: Reque
     }
 
     try:
+        if request.headers.get("x-shadow-test", "").lower() == "true":
+            logger.info(f"🛡️ Shadow bypass triggered. Skipping DB POST to {url}")
+            return {"status": "success", "shadow_bypassed": True}
+            
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(url, headers=headers, json=upsert_body)
             if resp.status_code not in (200, 201):
@@ -145,6 +149,10 @@ async def mark_alerts_read(request: Request):
     payload = {"is_read": True}
 
     try:
+        if request.headers.get("x-shadow-test", "").lower() == "true":
+            logger.info("🛡️ Shadow bypass triggered for alerts patch.")
+            return {"status": "success", "shadow_bypassed": True}
+            
         async with httpx.AsyncClient(timeout=5.0) as client:
             await client.patch(url, headers=headers, json=payload)
         return {"status": "success"}
@@ -202,6 +210,10 @@ async def update_user_settings(settings: UserSettingsRequest, request: Request):
     }
 
     try:
+        if request.headers.get("x-shadow-test", "").lower() == "true":
+            logger.info("🛡️ Shadow bypass triggered for user_settings.")
+            return {"status": "success", "shadow_bypassed": True}
+            
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(url, headers=headers, json=payload)
             if resp.status_code not in [200, 201]:
@@ -387,6 +399,10 @@ async def save_portfolio(request: Request):
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates" 
         }
+
+        if request.headers.get("x-shadow-test", "").lower() == "true":
+            logger.info("🛡️ Shadow bypass triggered for portfolio save.")
+            return {"status": "success", "shadow_bypassed": True}
 
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(f"{supa_url}/rest/v1/portfolios", json=body, headers=headers)
