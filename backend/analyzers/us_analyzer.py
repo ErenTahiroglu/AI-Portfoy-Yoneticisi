@@ -74,8 +74,8 @@ class HisseAnaliz(BaseAnalyzer):
             sonuc: Dict[int, float] = {}
             for yil in self.yillar:
                 try:
-                    c_once = cpi[cpi.index.year == yil - 1]["CPIAUCSL"]
-                    c_bu = cpi[cpi.index.year == yil]["CPIAUCSL"]
+                    c_once = cpi[cast(pd.DatetimeIndex, cpi.index).year == yil - 1]["CPIAUCSL"]
+                    c_bu = cpi[cast(pd.DatetimeIndex, cpi.index).year == yil]["CPIAUCSL"]
                     if isinstance(c_once, pd.Series) and isinstance(c_bu, pd.Series) and not c_once.empty and not c_bu.empty:
                         once = cast(pd.Series, c_once).iloc[-1]
                         bu = cast(pd.Series, c_bu).iloc[-1]
@@ -101,9 +101,9 @@ class HisseAnaliz(BaseAnalyzer):
                 raise ValueError
             def _n(ts):
                 return ts.tz_convert(None) if ts.tzinfo else ts
-            cb = self.aylik_cpi[self.aylik_cpi.index <= _n(bas)]["CPIAUCSL"].iloc[-1]
-            ce = self.aylik_cpi[self.aylik_cpi.index <= _n(bit)]["CPIAUCSL"].iloc[-1]
-            return ((ce - cb) / cb) * 100
+            cb = cast(pd.Series, self.aylik_cpi[self.aylik_cpi.index <= _n(bas)]["CPIAUCSL"]).iloc[-1]
+            ce = cast(pd.Series, self.aylik_cpi[self.aylik_cpi.index <= _n(bit)]["CPIAUCSL"]).iloc[-1]
+            return ((float(ce) - float(cb)) / float(cb)) * 100
         except Exception:
             return (VARSAYILAN_ENF / 365) * (bit - bas).days
 

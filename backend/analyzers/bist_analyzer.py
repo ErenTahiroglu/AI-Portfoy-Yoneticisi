@@ -27,7 +27,7 @@ from dataclasses import asdict
 import pandas as pd
 from io import StringIO
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Any, cast
 
 from backend.data.data_sources import (
     HAS_CURL, AV_KEY, req_lib,
@@ -151,12 +151,12 @@ class HisseAnaliz(BaseAnalyzer):
         if cpi is not None and not cpi.empty:
             # Yıllık enflasyon hesapla
             sonuc: Dict[int, float] = {}
-            cpi_idx = pd.DatetimeIndex(cpi.index)
-            cpi_col = cpi["TURCPIALLMINMEI"]
+            cpi_idx = cast(pd.DatetimeIndex, pd.DatetimeIndex(cpi.index))
+            cpi_col = cast(pd.Series, cpi["TURCPIALLMINMEI"])
             for yil in self.yillar:
                 try:
-                    once = float(cpi_col[cpi_idx.year == yil - 1].iloc[-1])
-                    bu   = float(cpi_col[cpi_idx.year == yil    ].iloc[-1])
+                    once = float(cast(pd.Series, cpi_col[cpi_idx.year == yil - 1]).iloc[-1])
+                    bu   = float(cast(pd.Series, cpi_col[cpi_idx.year == yil    ]).iloc[-1])
                     sonuc[yil] = ((bu - once) / once) * 100
                 except Exception:
                     sonuc[yil] = VARSAYILAN_ENF
@@ -182,9 +182,9 @@ class HisseAnaliz(BaseAnalyzer):
                 raise ValueError
             def _n(ts):
                 return ts.tz_convert(None) if ts.tzinfo else ts
-            col = self.aylik_cpi["TURCPIALLMINMEI"]
-            cb = float(col[self.aylik_cpi.index <= _n(bas)].iloc[-1])
-            ce = float(col[self.aylik_cpi.index <= _n(bit)].iloc[-1])
+            col = cast(pd.Series, self.aylik_cpi["TURCPIALLMINMEI"])
+            cb = float(cast(pd.Series, col[self.aylik_cpi.index <= _n(bas)]).iloc[-1])
+            ce = float(cast(pd.Series, col[self.aylik_cpi.index <= _n(bit)]).iloc[-1])
             return ((ce - cb) / cb) * 100
         except Exception:
             return (VARSAYILAN_ENF / 365) * (bit - bas).days
@@ -364,14 +364,15 @@ class HisseAnaliz(BaseAnalyzer):
             # Şirket adı
             price_info = t.price
             if isinstance(price_info, dict) and yf_sembol in price_info:
-                ad = price_info[yf_sembol].get('shortName') or price_info[yf_sembol].get('longName') or ad
+                sym_data = cast(dict, price_info[yf_sembol])
+                ad = sym_data.get('shortName') or sym_data.get('longName') or ad
                 
             # Temettü (Eğer Yahoo verisi varsa)
             if kaynaklar["Yahoo"] is not None and "Dividends" in kaynaklar["Yahoo"].columns:
-                tem = kaynaklar["Yahoo"]["Dividends"]
-                tem = tem[tem > 0]
-                if not tem.empty:
-                    temettular = tem
+                tem = cast(pd.Series, kaynaklar["Yahoo"]["Dividends"])
+                tem_f = tem[tem > 0]
+                if not cast(pd.Series, tem_f).empty:
+                    temettular = cast(pd.Series, tem_f)
         except Exception:
             pass
 

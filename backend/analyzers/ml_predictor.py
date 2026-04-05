@@ -9,6 +9,7 @@ Prophet kütüphanesinin ağırlığını (RAM/Depolama) sistemden kaldırmak i�
 """
 import logging
 import os
+from typing import cast, Any
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def predict_price(ticker: str) -> dict:
 
         # Tarih ve Kapanış Verilerini Al
         df = pd.DataFrame({
-            "ds": hist.index.tz_localize(None),
+            "ds": cast(pd.DatetimeIndex, hist.index).tz_localize(None),
             "y": hist["Close"].values,
         })
         
@@ -79,11 +80,11 @@ def predict_price(ticker: str) -> dict:
         anomaly_threshold = 0.50 if is_crypto else 0.25 
         
         anomalies = returns[returns.abs() > anomaly_threshold]
-        if not anomalies.empty:
+        if not cast(pd.Series, anomalies).empty:
              logger.warning(f"⚠️ [{ticker}] Veri Zehirlenmesi/Anomali Tespit Edildi! (%{anomaly_threshold*100}+ devingenlik). Tahmin durduruluyor.")
              return {
                  "ticker": ticker, 
-                 "error": f"Veri setinde aşırı anomali tespit edildi (%{round(anomalies.iloc[-1]*100,2)}). Tahmin askıya alındı.",
+                 "error": f"Veri setinde aşırı anomali tespit edildi (%{round(float(cast(pd.Series, anomalies).iloc[-1])*100,2)}). Tahmin askıya alındı.",
                  "enabled": True
              }
 
@@ -95,15 +96,15 @@ def predict_price(ticker: str) -> dict:
         
         # Momentum: Son 10 günlük eğilim (Doğrusal Regresyon Eğimi benzeri basit trend)
         if len(series) >= 10:
-            momentum = float((series.iloc[-1] - series.iloc[-10]) / 10.0)
+            momentum = float(cast(pd.Series, series).iloc[-1] - cast(pd.Series, series).iloc[-10]) / 10.0
         else:
-            momentum = float(series.diff().mean())
+            momentum = float(cast(pd.Series, series.diff()).mean())
             
         if pd.isna(momentum):
             momentum = 0.0
 
         # Volatilite (Günlük getiri standart sapması)
-        daily_vol = float(returns.std()) # Günlük oynaklık oranı (Örn: 0.02)
+        daily_vol = float(cast(pd.Series, returns).std()) # Günlük oynaklık oranı (Örn: 0.02)
         if pd.isna(daily_vol) or daily_vol < 0:
             daily_vol = 0.02 # Safe baseline volatility
         
@@ -127,7 +128,7 @@ def predict_price(ticker: str) -> dict:
             std_error = current_price * daily_vol * np.sqrt(i)
             
             plot_data.append({
-                "ds": str(future_dates[i-1].date()),
+                "ds": str(cast(Any, future_dates[i-1]).date()),
                 "yhat": round(float(step_target), 2),
                 "yhat_lower": round(float(step_target - std_error), 2),
                 "yhat_upper": round(float(step_target + std_error), 2),
