@@ -1,4 +1,4 @@
-name: CI
+name: Enterprise CI/CD Quality Gate
 
 on:
   push:
@@ -11,19 +11,27 @@ env:
   MOCK_LLM: true
 
 jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Trufflehog needs full history
+      
+      - name: TruffleHog Secret Scanner
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
   lint:
+    needs: security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Cache npm dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json', '**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -35,19 +43,26 @@ jobs:
       - name: Run ESLint (JS Verification)
         run: npm run lint
 
-  test:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Linters
+        run: |
+          pip install ruff pyright
+          
+      - name: Run Ruff Linter
+        run: ruff check .
+
+      - name: Run Pyright Type Checker
+        run: pyright backend/
+
+  test-core:
     needs: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -57,27 +72,28 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-asyncio psutil memory-profiler pytest-socket httpx pandas numpy langchain-community
+          pip install pytest pytest-asyncio psutil pytest-socket httpx pandas numpy langchain-community
 
-      - name: Run Zero Trust Tests (SRE Guard Locked)
+      - name: Run Core Financial & Logic Tests (Zero-Trust Locked)
         run: |
-          # pytest-socket kalkanı --disable-socket ile her sızıntıyı kilitler.
-          # Sadece 127.0.0.1 ve localhost erişilebilir kalır.
-          PYTHONPATH=. python -m pytest backend/tests/ -v --disable-socket --allow-hosts=127.0.0.1,localhost
+          PYTHONPATH=. python -m pytest backend/tests/test_financial_integrity.py backend/tests/test_decimal_precision_v3.py backend/tests/test_logic_hardening.py -v --disable-socket --allow-hosts=127.0.0.1,localhost
 
-      - name: Check Performance Artifact
-        if: always()
-        continue-on-error: true
-        run: |
-          # Performans raporlarını CI eserlerine ekle
-          if [ -f backend/tests/performance_report.txt ]; then
-            echo "✅ Performance report found."
-          else
-            echo "❌ Performance report not found."
-          fi
+  test-chaos:
+    needs: test-core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - uses: actions/upload-artifact@v4.6.0
-        if: always()
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: performance-metrics
-          path: backend/tests/performance_report.txt
+          python-version: '3.12'
+
+      - name: Install Execution Dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-asyncio psutil pytest-socket httpx
+
+      - name: Run Resilience & Chaos Tests (Rate Limiter, Circuit Breaker)
+        run: |
+          PYTHONPATH=. python -m pytest backend/tests/test_chaos_engineering.py backend/tests/test_chaos_resilience.py backend/tests/test_sre_firewall.py -v

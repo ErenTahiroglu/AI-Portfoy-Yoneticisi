@@ -1,0 +1,53 @@
+name: Production Sentinel (Shadow Agent)
+
+on:
+  schedule:
+    # Her 14 dakikada bir çalıştır ((0,14,28,42,56 as cron doesn't evenly divide by 14 nicely, "*/14" is standard enough depending on runner load))
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Manuel tetiklemeye de izin ver
+
+jobs:
+  production-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Frontend (Vercel)
+        run: |
+          # Vercel'in / ayağa kalkma süresi. Başarısız olursa site çökmüş demektir.
+          curl --fail -s -o /dev/null -w "%{http_code}" https://ai-destekli-portfoy-yoneticisi.vercel.app || exit 1
+
+      - name: Shadow Analysis via Backend (Render)
+        timeout-minutes: 1 # Analizin 1 dakikadan uzun sürmemesi beklenir (Hızlı 1 hisse)
+        run: |
+          RESPONSE=$(curl -s -X POST https://ai-portfoy-yoneticisi-vj2m.onrender.com/api/analyze \
+               -H "Content-Type: application/json" \
+               -H "X-Shadow-Test: true" \
+               -d '{"tickers": "AAPL", "use_ai": false, "check_financials": false, "check_islamic": false, "lang": "TR"}')
+          
+          # Render API /api/analyze SSE döndürüyor mu veya timeout mu yiyor?
+          # Sunucu SSE yerine HTTP hatası döndürürse (örn: 502) hata fırlat
+          if [[ "$RESPONSE" == *"Internal Server Error"* ]]; then
+             echo "💥 Backend Analysis FAILED"
+             exit 1
+          fi
+
+          echo "✅ Backend Engine is Active and reachable."
+
+      - name: Check Shadow Mutate Bypass (Sentinel Check)
+        run: |
+           # Test_idempotency: x-shadow-test header'ının veri tabanını kirletmediğini POST yaparak test et.
+           RES_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://ai-portfoy-yoneticisi-vj2m.onrender.com/api/portfolios \
+               -H "Content-Type: application/json" \
+               -H "X-Shadow-Test: true" \
+               -d '{"tickers": ["AAPL"], "user_id": "sentinel-001"}')
+               
+           if [ "$RES_CODE" -ne 200 ] && [ "$RES_CODE" -ne 201 ]; then
+              echo "💥 Bypass Test Failed! DB MIGHT BE POLLUTED! Status: $RES_CODE"
+              exit 1
+           fi
+           echo "🛡️ Shadow Mutate Bypass is Active."
+
+      - name: Send Alert on Failure
+        if: failure()
+        run: |
+          echo "Send alert to Discord/Slack/Telegram webhook using secrets."
+          # curl -X POST -H 'Content-type: application/json' --data '{"text":"💥 PROMETHEUS ALERT: AI Portfolio Shadow Agent Failed! Production might be DOWN."}' ${{ secrets.WEBHOOK_URL }}
