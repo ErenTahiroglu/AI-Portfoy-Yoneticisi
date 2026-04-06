@@ -23,7 +23,7 @@ from dataclasses import asdict
 import pandas as pd
 from io import StringIO
 from datetime import datetime
-from typing import Dict, Optional, cast
+from typing import Dict, Optional, cast, Any
 
 from backend.data.data_sources import (
     HAS_CURL, AV_KEY, req_lib,

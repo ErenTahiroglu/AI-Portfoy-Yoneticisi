@@ -2,6 +2,7 @@ import pytest
 import socket
 import httpx
 import requests
+from typing import cast, Any
 from pytest_socket import disable_socket
 
 def test_sync_network_block_firewall():
