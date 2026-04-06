@@ -14,7 +14,7 @@ async def get_returns_df(tickers: List[str]) -> pd.DataFrame:
     # Executing blocking dataframe manipulations in separate thread isn't strictly needed for Ticker 
     # as it's already wrapped, but let's be fully async safe
     loop = asyncio.get_event_loop()
-    hist = await loop.run_in_executor(None, t.history, "1y", True)
+    hist = await loop.run_in_executor(None, lambda: t.history(period="1y", adj_ohlc=True))
     
     if hist is None or (isinstance(hist, pd.DataFrame) and hist.empty):
         raise HTTPException(status_code=400, detail="Piyasa verisi alınamadı. Lütfen ticker sembolünü ve internet bağlantınızı kontrol edin.")
@@ -31,7 +31,7 @@ async def get_returns_df(tickers: List[str]) -> pd.DataFrame:
     if returns_df.empty or len(returns_df) < 20: 
         raise HTTPException(status_code=400, detail="Yetersiz finansal veri mevcut.")
         
-    return returns_df
+    return pd.DataFrame(returns_df)
 
 async def optimize_portfolio_service(tickers: List[str], risk_free_rate: float, weights: Optional[Dict[str, float]]):
     """

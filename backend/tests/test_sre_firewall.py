@@ -33,8 +33,18 @@ async def test_async_network_block_firewall():
     full_error_text = str(excinfo.value).lower()
     
     # Eğer ExceptionGroup ise içindeki hataları da kontrol et
-    if hasattr(excinfo.value, "exceptions"):
-        for sub_e in excinfo.value.exceptions:
+    import typing
+    if typing.TYPE_CHECKING:
+        from typing import Any
+        BaseExceptionGroup = Any
+    else:
+        try:
+            BaseExceptionGroup = ExceptionGroup
+        except NameError:
+            BaseExceptionGroup = type(None)
+
+    if isinstance(excinfo.value, BaseExceptionGroup):
+        for sub_e in excinfo.value.exceptions:  # type: ignore
             full_error_text += " " + str(sub_e).lower()
 
     assert "socket" in full_error_text or "blocked" in full_error_text

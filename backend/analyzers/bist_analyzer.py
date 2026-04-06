@@ -155,8 +155,10 @@ class HisseAnaliz(BaseAnalyzer):
             cpi_col = cast(pd.Series, cpi["TURCPIALLMINMEI"])
             for yil in self.yillar:
                 try:
-                    once = float(cpi_col[cpi_idx.year == yil - 1].iloc[-1])
-                    bu   = float(cpi_col[cpi_idx.year == yil    ].iloc[-1])
+                    # Explicit casting for Pyright
+                    cpi_idx_year = cast(pd.Series, cpi_idx.year)
+                    once = float(cpi_col[cpi_idx_year == yil - 1].iloc[-1])
+                    bu   = float(cpi_col[cpi_idx_year == yil    ].iloc[-1])
                     sonuc[yil] = ((bu - once) / once) * 100
                 except Exception:
                     sonuc[yil] = VARSAYILAN_ENF

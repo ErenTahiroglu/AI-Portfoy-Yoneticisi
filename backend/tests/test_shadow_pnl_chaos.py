@@ -20,7 +20,7 @@ def test_type_mismatch_rejection():
     """Sayı yerine string gönderildiğinde Pydantic'in strict modda reddetmesini doğrular."""
     # strict=True olduğu için pydantic "0.002" stringini kabul etmez
     with pytest.raises(ValidationError):
-         UserSettingsRequest(commission_rate="0.002", slippage_rate=0.001)
+         UserSettingsRequest(commission_rate="0.002", slippage_rate=0.001)  # type: ignore
 
 # ── 2. Database Fallback (Resilience) ───────────────────────────────────────
 

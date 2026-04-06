@@ -30,7 +30,7 @@ async def test_precision_accumulation_stress(mock_ticker):
         # Float hassasiyeti kontrolü: Farkın çok küçük olması durumunda bile 
         # NEW motorun "kazanan" olarak atanması gerekir (BUY > SELL artış durumunda)
         assert winner == "NEW"
-        current_price = tn
+        current_price = Decimal(str(tn))
 
 @pytest.mark.asyncio
 @patch("yfinance.Ticker")

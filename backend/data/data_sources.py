@@ -124,6 +124,6 @@ try:
 
     setattr(yq, "Ticker", SafeTicker)
     # Optional: also monkey-patch it in sys.modules just in case some place uses local import
-    sys.modules["yahooquery"].Ticker = SafeTicker
+    setattr(sys.modules["yahooquery"], "Ticker", SafeTicker)  # type: ignore
 except Exception as e:
     logging.warning(f"yahooquery monkey-patch failed: {e}")

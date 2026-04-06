@@ -166,12 +166,14 @@ def get_financials(ticker):
                     if not isinstance(sub_ticker, str):
                         continue
                     
-                    weight = float(row.get('holdingPercent', 0))
+                    weight_val = row.get('holdingPercent', 0)
+                    weight = float(weight_val) if weight_val is not None else 0.0
                     if weight <= 0:
                         continue
                     
                     tasks.append(fetch_holding(sub_ticker, weight, sem))
-                return await asyncio.gather(*tasks)
+                results_gather = await asyncio.gather(*tasks)
+                return list(results_gather)
 
             # Run parallel fetch in worker thread (ThreadPool-safe)
             loop = asyncio.new_event_loop()
