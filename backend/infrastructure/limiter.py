@@ -51,7 +51,14 @@ class RateLimiter:
     def __init__(self, requests_limit: int = 3, period: int = 60):
         self.limit = requests_limit
         self.period = period
-        self.lock = asyncio.Lock()
+        self.locks: dict[str, asyncio.Lock] = {}
+        self._global_lock = asyncio.Lock()
+
+    async def _get_lock(self, key: str) -> asyncio.Lock:
+        async with self._global_lock:
+            if key not in self.locks:
+                self.locks[key] = asyncio.Lock()
+            return self.locks[key]
 
     async def check(self, request: Request):
         from backend.infrastructure import redis_cache
@@ -78,10 +85,18 @@ class RateLimiter:
 
         now = time.time()
 
-        async with self.lock:
+        limit_lock = await self._get_lock(limit_key)
+        async with limit_lock:
             # 1. Cache'den geçmişi oku (Redis veya In-memory L1 Fallback)
             history_data = await asyncio.to_thread(redis_cache.cache_get, limit_key)
-            timestamps = history_data if isinstance(history_data, list) else []
+            
+            # Redis verisi {'history': [...]} formatında veya doğrudan liste olabilir
+            if isinstance(history_data, dict):
+                timestamps = history_data.get("history", [])
+            elif isinstance(history_data, list):
+                timestamps = history_data
+            else:
+                timestamps = []
 
             # 2. Süresi dolmuş timestamp'leri temizle
             timestamps = [t for t in timestamps if now - t < self.period]

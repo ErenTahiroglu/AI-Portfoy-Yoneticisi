@@ -27,11 +27,10 @@ async def test_rate_limiter_concurrency_spam(mock_set, mock_get):
     mock_request.client.host = "127.0.0.1"
     
     # State mock listesi: Okunduğunda mevcut state'i, set edildiğinde mutate edilen state'i döner.
-    mock_history = []
-    mock_get.side_effect = lambda key: mock_history.copy()
+    mock_history = {}
+    mock_get.side_effect = lambda key: mock_history.get(key, {}).copy()
     def side_effect_set(key, val, ttl=None):
-        nonlocal mock_history
-        mock_history = val
+        mock_history[key] = val
     mock_set.side_effect = side_effect_set
 
     # 10 adet eşzamanlı (concurrent) istek gönderimi
