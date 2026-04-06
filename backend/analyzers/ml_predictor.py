@@ -104,7 +104,8 @@ def predict_price(ticker: str) -> dict:
             momentum = 0.0
 
         # Volatilite (Günlük getiri standart sapması)
-        daily_vol = float(returns.std() if not returns.empty else 0.0) # Günlük oynaklık oranı (Örn: 0.02)
+        daily_vol_val = returns.std() if not returns.empty else 0.0
+        daily_vol = float(cast(Any, daily_vol_val)) # Günlük oynaklık oranı (Örn: 0.02)
         if pd.isna(daily_vol) or daily_vol < 0:
             daily_vol = 0.02 # Safe baseline volatility
         

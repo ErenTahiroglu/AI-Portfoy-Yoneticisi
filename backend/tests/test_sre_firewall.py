@@ -32,19 +32,14 @@ async def test_async_network_block_firewall():
     # Python 3.12+ TaskGroups (veya LangGraph paralel düğümleri) hatayı ExceptionGroup içine alabilir.
     full_error_text = str(excinfo.value).lower()
     
-    # Eğer ExceptionGroup ise içindeki hataları da kontrol et
-    import typing
-    if typing.TYPE_CHECKING:
-        from typing import Any
-        BaseExceptionGroup = Any
-    else:
-        try:
-            BaseExceptionGroup = ExceptionGroup
-        except NameError:
-            BaseExceptionGroup = type(None)
+    # BaseExceptionGroup is only available in Python 3.11+
+    try:
+        from builtins import BaseExceptionGroup as BEG # type: ignore
+    except ImportError:
+        BEG = type(None)
 
-    if isinstance(excinfo.value, BaseExceptionGroup):
-        for sub_e in excinfo.value.exceptions:  # type: ignore
+    if isinstance(excinfo.value, BEG):
+        for sub_e in cast(Any, excinfo.value).exceptions:
             full_error_text += " " + str(sub_e).lower()
 
     assert "socket" in full_error_text or "blocked" in full_error_text

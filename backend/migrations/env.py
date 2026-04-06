@@ -14,8 +14,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 config = context.config
 
 # Overwrite sqlalchemy.url with the one from the environment
-if os.getenv("DATABASE_URL"):
-    db_url = os.getenv("DATABASE_URL")
+db_url = os.getenv("DATABASE_URL")
 if db_url:
     config.set_main_option("sqlalchemy.url", db_url)
 

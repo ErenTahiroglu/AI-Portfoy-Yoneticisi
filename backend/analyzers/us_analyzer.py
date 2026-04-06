@@ -75,8 +75,8 @@ class HisseAnaliz(BaseAnalyzer):
             for yil in self.yillar:
                 try:
                     c_idx = pd.DatetimeIndex(cpi.index)
-                    c_once = cpi[c_idx.year == yil - 1]["CPIAUCSL"]
-                    c_bu = cpi[c_idx.year == yil]["CPIAUCSL"]
+                    c_once = cast(Any, cpi)[cast(Any, c_idx).year == yil - 1]["CPIAUCSL"]
+                    c_bu = cast(Any, cpi)[cast(Any, c_idx).year == yil]["CPIAUCSL"]
                     if isinstance(c_once, pd.Series) and isinstance(c_bu, pd.Series) and not c_once.empty and not c_bu.empty:
                         once = cast(pd.Series, c_once).iloc[-1]
                         bu = cast(pd.Series, c_bu).iloc[-1]
