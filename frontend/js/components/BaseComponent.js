@@ -1,11 +1,10 @@
 /**
  * 🧱 BaseComponent.js
- * A minimal base class for Reactive Web Components.
+ * A minimal base class for Reactive Classes.
  */
 
-export class BaseComponent extends HTMLElement {
+export class BaseComponent {
     constructor() {
-        super();
         this._state = {};
     }
 

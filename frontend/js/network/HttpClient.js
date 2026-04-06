@@ -50,24 +50,14 @@ export class HttpClient {
         }
         
         let attempt = 0;
+        const retriableStatuses = [429, 502, 503, 504];
 
         while (attempt <= this.maxRetries) {
             const controller = new AbortController();
-            
-            // 🛡️ Cold Start UI Trigger
-            let wakeUpTimer = null;
-            if (!this.hasWokenUp && typeof window.AppState !== 'undefined' && endpoint.includes('/api/')) {
-                wakeUpTimer = setTimeout(() => {
-                    window.AppState.systemStatus = 'waking_up';
-                }, 3000); // 3 saniye içinde dönmezse uyarı ver
-            }
-
             const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
             try {
-                // 1. Auth Interceptor: Inject Supabase Token if available
                 const authHeaders = await this._getAuthHeaders();
-                
                 const combinedHeaders = {
                     ...this.defaultHeaders,
                     'X-Correlation-ID': correlationId,
@@ -75,81 +65,58 @@ export class HttpClient {
                     ...options.headers
                 };
 
-                if (idempotencyKey) {
-                    combinedHeaders['Idempotency-Key'] = idempotencyKey;
-                }
+                if (idempotencyKey) combinedHeaders['Idempotency-Key'] = idempotencyKey;
 
-                const fetchOptions = {
+                const response = await fetch(url, {
                     ...options,
                     headers: combinedHeaders,
                     signal: controller.signal
-                };
+                });
 
-                const response = await fetch(url, fetchOptions);
                 clearTimeout(timeoutId);
-                if (wakeUpTimer) {
-                    clearTimeout(wakeUpTimer);
-                    if (window.AppState?.systemStatus === 'waking_up') {
-                        window.AppState.systemStatus = 'ready';
-                    }
-                }
-                this.hasWokenUp = true; // İlk başarılı istekte flag'i kaldır
 
-                // 2. Handle Success
                 if (response.ok) {
-                    // Return parsed JSON or raw response if needed
                     const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        return await response.json();
-                    }
-                    return response;
+                    return contentType?.includes('application/json') ? await response.json() : response;
                 }
 
-                // 3. Handle Retriable Errors (429, 500, 502, 503, 504)
-                const isRetriable = [429, 500, 502, 503, 504].includes(response.status);
-                if (isRetriable && attempt < this.maxRetries) {
-                    // Parse Retry-After header if provided by backend
-                    const retryAfter = response.headers.get('Retry-After');
-                    const backoff = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt) * 1000;
+                // 🛡️ Retry Logic for specific statuses
+                if (retriableStatuses.includes(response.status) && attempt < this.maxRetries) {
+                    const backoff = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s...
+                    console.warn(`[HttpClient] Retrying ${url} in ${backoff}ms (Attempt ${attempt + 1}/${this.maxRetries})`);
                     
-                    console.warn(`[HttpClient] Request failed (${response.status}). Retrying in ${backoff}ms... (Attempt ${attempt + 1}/${this.maxRetries})`);
+                    // Notify UI via global event or specific callback if provided
+                    if (options.onRetry) options.onRetry(attempt + 1, this.maxRetries, backoff);
+
                     await new Promise(r => setTimeout(r, backoff));
                     attempt++;
                     continue;
                 }
 
-                // 4. Standardized Error Throw
-                let errorData;
-                try {
-                    errorData = await response.json();
-                } catch (e) {
-                    errorData = { detail: response.statusText };
-                }
-
-                throw {
-                    status: response.status,
-                    message: errorData.detail || errorData.message || 'Unknown API Error',
-                    correlationId: correlationId,
-                    data: errorData
-                };
+                const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+                throw { status: response.status, message: errorData.detail || errorData.message || 'API Error', correlationId };
 
             } catch (err) {
                 clearTimeout(timeoutId);
                 
-                if (err.name === 'AbortError') {
-                    throw { status: 408, message: 'Request Timeout', correlationId };
-                }
+                // 🛡️ Handle Retriable Errors (Network Failure OR Timeout)
+                const isTimeout = err.name === 'AbortError';
+                const isNetworkError = !err.status && !isTimeout;
 
-                // If it's already our standardized error, rethrow it
-                if (err.status) throw err;
-
-                // Network errors or other exceptions
-                if (attempt < this.maxRetries) {
-                    attempt++;
-                    const backoff = Math.pow(2, attempt) * 1000;
+                if ((isTimeout || isNetworkError) && attempt < this.maxRetries) {
+                    const backoff = Math.pow(2, attempt + 1) * 1000;
+                    console.warn(`[HttpClient] ${isTimeout ? 'Timeout' : 'Network Error'}. Retrying in ${backoff}ms (Attempt ${attempt + 1}/${this.maxRetries})`);
+                    
+                    if (options.onRetry) options.onRetry(attempt + 1, this.maxRetries, backoff);
+                    
                     await new Promise(r => setTimeout(r, backoff));
+                    attempt++;
                     continue;
                 }
+
+                // If we've reached maxRetries or it's a non-retriable error, throw it
+                if (isTimeout) throw { status: 408, message: 'Request Timeout (Max Retries Exceeded)', correlationId };
+                if (err.status) throw err; // Already standardized API error
 
                 throw { status: 0, message: err.message || 'Network Error', correlationId };
             }

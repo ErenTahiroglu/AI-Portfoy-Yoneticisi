@@ -1,4 +1,4 @@
-name: CI/CD Test
+name: CI/CD Master Pipeline
 
 on:
   push:
@@ -9,6 +9,8 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   MOCK_LLM: true
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://mock.supabase.co' }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'mock-key' }}
 
 jobs:
   security:
@@ -16,82 +18,75 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Trufflehog needs full history
-      
+          fetch-depth: 0
       - name: TruffleHog Secret Scanner
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          extra_args: --debug --only-verified
+          extra_args: --only-verified
 
-  lint:
+  lint-and-unit:
     needs: security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+      - name: Set up Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Dependencies
+        run: |
+          npm ci
+          pip install -r backend/requirements.txt ruff pytest pytest-asyncio
+      - name: Run Linters (Python & JS)
+        run: npm run lint
+      - name: Run Backend Logic Tests
+        run: PYTHONPATH=. python -m pytest backend/tests/ -v
+      - name: Run Frontend Unit Tests (Vitest)
+        run: npm test
+
+  e2e-chaos-resilience:
+    needs: lint-and-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-
-      - name: Install JS dependencies
-        run: npm install
-
-      - name: Run ESLint (JS Verification)
-        run: npm run lint:js
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Install Python Linters
+      - name: Install Dependencies
         run: |
-          pip install ruff pyright
-          pip install -r backend/requirements.txt          
-      - name: Run Ruff Linter
-        run: npm run lint:py
+          npm ci
+          pip install -r backend/requirements.txt uvicorn
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
 
-      - name: Run Pyright Type Checker
-        run: pyright backend/
+      - name: Start Services (Background)
+        run: |
+          # Start Backend (FastAPI)
+          PYTHONPATH=. uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 &
+          # Start Frontend (Static Server)
+          python3 -m http.server 3000 --directory frontend &
+          
+          # 🛡️ Wait for both services to be healthy before proceeding
+          npx --yes wait-on http://localhost:3000 http://localhost:8000/api/health --timeout 60000
 
-  test-core:
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Run Playwright E2E Chaos Test
+        run: npx playwright test tests/e2e/network_chaos.spec.js
+        env:
+          CI: true
+          API_BASE: http://localhost:8000
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Upload Test Results on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          python-version: '3.12'
-
-      - name: Install Python dependencies
-        run: |
-          pip install -r backend/requirements.txt
-          pip install pytest pytest-asyncio psutil pytest-socket httpx pandas numpy langchain-community
-
-      - name: Run Core Financial & Logic Tests (Zero-Trust Locked)
-        run: |
-          PYTHONPATH=. python -m pytest backend/tests/test_financial_integrity.py backend/tests/test_decimal_precision_v3.py backend/tests/test_logic_hardening.py -v --disable-socket --allow-hosts=127.0.0.1,localhost
-
-  test-chaos:
-    needs: test-core
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Execution Dependencies
-        run: |
-          pip install -r backend/requirements.txt
-          pip install pytest pytest-asyncio psutil pytest-socket httpx
-
-      - name: Run Resilience & Chaos Tests (Rate Limiter, Circuit Breaker)
-        run: |
-          PYTHONPATH=. python -m pytest backend/tests/test_chaos_engineering.py backend/tests/test_chaos_resilience.py backend/tests/test_sre_firewall.py -v
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

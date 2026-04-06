@@ -77,5 +77,3 @@ export function createStore(initialState) {
 
     return state;
 }
-
-window.createStore = createStore;
